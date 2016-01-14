@@ -9,17 +9,19 @@
 #	To restore the backup:
 #	find "backup_path" -name "*.bson.gz" -exec gunzip '{}' \;
 #	mongorestore --oplogReplay --dir "backup_path"
-# Script:
-#	mongo_backup_all_dbs.sh
+#
+# Source:
+#	https://github.com/dabest1/mongodb/blob/master/backup/mongo_backup_all_dbs.sh
 ################################################################################
 
 # Version.
-version="1.0.0"
+version="1.0.1"
 
 # Main backup directory.
 bkup_dir="/backups"
 # Backup type such as adhoc, daily, weekly, monthly, or yearly. Optionally supply this value to override the calculated value.
 bkup_type=""
+# Day of week to produce weekly, monthly, or yearly backups.
 weekly_bkup_dow=2
 # Number of daily backups to retain.
 num_daily_bkups=5

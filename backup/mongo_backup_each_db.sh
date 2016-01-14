@@ -10,17 +10,19 @@
 #	To restore the backup:
 #	find "backup_path" -name "*.bson.gz" -exec gunzip '{}' \;
 #	mongorestore --dir "backup_path"
-# Script:
-#	mongo_backup_each_db.sh
+#
+# Source:
+#	https://github.com/dabest1/mongodb/blob/master/backup/mongo_backup_each_db.sh
 ################################################################################
 
 # Version.
-version="1.0.0"
+version="1.0.1"
 
 # Main backup directory.
 bkup_dir="/backups"
 # Backup type such as adhoc, daily, weekly, monthly, or yearly. Optionally supply this value to override the calculated value.
 bkup_type=""
+# Day of week to produce weekly, monthly, or yearly backups.
 weekly_bkup_dow=2
 # Number of daily backups to retain.
 num_daily_bkups=5
@@ -165,9 +167,14 @@ if [[ -s "$log_err" ]]; then
 	if [[ ! -z "$mail_on_error" ]]; then
         	cat "$log_mail" | mail -s "Error - MongoDB Backup $HOSTNAME" "$mail_on_error"
 	fi
+	mv "$log_mail" "$bkup_dir/$bkup_date.$bkup_type/"
+	mv "$log_err" "$bkup_dir/$bkup_date.$bkup_type/"
 	exit 1
 else
 	if [[ ! -z "$mail_on_success" ]]; then
         	cat "$log_mail" | mail -s "Success - MongoDB Backup $HOSTNAME" "$mail_on_success"
 	fi
+	mv "$log_mail" "$bkup_dir/$bkup_date.$bkup_type/"
+	mv "$log_err" "$bkup_dir/$bkup_date.$bkup_type/"
+	exit 0
 fi

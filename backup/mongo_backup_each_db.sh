@@ -23,7 +23,7 @@ bkup_dir="/backups"
 # Backup type such as adhoc, daily, weekly, monthly, or yearly. Optionally supply this value to override the calculated value.
 bkup_type=""
 # Day of week to produce weekly, monthly, or yearly backups.
-weekly_bkup_dow=2
+weekly_bkup_dow=1
 # Number of daily backups to retain.
 num_daily_bkups=5
 # Number of weekly backups to retain.

@@ -1,10 +1,11 @@
 #!/bin/bash
 ################################################################################
 # Purpose:
-#	Backup all MongoDB databases using mongodump. --oplog option is used, 
-#	so that backup will reflect a single moment in time.
+#	Backup all MongoDB databases using mongodump (local db is excluded.).
+#	--oplog option is used, so that backup will reflect a single moment in 
+#	time.
 #	Compress backup.
-#	Email upon completion.
+#	Send email upon completion.
 #
 #	To restore the backup:
 #	find "backup_path" -name "*.bson.gz" -exec gunzip '{}' \;
@@ -15,34 +16,19 @@
 ################################################################################
 
 # Version.
-version="1.0.1"
+version="1.1.0"
 
-# Main backup directory.
-bkup_dir="/backups"
-# Backup type such as adhoc, daily, weekly, monthly, or yearly. Optionally supply this value to override the calculated value.
-bkup_type=""
-# Day of week to produce weekly, monthly, or yearly backups.
-weekly_bkup_dow=1
-# Number of daily backups to retain.
-num_daily_bkups=5
-# Number of weekly backups to retain.
-num_weekly_bkups=5
-# Number of monthly backups to retain.
-num_monthly_bkups=2
-# Number of yearly backups to retain.
-num_yearly_bkups=0
-# MongoDB username.
-user=""
-# MongoDB password.
-pass=""
-# Where to email when errors occur. Leave empty if no email is desired.
-mail_on_error=""
-# Where to email when no errors occur. Leave empty if no email is desired.
-mail_on_success=""
-# Location of mongo binary.
-mongo="/usr/bin/mongo"
-# Location of mongodump binary.
-mongodump="/usr/bin/mongodump"
+script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+script_name="$(basename "$0")"
+config_path="$script_dir/${script_name/.sh/.cfg}"
+
+# Load configuration settings.
+source "$config_path"
+
+if [[ -z $bkup_dir ]]; then
+	echo "Error: Some variables were not provided in configuration file." >&2
+	exit 1
+fi
 
 # Redirect stderr into error log, stdout and stderr into log and terminal.
 log_err="$bkup_dir/error.log"
@@ -115,6 +101,9 @@ fi
 echo "Backup will be created in:"
 echo "$bkup_dir/$bkup_date.$bkup_type"
 echo
+echo "Disk space before backup:"
+df -h "$bkup_dir"
+echo
 mkdir "$bkup_dir/$bkup_date.$bkup_type"
 echo "Backing up all dbs except local with --oplog option."
 date -u +'start:  %F %T %Z'
@@ -126,6 +115,8 @@ fi
 date -u +'finish: %F %T %Z'
 echo "Total disk usage:"
 du -sb "$bkup_dir/$bkup_date.$bkup_type"
+echo "Disk space after backup:"
+df -h "$bkup_dir"
 echo
 
 # Compress backup.
@@ -135,6 +126,8 @@ find "$bkup_dir/$bkup_date.$bkup_type" -name "*.bson" -exec gzip '{}' \;
 date -u +'finish: %F %T %Z'
 echo "Total compressed disk usage:"
 du -sb "$bkup_dir/$bkup_date.$bkup_type"
+echo "Disk space after compression:"
+df -h "$bkup_dir"
 echo
 
 echo "**************************************************"
@@ -145,14 +138,14 @@ echo "**************************************************"
 # Send email.
 if [[ -s "$log_err" ]]; then
 	if [[ ! -z "$mail_on_error" ]]; then
-        	cat "$log_mail" | mail -s "Error - MongoDB Backup $HOSTNAME" "$mail_on_error"
+        	mail -s "Error - MongoDB Backup $HOSTNAME" "$mail_on_error" < "$log_mail"
 	fi
 	mv "$log_mail" "$bkup_dir/$bkup_date.$bkup_type/"
 	mv "$log_err" "$bkup_dir/$bkup_date.$bkup_type/"
 	exit 1
 else
 	if [[ ! -z "$mail_on_success" ]]; then
-        	cat "$log_mail" | mail -s "Success - MongoDB Backup $HOSTNAME" "$mail_on_success"
+        	mail -s "Success - MongoDB Backup $HOSTNAME" "$mail_on_success" < "$log_mail"
 	fi
 	mv "$log_mail" "$bkup_dir/$bkup_date.$bkup_type/"
 	mv "$log_err" "$bkup_dir/$bkup_date.$bkup_type/"

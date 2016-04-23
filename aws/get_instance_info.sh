@@ -1,9 +1,11 @@
 #!/bin/bash
 
 # Purpose:
-#     Prints essential information about the host or instance_id supplied.
+#     Prints essential information about the host supplied.
+# Usage:
+#     Run with no options to get usage.
 
-version=1.0.0
+version=1.0.1
 
 host="$1"
 log='get_instance_info.log'
@@ -11,7 +13,7 @@ profile="$AWS_PROFILE"
 
 if [[ -z $host || -z $profile ]]; then
     echo 'Usage:'
-    echo '    AWS_PROFILE=profile'
+    echo '    export AWS_PROFILE=profile'
     echo '    script.sh hostname'
     exit 1
 fi

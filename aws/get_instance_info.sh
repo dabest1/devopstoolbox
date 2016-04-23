@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Purpose:
+#     Prints essential information about the host or instance_id supplied.
+
+version=1.0.0
+
 host="$1"
 log='get_instance_info.log'
 profile="$AWS_PROFILE"

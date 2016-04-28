@@ -5,20 +5,23 @@
 #     Multiple instances can be displayed if partial name with wildcard is 
 #     supplied.
 # Usage:
-#     Run script with no options to get usage.
+#     Run script with -h option to get usage.
 
-version=1.0.1
+version=1.0.2
 
 name="$1"
 profile="$AWS_PROFILE"
 
-if [[ -z $name || -z $profile ]]; then
+if [[ -z $profile || $1 == '-h' ]]; then
     echo 'Usage:'
     echo '    export AWS_PROFILE=profile'
-    echo '    script.sh name'
+    echo '    script.sh [name]'
     echo '    or'
     echo "    script.sh 'partial_name*'"
     exit 1
+fi
+if [[ -z $1 ]]; then
+    name='*'
 fi
 
 echo "profile: $profile"

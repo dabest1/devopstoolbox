@@ -7,7 +7,7 @@
 # Usage:
 #     Run script with no options to get usage.
 
-version=1.0.2
+version=1.0.3
 
 name="$1"
 log='get_instance_info.log'
@@ -24,14 +24,14 @@ fi
 
 echo >> $log
 echo >> $log
+date +'%F %T %z' >> $log
 echo "profile: $profile" | tee -a $log
 echo "name: $name" | tee -a $log
 instance_ids=$(aws --profile "$profile" ec2 describe-instances --filters "Name=tag:Name, Values=$name" --query 'Reservations[].Instances[].[InstanceId]' --output text)
-return_code=$?
-if [[ $return_code -ne 0 ]]; then
+echo "instance_ids:" $instance_ids | tee -a $log
+if [[ -z $instance_ids ]]; then
     exit 1
 fi
-echo "instance_id(s):" $instance_ids | tee -a $log
 
 for instance_id in $instance_ids; do
     echo | tee -a $log

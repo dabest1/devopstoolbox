@@ -5,20 +5,21 @@
 # Usage:
 #     Run script with no options to get usage.
 
-version=1.0.0
+version=1.0.1
 
 name="$1"
 volume_size="$2"
-device="$3"
+volume_type="$3"
+device="$4"
 log='create_volume.log'
 profile="$AWS_PROFILE"
 
 set -o pipefail
-if [[ -z $name || -z $volume_size || -z $device ]]; then
+if [[ -z $name || -z $volume_size || -z $volume_type || -z $device ]]; then
     echo 'Usage:'
-    echo '    script.sh hostname volume_size_mb device'
+    echo '    script.sh hostname volume_size_mb volume_type device'
     echo 'Example:'
-    echo '    script.sh my_host 1024 /dev/sdf'
+    echo '    script.sh my_host 1024 gp2 /dev/sdf'
     exit 1
 fi
 
@@ -36,7 +37,7 @@ result=$(aws --profile "$profile" ec2 describe-instances --instance-ids "$instan
 availability_zone=$(echo "$result" | awk -F'"' '/"AvailabilityZone":/{print $4}')
 
 echo 'Create volume...' | tee -a $log
-result=$(aws --profile "$profile" ec2 create-volume --size "$volume_size" --availability-zone "$availability_zone")
+result=$(aws --profile "$profile" ec2 create-volume --size "$volume_size" --availability-zone "$availability_zone" --volume-type "$volume_type")
 echo "$result" | tee -a $log
 volume_id=$(echo "$result" | awk -F'"' '/"VolumeId":/{print $4}')
 state=""

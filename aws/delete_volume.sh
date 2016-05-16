@@ -1,20 +1,23 @@
 #!/bin/bash
 
 # Purpose:
-#    Delete AWS Volume.
+#     Delete AWS Volume.
 # Usage:
-#     Run script with no options to get usage.
+#     Run script with -h option to get usage.
 
-version=1.0.3
-
-volume_id="$1"
-log='delete_volume.log'
-profile="$AWS_PROFILE"
+version=1.0.4
 
 set -o pipefail
-if [[ -z $volume_id ]]; then
+script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+script_name="$(basename "$0")"
+log="$script_dir/${script_name/.sh/.log}"
+
+volume_id="$1"
+profile="${AWS_PROFILE:-default}"
+
+if [[ -z $volume_id || $1 == '-h' ]]; then
     echo 'Usage:'
-    echo '    script.sh volume_id'
+    echo "    $script_name volume_id"
     exit 1
 fi
 

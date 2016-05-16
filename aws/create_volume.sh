@@ -1,33 +1,39 @@
 #!/bin/bash
 
 # Purpose:
-#    Create AWS volume and attach it.
+#     Create AWS volume and attach it.
 # Usage:
-#     Run script with no options to get usage.
+#     Run script with -h option to get usage.
 
-version=1.0.1
+version=1.0.2
+
+set -o pipefail
+script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+script_name="$(basename "$0")"
+log="$script_dir/${script_name/.sh/.log}"
 
 name="$1"
 volume_size="$2"
 volume_type="$3"
 device="$4"
-log='create_volume.log'
-profile="$AWS_PROFILE"
+profile="${AWS_PROFILE:-default}"
 
-set -o pipefail
-if [[ -z $name || -z $volume_size || -z $volume_type || -z $device ]]; then
+if [[ -z $name || -z $volume_size || -z $volume_type || -z $device || $1 == '-h' ]]; then
     echo 'Usage:'
-    echo '    script.sh hostname volume_size_mb volume_type device'
+    echo '    export AWS_PROFILE=profile'
+    echo "    $script_name hostname volume_size_mb volume_type device"
     echo 'Example:'
-    echo '    script.sh my_host 1024 gp2 /dev/sdf'
+    echo "    $script_name my_host 1024 gp2 /dev/sdf"
     exit 1
 fi
 
 echo >> $log
 echo >> $log
 date +'%F %T %z' >> $log
+echo "profile: $profile" | tee -a $log
 echo "hostname: $name" | tee -a $log
 echo "volume_size_mb: $volume_size" | tee -a $log
+echo "volume_type: $volume_type" | tee -a $log
 echo "device: $device" | tee -a $log
 echo | tee -a $log
 

@@ -5,20 +5,24 @@
 #     Information about multiple instances can be displayed if partial name 
 #     with wildcard is supplied.
 # Usage:
-#     Run script with no options to get usage.
+#     Run script with -h option to get usage.
 
-version=1.0.3
+version=1.0.4
+
+set -o pipefail
+script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+script_name="$(basename "$0")"
+log="$script_dir/${script_name/.sh/.log}"
 
 name="$1"
-log='get_instance_info.log'
-profile="$AWS_PROFILE"
+profile="${AWS_PROFILE:-default}"
 
-if [[ -z $name || -z $profile ]]; then
+if [[ -z $name || $1 == '-h' ]]; then
     echo 'Usage:'
     echo '    export AWS_PROFILE=profile'
-    echo '    script.sh name'
+    echo "    $script_name name"
     echo '    or'
-    echo "    script.sh 'partial_name*'"
+    echo "    $script_name 'partial_name*'"
     exit 1
 fi
 

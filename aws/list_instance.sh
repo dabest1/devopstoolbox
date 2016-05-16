@@ -7,20 +7,26 @@
 # Usage:
 #     Run script with -h option to get usage.
 
-version=1.0.4
+version=1.0.5
+
+set -o pipefail
+script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+script_name="$(basename "$0")"
 
 name="$1"
-profile="$AWS_PROFILE"
+profile="${AWS_PROFILE:-default}"
 
-if [[ -z $profile || $1 == '-h' ]]; then
+if [[ $1 == '-h' ]]; then
     echo 'Usage:'
     echo '    export AWS_PROFILE=profile'
-    echo '    script.sh [name]'
+    echo "    $script_name [name]"
     echo '    or'
-    echo "    script.sh 'partial_name*'"
+    echo "    $script_name 'partial_name*'"
     exit 1
 fi
-if [[ -z $1 ]]; then
+
+# If name is not supplied, then we want all instances.
+if [[ -z $name ]]; then
     name='*'
 fi
 

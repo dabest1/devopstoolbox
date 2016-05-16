@@ -5,18 +5,21 @@
 # Usage:
 #     Run script with no options to get usage.
 
-version=1.0.0
-
-name="$1"
-log='terminate_instance.log'
-profile="$AWS_PROFILE"
+version='1.0.1'
 
 set -o pipefail
+script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+script_name="$(basename "$0")"
+log="$script_dir/${script_name/.sh/.log}"
 failures=0
-if [[ -z $name || -z $profile ]]; then
+
+name="$1"
+profile="${AWS_PROFILE:-default}"
+
+if [[ -z $name ]]; then
     echo 'Usage:'
     echo '    export AWS_PROFILE=profile'
-    echo '    script.sh name|instance_id'
+    echo "    $script_name name|instance_id"
     exit 1
 fi
 

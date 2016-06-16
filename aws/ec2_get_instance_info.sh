@@ -1,44 +1,50 @@
 #!/bin/bash
 
 # Purpose:
-#     Prints essential information about the instance name supplied.
-#     Information about multiple instances can be displayed if partial name 
-#     with wildcard is supplied.
+#     Provides information about an instance.
+#     Multiple instances can be displayed if wildcard is used.
 # Usage:
-#     Run script with -h option to get usage.
+#     Run script with --help option to get usage.
 
-version=1.0.4
+version=1.0.5
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
-log="$script_dir/${script_name/.sh/.log}"
 
 name="$1"
 profile="${AWS_PROFILE:-default}"
 
-if [[ -z $name || $1 == '-h' ]]; then
+if [[ $1 == '--help' ]]; then
     echo 'Usage:'
     echo '    export AWS_PROFILE=profile'
-    echo "    $script_name name"
+    echo
+    echo "    $script_name name|instance_id"
     echo '    or'
     echo "    $script_name 'partial_name*'"
     exit 1
 fi
 
-echo >> $log
-echo >> $log
-date +'%F %T %z' >> $log
-echo "profile: $profile" | tee -a $log
-echo "name: $name" | tee -a $log
-instance_ids=$(aws --profile "$profile" ec2 describe-instances --filters "Name=tag:Name, Values=$name" --query 'Reservations[].Instances[].[InstanceId]' --output text)
-echo "instance_ids:" $instance_ids | tee -a $log
+# If name is not supplied, then we want all instances.
+if [[ -z $name ]]; then
+    name='*'
+fi
+
+date +'%F %T %z'
+echo "profile: $profile"
+if echo "$name" | grep -q 'i-'; then
+    instance_ids="$name"
+else
+    echo "name: $name"
+    instance_ids=$(aws --profile "$profile" ec2 describe-instances --filters "Name=tag:Name, Values=$name" --query 'Reservations[].Instances[].[InstanceId]' --output text)
+fi
+echo "instance_ids:" $instance_ids
 if [[ -z $instance_ids ]]; then
     exit 1
 fi
 
 for instance_id in $instance_ids; do
-    echo | tee -a $log
-    aws --profile "$profile" ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, Placement.AvailabilityZone, InstanceType, State.Name]' --output table | tee -a $log
-    aws --profile "$profile" ec2 describe-volumes --filters "Name=attachment.instance-id, Values=$instance_id" --query 'Volumes[*].{VolumeId:VolumeId,InstanceId:Attachments[0].InstanceId,State:Attachments[0].State,DeleteOnTermination:Attachments[0].DeleteOnTermination,Device:Attachments[0].Device,Size:Size}' --output table | tee -a $log
+    echo
+    aws --profile "$profile" ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, Placement.AvailabilityZone, InstanceType, State.Name]' --output table
+    aws --profile "$profile" ec2 describe-volumes --filters "Name=attachment.instance-id, Values=$instance_id" --query 'Volumes[*].{VolumeId:VolumeId,InstanceId:Attachments[0].InstanceId,State:Attachments[0].State,DeleteOnTermination:Attachments[0].DeleteOnTermination,Device:Attachments[0].Device,Size:Size}' --output table
 done

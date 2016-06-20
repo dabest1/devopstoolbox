@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with -h option to get usage.
 
-version=1.0.2
+version=1.0.3
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -21,7 +21,7 @@ profile="${AWS_PROFILE:-default}"
 if [[ -z $name || -z $volume_size || -z $volume_type || -z $device || $1 == '-h' ]]; then
     echo 'Usage:'
     echo '    export AWS_PROFILE=profile'
-    echo "    $script_name hostname volume_size_mb volume_type device"
+    echo "    $script_name hostname volume_size_GiB volume_type device"
     echo 'Example:'
     echo "    $script_name my_host 1024 gp2 /dev/sdf"
     exit 1
@@ -32,7 +32,7 @@ echo >> $log
 date +'%F %T %z' >> $log
 echo "profile: $profile" | tee -a $log
 echo "hostname: $name" | tee -a $log
-echo "volume_size_mb: $volume_size" | tee -a $log
+echo "volume_size_GiB: $volume_size" | tee -a $log
 echo "volume_type: $volume_type" | tee -a $log
 echo "device: $device" | tee -a $log
 echo | tee -a $log

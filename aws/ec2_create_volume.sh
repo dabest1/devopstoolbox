@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with -h option to get usage.
 
-version=1.0.3
+version=1.0.4
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -44,6 +44,11 @@ availability_zone=$(echo "$result" | awk -F'"' '/"AvailabilityZone":/{print $4}'
 
 echo 'Create volume...' | tee -a $log
 result=$(aws --profile "$profile" ec2 create-volume --size "$volume_size" --availability-zone "$availability_zone" --volume-type "$volume_type")
+rc=$?
+if [[ $rc != 0 ]]; then
+    echo "Error: Unable to create volume."
+    exit 1
+fi
 echo "$result" | tee -a $log
 volume_id=$(echo "$result" | awk -F'"' '/"VolumeId":/{print $4}')
 state=""

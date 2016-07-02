@@ -13,7 +13,7 @@
 ################################################################################
 
 # Version.
-version="1.1.1"
+version="1.1.2"
 
 start_time="$(date -u +'%F %T %Z')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -61,13 +61,15 @@ if [[ -z "$bkup_type" ]]; then
 		yearly_bkup_exists="$(find "$bkup_dir" -name "*.yearly" | awk -F'/' '{print $NF}' | grep "^$bkup_y")"
 		bkup_ym="$(date -d "$start_time" +'%Y%m')"
 		monthly_bkup_exists="$(find "$bkup_dir" -name "*.monthly" | awk -F'/' '{print $NF}' | grep "^$bkup_ym")"
+		bkup_yw="$(date -d "$start_time" +'%Y%U')"
+		weekly_bkup_exists="$(find "$bkup_dir" -name "*.weekly" | awk -F'/' '{print $NF}' | awk -FT '{print $1}' | xargs -i date -d "{}" +'%Y%U' | grep "^$bkup_yw")"
 		if [[ -z "$yearly_bkup_exists" && $num_yearly_bkups -ne 0 ]]; then
 			bkup_type="yearly"
 			num_bkups=$num_yearly_bkups
 		elif [[ -z "$monthly_bkup_exists" && $num_monthly_bkups -ne 0 ]]; then
 			bkup_type="monthly"
 			num_bkups=$num_monthly_bkups
-		elif [[ $num_weekly_bkups -ne 0 ]]; then
+		elif [[ -z "$weekly_bkup_exists" && $num_weekly_bkups -ne 0 ]]; then
 			bkup_type="weekly"
 			num_bkups=$num_weekly_bkups
 		else

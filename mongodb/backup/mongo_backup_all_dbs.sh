@@ -13,7 +13,7 @@
 ################################################################################
 
 # Version.
-version="1.1.3"
+version="1.1.4"
 
 start_time="$(date -u +'%F %T %Z')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -161,6 +161,9 @@ if [[ ! -z $post_backup ]]; then
     date -u +'start:  %F %T %Z'
     eval "$post_backup"
     post_backup_rc=$?
+    if [[ $post_backup_rc -gt 0 ]]; then
+        echo 'Error: There was some kind of problem with post backup process. Please review the log.'
+    fi
     date -u +'finish: %F %T %Z'
     echo
 fi

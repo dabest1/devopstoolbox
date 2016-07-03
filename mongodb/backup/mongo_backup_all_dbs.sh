@@ -13,7 +13,7 @@
 ################################################################################
 
 # Version.
-version="1.1.4"
+version="1.1.5"
 
 start_time="$(date -u +'%F %T %Z')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -49,7 +49,7 @@ echo "**************************************************"
 echo
 echo "Hostname: $HOSTNAME"
 echo "MongoDB version:"
-mongod --version
+"$mongod" --version
 echo
 
 # Decide on what type of backup to perform.
@@ -117,6 +117,12 @@ echo "Disk space before backup:"
 df -h "$bkup_dir"
 echo
 
+echo "Insert UUID into database for restore verification."
+uuid=$(uuidgen)
+echo "uuid: $uuid"
+"$mongo" --quiet $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.insert( { uuid: \"$uuid\" } )"
+echo
+
 date -u +'start:  %F %T %Z'
 if echo "$HOSTNAME" | grep -q 'cfgdb'; then
     # Config server
@@ -133,8 +139,12 @@ if [[ $rc -ne 0 ]]; then
     cat "$bkup_dir/$bkup_date.$bkup_type/mongodump.log" >&2
 fi
 date -u +'finish: %F %T %Z'
-
 echo
+
+echo "Remove UUID."
+"$mongo" --quiet $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.remove( { uuid: \"$uuid\" } )"
+echo
+
 echo "Total disk usage:"
 du -sb "$bkup_dir/$bkup_date.$bkup_type"
 echo "Disk space after backup:"

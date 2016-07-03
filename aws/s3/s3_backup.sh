@@ -5,7 +5,7 @@
 ################################################################################
 
 # Version.
-version="1.0.3"
+version="1.0.4"
 
 start_time="$(date -u +'%F %T %Z')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -58,6 +58,7 @@ echo "$s3_backup_list"
 
 echo
 echo 'Upload to S3:'
+date -u +'Time started: %F %T %Z'
 echo "Command:" $s3cmd sync "$dir_to_upload" "$s3_bucket_sync_path"
 $s3cmd sync "$dir_to_upload" "$s3_bucket_sync_path"
 rc=$?
@@ -65,6 +66,7 @@ if [[ $rc -ne 0 ]]; then
     echo 'Error: Upload to S3 failed.'
     exit $rc
 fi
+date -u +'Time finished: %F %T %Z'
 
 echo
 echo 'List of backups on S3, before delete:'

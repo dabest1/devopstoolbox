@@ -5,7 +5,7 @@
 ################################################################################
 
 # Version.
-version="1.0.2"
+version="1.0.3"
 
 start_time="$(date -u +'%F %T %Z')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -45,6 +45,11 @@ echo "**************************************************"
 echo
 echo "Directory to upload: $dir_to_upload"
 echo "S3 Bucket path: $s3_bucket_path"
+
+echo
+echo 'Create md5 check sums.'
+cd "$dir_to_upload" || exit 1
+find . -type f | grep -v '[.]log$' | grep -v '[.]err$' | sort | xargs md5sum > md5sum.txt
 
 echo
 echo 'List of backups on S3, before upload:'

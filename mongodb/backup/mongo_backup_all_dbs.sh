@@ -117,11 +117,13 @@ echo "Disk space before backup:"
 df -h "$bkup_dir"
 echo
 
-echo "Insert UUID into database for restore verification."
-uuid=$(uuidgen)
-echo "uuid: $uuid"
-"$mongo" --quiet $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.insert( { uuid: \"$uuid\" } )"
-echo
+if [[ $uuid_insert == yes ]]; then
+    echo "Insert UUID into database for restore validation."
+    uuid=$(uuidgen)
+    echo "uuid: $uuid"
+    "$mongo" --quiet $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.insert( { uuid: \"$uuid\" } )"
+    echo
+fi
 
 date -u +'start:  %F %T %Z'
 if echo "$HOSTNAME" | grep -q 'cfgdb'; then
@@ -141,9 +143,11 @@ fi
 date -u +'finish: %F %T %Z'
 echo
 
-echo "Remove UUID."
-"$mongo" --quiet $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.remove( { uuid: \"$uuid\" } )"
-echo
+if [[ $uuid_insert == yes ]]; then
+    echo "Remove UUID."
+    "$mongo" --quiet $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.remove( { uuid: \"$uuid\" } )"
+    echo
+fi
 
 echo "Total disk usage:"
 du -sb "$bkup_dir/$bkup_date.$bkup_type"

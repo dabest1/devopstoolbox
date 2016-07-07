@@ -5,7 +5,7 @@
 ################################################################################
 
 # Version.
-version="1.0.4"
+version="1.0.5"
 
 start_time="$(date -u +'%F %T %Z')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -33,8 +33,8 @@ s3cmd="aws --profile $aws_profile s3"
 backup_types="daily weekly monthly yearly"
 
 # Redirect stderr into error log, stdout and stderr into log.
-log="${log:-/tmp/s3backup.log}"
-log_err="${log_err:-/tmp/s3backup.err}"
+log="${log:-/tmp/s3_backup.log}"
+log_err="${log_err:-/tmp/s3_backup.err}"
 rm "$log" "$log_err" 2> /dev/null
 exec 1> "$log" 2> "$log" 2> "$log_err"
 
@@ -60,7 +60,7 @@ echo
 echo 'Upload to S3:'
 date -u +'Time started: %F %T %Z'
 echo "Command:" $s3cmd sync "$dir_to_upload" "$s3_bucket_sync_path"
-$s3cmd sync "$dir_to_upload" "$s3_bucket_sync_path"
+$s3cmd sync --exclude "$log" --exclude "$log_err" "$dir_to_upload" "$s3_bucket_sync_path"
 rc=$?
 if [[ $rc -ne 0 ]]; then
     echo 'Error: Upload to S3 failed.'

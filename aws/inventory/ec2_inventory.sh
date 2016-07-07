@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version=1.0.0
+version=1.0.1
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -37,7 +37,7 @@ refresh() {
             exit 1
         fi
 
-        aws --profile "$profile" ec2 describe-instances --instance-ids $instance_ids --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, Placement.AvailabilityZone, InstanceType, State.Name]' --output text | sort | awk -v profile="$profile" '{print profile, "\011", $0}' >> "$data_tmp_path"
+        aws --profile "$profile" ec2 describe-instances --instance-ids $instance_ids --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, Placement.AvailabilityZone, InstanceType, State.Name]' --output text | sort | awk -v profile="$profile" '{print profile"\t"$0}' >> "$data_tmp_path"
     done
 
     mv "$data_tmp_path" "$data_path"

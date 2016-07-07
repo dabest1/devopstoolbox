@@ -13,7 +13,7 @@
 ################################################################################
 
 # Version.
-version="1.1.5"
+version="1.1.6"
 
 start_time="$(date -u +'%F %T %Z')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -101,13 +101,13 @@ df -h "$bkup_dir"
 echo
 
 echo "Purge old backups."
-list_of_bkups="$(find "$bkup_dir" -name "*.$bkup_type" | sort)"
+list_of_bkups="$(find "$bkup_dir/" -name "*.$bkup_type" | sort)"
 if [[ ! -z "$list_of_bkups" ]]; then
-    while [[ "$(echo "$list_of_bkups" | wc -l)" -ge $num_bkups ]]; do
+    while [[ "$(echo "$list_of_bkups" | wc -l)" -gt $num_bkups ]]; do
         old_bkup="$(echo "$list_of_bkups" | head -1)"
         echo "Deleting old backup: $old_bkup"
         rm -r "$old_bkup"
-        list_of_bkups="$(find "$bkup_dir" -name "*.$bkup_type" | sort)"
+        list_of_bkups="$(find "$bkup_dir/" -name "*.$bkup_type" | sort)"
     done
     echo
 fi

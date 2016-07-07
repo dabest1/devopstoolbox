@@ -6,7 +6,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version=1.0.5
+version=1.0.6
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -30,12 +30,12 @@ if [[ -z $name ]]; then
     name='*'
 fi
 
-date +'%F %T %z'
+date -u +'%F %T %Z'
 echo "profile: $profile"
 if echo "$name" | grep -q 'i-'; then
     instance_ids="$name"
 else
-    echo "name: $name"
+    #echo "name: $name"
     instance_ids=$(aws --profile "$profile" ec2 describe-instances --filters "Name=tag:Name, Values=$name" --query 'Reservations[].Instances[].[InstanceId]' --output text)
 fi
 echo "instance_ids:" $instance_ids

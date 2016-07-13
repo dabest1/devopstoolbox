@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version=1.0.1
+version=1.0.2
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -53,6 +53,10 @@ refresh)
     ;;
 list)
     list
+    script_count=$(ps | grep "$script_name" | grep -v grep | wc -l)
+    if [[ $script_count -le 2 ]]; then
+        refresh > /dev/null &
+    fi
     ;;
 *)
     exit 1

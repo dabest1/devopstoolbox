@@ -5,7 +5,7 @@
 ################################################################################
 
 # Version.
-version="1.0.5"
+version="1.0.6"
 
 start_time="$(date -u +'%F %T %Z')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -59,7 +59,7 @@ echo "$s3_backup_list"
 echo
 echo 'Upload to S3:'
 date -u +'Time started: %F %T %Z'
-echo "Command:" $s3cmd sync "$dir_to_upload" "$s3_bucket_sync_path"
+echo "Command:" $s3cmd sync --exclude "$log" --exclude "$log_err" "$dir_to_upload" "$s3_bucket_sync_path"
 $s3cmd sync --exclude "$log" --exclude "$log_err" "$dir_to_upload" "$s3_bucket_sync_path"
 rc=$?
 if [[ $rc -ne 0 ]]; then

@@ -7,8 +7,9 @@ var databaseName = 'database'; // your database name
 var collectionName = 'collection'; // your collection
 var adminUsername = ''; // user with clusterAdmin role
 var adminPassword = ''; // that user's password
+var sleepMsBetweenMoveChunk = 60000 // Sleep time in milliseconds
 
-var version = '1.0.1'
+var version = '1.0.2'
 
 var namespace = databaseName+'.'+collectionName;
 var admindb = db.getSiblingDB('admin');
@@ -46,6 +47,6 @@ eligibleChunks.forEach(function(chunk) {
 		quit();
 	}
 	print(i+' moved chunk successfully');
-	print("Sleeping...")
-	sleep(60000) // 1000 = 1 second
+	print("Sleeping for "+sleepMsBetweenMoveChunk+" ms...")
+	sleep(sleepMsBetweenMoveChunk)
 });

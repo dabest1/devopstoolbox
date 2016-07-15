@@ -7,9 +7,9 @@ var databaseName = 'database'; // Your database name.
 var collectionNames = ['collection1', 'collection2']; // Your collections.
 var adminUsername = ''; // User with clusterAdmin role.
 var adminPassword = ''; // That user's password.
-var sleepMsBetweenMoveChunk = 60000 // Sleep time in milliseconds.
+var sleepMsBetweenMoveChunk = 60000; // Sleep time in milliseconds.
 
-var version = '1.0.3'
+var version = '1.0.4';
 
 var admindb = db.getSiblingDB('admin');
 var configdb = db.getSiblingDB('config');
@@ -50,7 +50,7 @@ collectionNames.forEach(function (collectionName, index, array) {
 			quit();
 		}
 		print(i+' moved chunk successfully');
-		print("Sleeping for "+sleepMsBetweenMoveChunk+" ms...")
-		sleep(sleepMsBetweenMoveChunk)
+		print("Sleeping for "+sleepMsBetweenMoveChunk+" ms...");
+		sleep(sleepMsBetweenMoveChunk);
 	});
 });

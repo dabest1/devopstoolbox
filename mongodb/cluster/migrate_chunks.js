@@ -1,7 +1,14 @@
+// Usage:
+//     mongo mongos.example.com/admin migrate_chunks.js
+// Original source:
+//     https://www.andrewzammit.com/blog/mongodb-migrate-and-merge-all-chunks-in-shard/
+
 var databaseName = 'database'; // your database name
 var collectionName = 'collection'; // your collection
-var adminUsername = 'username'; // user with clusterAdmin role
-var adminPassword = 'password'; // that user's password
+var adminUsername = ''; // user with clusterAdmin role
+var adminPassword = ''; // that user's password
+
+var version = '1.0.1'
 
 var namespace = databaseName+'.'+collectionName;
 var admindb = db.getSiblingDB('admin');
@@ -39,4 +46,6 @@ eligibleChunks.forEach(function(chunk) {
 		quit();
 	}
 	print(i+' moved chunk successfully');
+	print("Sleeping...")
+	sleep(60000) // 1000 = 1 second
 });

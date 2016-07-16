@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with -h option to get usage.
 
-version=1.0.4
+version=1.0.5
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -46,11 +46,12 @@ if [[ $yn == y ]]; then
     result=$(aws --profile "$profile" ec2 describe-volumes --volume-ids "$volume_id" --query 'Volumes[*].{InstanceId:Attachments[0].InstanceId,State:Attachments[0].State,Device:Attachments[0].Device}')
     instance_id=$(echo "$result" | awk -F'"' '/"InstanceId":/{print $4}')
     device=$(echo "$result" | awk -F'"' '/"Device":/{print $4}')
+    device_short="${device: -1}"
     attach_state=$(echo "$result" | awk -F'"' '/"State":/{print $4}')
     if [[ $attach_state == 'attached' || $attach_state == 'busy' ]]; then
         name=$(aws --profile "$profile" ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0]]' --output text)
         echo 'Unmount volume...' | tee -a $log
-        ssh "$name" "cmd=\$(cat /etc/fstab | grep '/dev/xvd${device:(-1)}' | awk '{print \$1}' | xargs echo sudo umount); echo \$cmd; eval \$cmd"
+        ssh "$name" "cmd=\$(cat /etc/fstab | egrep '/dev/sd${device_short}|/dev/xvd${device_short}' | awk '{print \$1}' | xargs echo sudo umount); echo \$cmd; eval \$cmd"
         rc=$?
         if [[ $rc -ne 0 ]]; then
             echo 'Warning: Could not unmount volume.' | tee -a $log

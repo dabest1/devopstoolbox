@@ -9,7 +9,7 @@ var adminUsername = ''; // User with clusterAdmin role.
 var adminPassword = ''; // That user's password.
 var sleepMsBetweenMoveChunk = 60000; // Sleep time in milliseconds.
 
-var version = '1.0.4';
+var version = '1.0.5';
 
 var admindb = db.getSiblingDB('admin');
 var configdb = db.getSiblingDB('config');
@@ -47,7 +47,7 @@ collectionNames.forEach(function (collectionName, index, array) {
 		if ( !result || !result.ok ) {
 			print(i+' error moving chunk with id '+chunk._id.toString());
 			print(JSON.stringify(result));
-			quit();
+			//quit();
 		}
 		print(i+' moved chunk successfully');
 		print("Sleeping for "+sleepMsBetweenMoveChunk+" ms...");

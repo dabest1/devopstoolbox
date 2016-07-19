@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version='1.0.2'
+version="1.0.3"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -13,8 +13,8 @@ script_name="$(basename "$0")"
 log="$script_dir/${script_name/.sh/.log}"
 
 function usage {
-    echo 'Usage:'
-    echo '    export AWS_PROFILE=profile'
+    echo "Usage:"
+    echo "    export AWS_PROFILE=profile"
     echo "    $script_name [-w|--wait] name|instance_id"
     echo
     echo "Description:"
@@ -52,11 +52,13 @@ if echo "$name" | grep -q 'i-'; then
 else
     echo "name: $name" | tee -a $log
     instance_id=$(aws --profile "$profile" ec2 describe-instances --filters "Name=tag:Name, Values=$name" --query 'Reservations[].Instances[].[InstanceId]' --output text)
+    rc=$?
+    if [[ $rc -gt 0 ]]; then
+        echo "Error: Failed to query AWS."
+        exit 1
+    fi
 fi
 echo "instance_id: $instance_id" | tee -a $log
-if [[ -z $instance_id ]]; then
-    exit 1
-fi
 
 aws --profile "$profile" ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, Placement.AvailabilityZone, InstanceType, State.Name]' --output table
 aws --profile "$profile" ec2 describe-instances --instance-ids "$instance_id" --output table >> $log

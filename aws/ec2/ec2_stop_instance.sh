@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version='1.0.1'
+version='1.0.2'
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -77,10 +77,7 @@ echo "Stop instance..." | tee -a $log
 aws --profile "$profile" ec2 stop-instances --instance-ids "$instance_id" --output table | tee -a $log
 state=""
 while [[ $state != "stopped" ]] && [[ $wait_for_stopped == yes ]]; do
-    result=$(aws --profile "$profile" ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[].Instances[].[State.Name]' --output text)
-    echo "$result"
-    state="$result"
-    echo "$state"
+    state=$(aws --profile "$profile" ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[].Instances[].[State.Name]' --output text)
     echo -n "."
     sleep 1
 done

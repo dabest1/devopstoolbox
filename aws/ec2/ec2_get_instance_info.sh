@@ -6,7 +6,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version=1.0.7
+version=1.0.8
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -37,11 +37,13 @@ if echo "$name" | grep -q 'i-'; then
 else
     #echo "name: $name"
     instance_ids=$(aws --profile "$profile" ec2 describe-instances --filters "Name=tag:Name, Values=$name" --query 'Reservations[].Instances[].[InstanceId]' --output text)
+    rc=$?
+    if [[ $rc -gt 0 ]]; then
+        echo "Error: Failed to query AWS."
+        exit 1
+    fi
 fi
 echo "instance_ids:" $instance_ids
-if [[ -z $instance_ids ]]; then
-    exit 1
-fi
 
 for instance_id in $instance_ids; do
     echo

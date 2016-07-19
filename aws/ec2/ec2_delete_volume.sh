@@ -5,20 +5,38 @@
 # Usage:
 #     Run script with -h option to get usage.
 
-version=1.0.5
+version=1.0.6
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 log="$script_dir/${script_name/.sh/.log}"
 
-volume_id="$1"
+function usage {
+    echo 'Usage:'
+    echo "    $script_name [-i] volume_id"
+    echo
+    echo "Description:"
+    echo "-i    Ignore unmount error."
+    exit 1
+}
+
+case "$1" in
+-h|--help)
+    usage
+    ;;
+-i|--ignore)
+    ignore_error=yes
+    shift
+    ;;
+*)
+    volume_id="$1"
+    shift
+esac
 profile="${AWS_PROFILE:-default}"
 
-if [[ -z $volume_id || $1 == '-h' ]]; then
-    echo 'Usage:'
-    echo "    $script_name volume_id"
-    exit 1
+if [[ -z $volume_id ]]; then
+    usage
 fi
 
 echo >> $log
@@ -54,7 +72,10 @@ if [[ $yn == y ]]; then
         ssh "$name" "cmd=\$(cat /etc/fstab | egrep '/dev/sd${device_short}|/dev/xvd${device_short}' | awk '{print \$1}' | xargs echo sudo umount); echo \$cmd; eval \$cmd"
         rc=$?
         if [[ $rc -ne 0 ]]; then
-            echo 'Warning: Could not unmount volume.' | tee -a $log
+            echo 'Error: Could not unmount volume.' | tee -a $log
+            if [[ $ignore_error != yes ]]; then
+                exit 1
+            fi
         fi
         echo 'Done.'
 

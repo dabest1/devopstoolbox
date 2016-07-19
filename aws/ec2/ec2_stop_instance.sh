@@ -3,23 +3,44 @@
 # Purpose:
 #     Stop AWS instance.
 # Usage:
-#     Run script with no options to get usage.
+#     Run script with --help option to get usage.
 
-version='1.0.0'
+version='1.0.1'
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 log="$script_dir/${script_name/.sh/.log}"
 
-name="$1"
+function usage {
+    echo 'Usage:'
+    echo '    export AWS_PROFILE=profile'
+    echo "    $script_name [-w|--wait] name|instance_id"
+    echo
+    echo "Description:"
+    echo "    -h, --help    Show this help."
+    echo "    -w, --wait    Wait for 'stopped' state before finishing."
+    exit 1
+}
+
+while test -n "$1"; do
+    case "$1" in
+    -h|--help)
+        usage
+        ;;
+    -w|--wait)
+        wait_for_stopped=yes
+        shift
+        ;;
+    *)
+        name="$1"
+        shift
+    esac
+done
 profile="${AWS_PROFILE:-default}"
 
 if [[ -z $name ]]; then
-    echo 'Usage:'
-    echo '    export AWS_PROFILE=profile'
-    echo "    $script_name name|instance_id"
-    exit 1
+    usage
 fi
 
 echo >> $log
@@ -46,9 +67,21 @@ volume_ids=$(aws --profile "$profile" ec2 describe-volumes --filters "Name=attac
 
 echo -n 'Are you sure that you want this instance stopped? y/n: '
 read yn
-if [[ $yn == y ]]; then
-    aws --profile "$profile" ec2 stop-instances --instance-ids "$instance_id" --output table | tee -a $log
-else
+if [[ $yn != y ]]; then
     echo 'Aborted!' | tee -a $log
     exit 1
 fi
+echo
+
+echo "Stop instance..." | tee -a $log
+aws --profile "$profile" ec2 stop-instances --instance-ids "$instance_id" --output table | tee -a $log
+state=""
+while [[ $state != "stopped" ]] && [[ $wait_for_stopped == yes ]]; do
+    result=$(aws --profile "$profile" ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[].Instances[].[State.Name]' --output text)
+    echo "$result"
+    state="$result"
+    echo "$state"
+    echo -n "."
+    sleep 1
+done
+echo 'Done.' | tee -a $log

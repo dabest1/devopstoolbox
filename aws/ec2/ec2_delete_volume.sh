@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with -h option to get usage.
 
-version=1.0.6
+version=1.0.7
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -14,25 +14,28 @@ log="$script_dir/${script_name/.sh/.log}"
 
 function usage {
     echo 'Usage:'
-    echo "    $script_name [-i] volume_id"
+    echo "    $script_name [-i|--ignore] volume_id"
     echo
     echo "Description:"
-    echo "-i    Ignore unmount error."
+    echo "    -h, --help    Show this help."
+    echo "    -i, --ignore    Ignore unmount error."
     exit 1
 }
 
-case "$1" in
--h|--help)
-    usage
-    ;;
--i|--ignore)
-    ignore_error=yes
-    shift
-    ;;
-*)
-    volume_id="$1"
-    shift
-esac
+while test -n "$1"; do
+    case "$1" in
+    -h|--help)
+        usage
+        ;;
+    -i|--ignore)
+        ignore_error=yes
+        shift
+        ;;
+    *)
+        volume_id="$1"
+        shift
+    esac
+done
 profile="${AWS_PROFILE:-default}"
 
 if [[ -z $volume_id ]]; then

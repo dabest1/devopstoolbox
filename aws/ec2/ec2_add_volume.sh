@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with -h option to get usage.
 
-version=1.0.0
+version=1.0.1
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -22,7 +22,7 @@ mount_owner="$7"
 mount_group="$8"
 profile="${AWS_PROFILE:-default}"
 
-if [[ -z $name || -z $volume_mount || -z $volume_size || -z $volume_type || $1 == '-h' ]]; then
+if [[ -z $name || -z $volume_mount || -z $volume_size || -z $volume_type || -z $device_aws || -z $mount_privs || -z $mount_owner || -z $mount_group || $1 == '-h' ]]; then
     echo 'Usage:'
     echo '    export AWS_PROFILE=profile'
     echo "    $script_name hostname volume_mount volume_size_GiB volume_type device privs owner group"
@@ -68,7 +68,7 @@ fi
 echo
 
 echo "Mount new volume..."
-ssh "$name" "echo '$device_aws $volume_mount auto defaults,auto,noatime 0 0' | sudo tee -a /etc/fstab > /dev/null; sudo mount -a"
+ssh "$name" "echo '$device_aws $volume_mount auto defaults,auto,noatime 0 0' | sudo tee -a /etc/fstab > /dev/null; sudo mount $volume_mount"
 rc=$?
 if [[ $rc -gt 0 ]]; then
     echo "Error: Could not mount volume."

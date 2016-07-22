@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Purpose:
-#     Backup AWS DynamoDB tables. Script wrapper for dynamodump.py.
+#     Backup AWS DynamoDB tables. Wrapper script for dynamodump.py (https://github.com/bchew/dynamodump).
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.4"
+version="1.0.5"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

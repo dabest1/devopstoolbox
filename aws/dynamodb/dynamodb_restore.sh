@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.0"
+version="1.0.1"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -46,8 +46,8 @@ echo
 for table in $tables; do
     date -u +'TS: %Y%m%dT%H%M%SZ'
     echo "Table: $table"
-    $dynamodump -r $region --accessKey $accessKey --secretKey $secretKey -m restore -s $table -d $table
-    #$dynamodump -r $region --accessKey $accessKey --secretKey $secretKey -m restore -s $table -d new_table_name
+    $dynamodump -r $region --accessKey $accessKey --secretKey $secretKey -m restore --writeCapacity "$writeCapacity" -s $table -d $table
+    #$dynamodump -r $region --accessKey $accessKey --secretKey $secretKey -m restore --writeCapacity "$writeCapacity" -s $table -d new_table_name
     echo
 done
 

@@ -5,20 +5,24 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.3"
+version="1.0.4"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 config_path="$script_dir/${script_name/.sh/.cfg}"
 
+function usage {
+    echo 'Usage:'
+    echo "    $script_name"
+    exit 1
+}
+
 # Load configuration settings.
 source "$config_path"
 
 if [[ $1 == '--help' ]]; then
-    echo 'Usage:'
-    echo "    $script_name"
-    exit 1
+    usage
 fi
 
 start_time="$(date -u +'%F %T %Z')"

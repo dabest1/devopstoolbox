@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.0"
+version="1.0.1"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -18,8 +18,8 @@ region_destination="$3"
 replication_jar="$script_dir/dynamodb-cross-region-replication-1.1.0.jar"
 task_name="_-Table-_${table}_-To-_${region_destination}"
 job_dir="$script_dir/$task_name"
-enpoint_source="https://dynamodb.${region_source}.amazonaws.com"
-enpoint_destination="https://dynamodb.${region_destination}.amazonaws.com"
+endpoint_source="https://dynamodb.${region_source}.amazonaws.com"
+endpoint_destination="https://dynamodb.${region_destination}.amazonaws.com"
 
 function usage {
     echo "Usage:"
@@ -49,7 +49,7 @@ echo
 cd "$job_dir" || exit 1
 
 echo "Starting replication task: $task"
-nohup java -jar "$replication_jar" --sourceEndpoint "$enpoint_source" --sourceTable "$table" --destinationEndpoint "$enpoint_destination" --destinationTable "$table" --taskName "$task_name" &
+nohup java -jar "$replication_jar" --sourceEndpoint "$endpoint_source" --sourceTable "$table" --destinationEndpoint "$endpoint_destination" --destinationTable "$table" --taskName "$task_name" &
 ps -ef | grep java | grep -- "--taskName $task_name"
 echo
 

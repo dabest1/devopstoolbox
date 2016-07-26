@@ -3,14 +3,23 @@
 # Purpose:
 #     Add volume to ec2 instance (create and mount volume).
 # Usage:
-#     Run script with -h option to get usage.
+#     Run script with --help option to get usage.
 
-version=1.0.1
+version=1.0.2
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 log="$script_dir/${script_name/.sh/.log}"
+
+function usage {
+    echo "Usage:"
+    echo "    export AWS_PROFILE=profile"
+    echo "    $script_name hostname volume_mount volume_size_GiB volume_type device privs owner group"
+    echo "Example:"
+    echo "    $script_name my_host /data 1024 gp2 /dev/sdf 770 myuser mygroup"
+    exit 1
+}
 
 name="$1"
 volume_mount="$2"
@@ -22,13 +31,8 @@ mount_owner="$7"
 mount_group="$8"
 profile="${AWS_PROFILE:-default}"
 
-if [[ -z $name || -z $volume_mount || -z $volume_size || -z $volume_type || -z $device_aws || -z $mount_privs || -z $mount_owner || -z $mount_group || $1 == '-h' ]]; then
-    echo 'Usage:'
-    echo '    export AWS_PROFILE=profile'
-    echo "    $script_name hostname volume_mount volume_size_GiB volume_type device privs owner group"
-    echo 'Example:'
-    echo "    $script_name my_host /data 1024 gp2 /dev/sdf 770 myuser mygroup"
-    exit 1
+if [[ -z $name || -z $volume_mount || -z $volume_size || -z $volume_type || -z $device_aws || -z $mount_privs || -z $mount_owner || -z $mount_group || $1 == "--help" ]]; then
+    usage
 fi
 
 echo >> $log

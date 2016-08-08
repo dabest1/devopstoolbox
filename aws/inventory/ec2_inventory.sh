@@ -5,11 +5,12 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version=1.0.2
+version=1.0.3
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
+log="$script_dir/${script_name/.sh/.log}"
 config_path="$script_dir/${script_name/.sh/.cfg}"
 data_path="$script_dir/${script_name/.sh/.dat}"
 data_tmp_path="$script_dir/${script_name/.sh/.dat.tmp}"
@@ -17,17 +18,22 @@ data_tmp_path="$script_dir/${script_name/.sh/.dat.tmp}"
 # Load configuration settings.
 source "$config_path"
 
-command=$1
+# Header row.
+header_row="account       name    instance_id     region  type    state"
 
-if [[ $1 == '--help' || -z $1 ]]; then
-    echo 'Usage:'
-    echo "    $script_name refresh|list"
+function usage {
+    echo "Usage:"
+    echo "    $script_name --refresh|--list"
+    echo
+    echo "Description:"
+    echo "    --refresh    Refreshes the list of EC2 instances and their state."
+    echo "    --list    Displays cached list of EC2 instances and runs refresh afterwards."
+    echo "    --help    Displays this help."
     exit 1
-fi
+}
 
 refresh() {
-    # Header row.
-    echo "account	name	instance_id	region	type	state" > "$data_tmp_path"
+    echo "$header_row" > "$data_tmp_path"
 
     for profile in $profiles; do
         echo "profile: $profile"
@@ -47,18 +53,25 @@ list() {
     cat "$data_path"
 }
 
-case $command in
-refresh)
+if [[ -z $1 ]]; then
+    usage
+fi
+
+case $1 in
+--help)
+    usage
+    ;;
+--refresh | -r)
+    task
     refresh
     ;;
-list)
+--list | -l)
     list
     script_count=$(ps | grep "$script_name" | grep -v grep | wc -l)
     if [[ $script_count -le 2 ]]; then
-        refresh > /dev/null &
+        refresh &> "$log" &
     fi
     ;;
 *)
-    exit 1
-    ;;
+    usage
 esac

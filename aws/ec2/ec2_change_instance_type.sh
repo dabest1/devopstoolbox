@@ -5,12 +5,16 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.0"
+version="1.0.1"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 log="$script_dir/${script_name/.sh/.log}"
+
+name="$1"
+instance_type="$2"
+profile="${AWS_PROFILE:-default}"
 
 function usage {
     echo "Usage:"
@@ -21,11 +25,7 @@ function usage {
     exit 1
 }
 
-name="$1"
-instance_type="$2"
-profile="${AWS_PROFILE:-default}"
-
-if [[ -z $name || $1 == "--help" ]]; then
+if [[ $1 == "--help" || -z $name ]]; then
     usage
 fi
 

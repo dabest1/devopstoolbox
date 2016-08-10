@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with no options to get usage.
 
-version='1.0.1'
+version="1.0.2"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -17,8 +17,9 @@ name="$1"
 profile="${AWS_PROFILE:-default}"
 
 if [[ -z $name ]]; then
-    echo 'Usage:'
-    echo '    export AWS_PROFILE=profile'
+    echo "Usage:"
+    echo "    export AWS_PROFILE=profile"
+    echo
     echo "    $script_name name|instance_id"
     exit 1
 fi
@@ -27,7 +28,7 @@ echo >> $log
 echo >> $log
 date +'%F %T %z' >> $log
 echo "profile: $profile" | tee -a $log
-if echo "$name" | grep -q 'i-'; then
+if echo "$name" | grep -q "i-"; then
     instance_id="$name"
 else
     echo "name: $name" | tee -a $log
@@ -45,12 +46,12 @@ aws --profile "$profile" ec2 describe-volumes --filters "Name=attachment.instanc
 
 volume_ids=$(aws --profile "$profile" ec2 describe-volumes --filters "Name=attachment.instance-id, Values=$instance_id" "Name=attachment.delete-on-termination, Values=false" --query 'Volumes[*].[VolumeId]' --output text)
 
-echo -n 'Are you sure that you want this instance terminated? y/n: '
+echo -n "Are you sure that you want this instance terminated? y/n: "
 read yn
 if [[ $yn == y ]]; then
     aws --profile "$profile" ec2 terminate-instances --instance-ids "$instance_id" --output table | tee -a $log
 else
-    echo 'Aborted!' | tee -a $log
+    echo "Aborted!" | tee -a $log
     exit 1
 fi
 
@@ -58,7 +59,7 @@ if [[ -z $volume_ids ]]; then
     exit 0
 fi
 echo "volume_ids:" $volume_ids | tee -a $log
-echo -n 'Are you sure that you want these volumes deleted? y/n: '
+echo -n "Are you sure that you want these volumes deleted? y/n: "
 read yn
 if [[ $yn == y ]]; then
     for volume_id in $volume_ids; do
@@ -66,7 +67,7 @@ if [[ $yn == y ]]; then
         aws --profile "$profile" ec2 delete-volume --volume-id "$volume_id" &> /dev/null
         return_code=$?
         while [[ $return_code -eq 255 ]]; do # Wait until the instance is terminated to delete the volume.
-            echo -n '.'
+            echo -n "."
             sleep 10
             aws --profile "$profile" ec2 delete-volume --volume-id "$volume_id" &> /dev/null
             return_code=$?
@@ -76,11 +77,11 @@ if [[ $yn == y ]]; then
             echo "return_code: $return_code" | tee -a $log
             failures+=1
         else
-            echo 'done' | tee -a $log
+            echo "done" | tee -a $log
         fi
     done
 else
-    echo 'Aborted!' | tee -a $log
+    echo "Aborted!" | tee -a $log
     exit 1
 fi
 

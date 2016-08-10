@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with -h option to get usage.
 
-version="1.0.5"
+version="1.0.6"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -39,7 +39,7 @@ echo "volume_type: $volume_type" | tee -a $log
 echo "device: $device" | tee -a $log
 echo | tee -a $log
 
-instance_id=$(aws --profile "$profile" ec2 describe-instances --filters "Name=tag:Name, Values=$name" --query 'Reservations[].Instances[].[InstanceId]' --output text)
+instance_id=$(aws --profile "$profile" ec2 describe-instances --filters "Name=tag:Name,Values=$name" "Name=instance-state-name,Values=running" --query 'Reservations[].Instances[].[InstanceId]' --output text)
 rc=$?
 if [[ $rc != 0 ]]; then
     echo "Error: Unable to query AWS."

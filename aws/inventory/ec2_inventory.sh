@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.5"
+version="1.0.6"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -37,6 +37,8 @@ refresh() {
     script_count=$(ps | grep "$script_name" | grep -v grep | wc -l)
     if [[ $script_count -le 2 ]]; then
         refresh_subtask &> "$log" &
+    else
+        echo "Warning: Refresh already in progress." 1>&2
     fi
 }
 
@@ -61,6 +63,8 @@ refresh_subtask() {
 }
 
 list() {
+    wait
+
     if [[ -z $regex ]]; then
         cat "$data_path"
     else

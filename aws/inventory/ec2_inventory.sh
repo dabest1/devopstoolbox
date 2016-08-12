@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.4"
+version="1.0.5"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -23,12 +23,13 @@ header_row="account       name    instance_id     region  type    state"
 
 function usage {
     echo "Usage:"
-    echo "    $script_name --refresh|[--list]"
+    echo "    $script_name --refresh|[--list [--grep 'regex']]"
     echo
     echo "Description:"
     echo "    -r, --refresh    Refreshes the list of EC2 instances and their state."
-    echo "    -l, --list    Displays cached list of EC2 instances and runs refresh afterwards. If no options are supplied, then this option is chosen by default."
-    echo "    --help    Displays this help."
+    echo "    -l, --list       Displays cached list of EC2 instances and runs refresh afterwards. If no options are supplied, then this option is chosen by default."
+    echo "    -g, --grep       Limits output to the regex provided."
+    echo "    -h, --help       Displays this help."
     exit 1
 }
 
@@ -40,6 +41,8 @@ refresh() {
 }
 
 refresh_subtask() {
+    echo "Start refresh."
+
     echo "$header_row" > "$data_tmp_path"
 
     for profile in $profiles; do
@@ -54,30 +57,45 @@ refresh_subtask() {
     done
 
     mv "$data_tmp_path" "$data_path"
+    echo "Done."
 }
 
 list() {
-    cat "$data_path"
+    if [[ -z $regex ]]; then
+        cat "$data_path"
+    else
+        echo "$header_row"
+        cat "$data_path" | sed '1d' | grep "$regex"
+    fi
 }
 
-case $1 in
---help)
-    usage
-    ;;
---refresh | -r)
-    tasks="$tasks refresh"
-    ;;
---list | -l)
-    tasks="$tasks list"
-    ;;
-*)
-    tasks="$tasks list"
-esac
+while test -n "$1"; do
+    case "$1" in
+    -h|--help)
+        usage
+        ;;
+    -r|--refresh)
+        tasks="$tasks refresh"
+        shift
+        ;;
+    -l|--list)
+        tasks="$tasks list"
+        shift
+        ;;
+    -g|--grep)
+        shift
+        regex="$1"
+        shift
+        ;;
+    *)
+        usage
+    esac
+done
 
 # Remove leading space.
 tasks="$(echo "${tasks}" | sed -e 's/^[[:space:]]*//')"
 
-if [[ $tasks == "list" ]]; then
+if [[ $tasks == "list" || -z $tasks ]]; then
     tasks="list refresh"
 fi
 

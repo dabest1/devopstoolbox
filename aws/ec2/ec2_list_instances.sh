@@ -5,9 +5,9 @@
 #     Multiple instances can be displayed if partial name with wildcard is 
 #     supplied.
 # Usage:
-#     Run script with -h option to get usage.
+#     Run script with --help option to get usage.
 
-version=1.0.5
+version="1.0.6"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -16,21 +16,28 @@ script_name="$(basename "$0")"
 name="$1"
 profile="${AWS_PROFILE:-default}"
 
-if [[ $1 == '-h' ]]; then
-    echo 'Usage:'
-    echo '    export AWS_PROFILE=profile'
+function usage {
+    echo "Usage:"
+    echo "    export AWS_PROFILE=profile"
+    echo
     echo "    $script_name [name]"
-    echo '    or'
+    echo "    or"
     echo "    $script_name 'partial_name*'"
     exit 1
+}
+
+if [[ $1 == "--help" ]]; then
+    usage
 fi
+
+# Header row.
+header_row="account	name	instance_id	private_ip	region	type	state"
 
 # If name is not supplied, then we want all instances.
 if [[ -z $name ]]; then
     name='*'
 fi
 
-echo "profile: $profile"
 if echo "$name" | grep -q 'i-'; then
     instance_ids="$name"
 else
@@ -42,5 +49,5 @@ if [[ -z $instance_ids ]]; then
     exit 1
 fi
 
-echo
-aws --profile "$profile" ec2 describe-instances --instance-ids $instance_ids --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, Placement.AvailabilityZone, InstanceType, State.Name]' --output text | sort
+echo "$header_row"
+aws --profile "$profile" ec2 describe-instances --instance-ids $instance_ids --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, PrivateIpAddress, Placement.AvailabilityZone, InstanceType, State.Name]' --output text | sort | awk -v profile="$profile" '{print profile"\t"$0}'

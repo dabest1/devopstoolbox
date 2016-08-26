@@ -3,9 +3,9 @@
 # Purpose:
 #     Terminate AWS instance and delete attached volumes.
 # Usage:
-#     Run script with no options to get usage.
+#     Run script with --help option to get usage.
 
-version="1.0.2"
+version="1.0.3"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -16,12 +16,16 @@ failures=0
 name="$1"
 profile="${AWS_PROFILE:-default}"
 
-if [[ -z $name ]]; then
+function usage {
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
     echo
     echo "    $script_name name|instance_id"
     exit 1
+}
+
+if [[ $1 == "--help" || -z $1 ]]; then
+    usage
 fi
 
 echo >> $log

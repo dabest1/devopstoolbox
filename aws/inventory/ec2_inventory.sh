@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.7"
+version="1.0.8"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -19,7 +19,7 @@ data_tmp_path="$script_dir/${script_name/.sh/.dat.tmp}"
 source "$config_path"
 
 # Header row.
-header_row="account	name	instance_id	priv_ip	region	type	state"
+header_row="account	name	instance_id	private_ip	region	type	state"
 
 function usage {
     echo "Usage:"
@@ -44,6 +44,7 @@ refresh() {
 
 refresh_subtask() {
     echo "Start refresh."
+    failures=0
 
     echo "$header_row" > "$data_tmp_path"
 
@@ -56,10 +57,18 @@ refresh_subtask() {
         fi
 
         aws --profile "$profile" ec2 describe-instances --instance-ids $instance_ids --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, PrivateIpAddress, Placement.AvailabilityZone, InstanceType, State.Name]' --output text | sort | awk -v profile="$profile" '{print profile"\t"$0}' >> "$data_tmp_path"
+        rc="$?"
+        if [[ $rc -gt 0 ]]; then
+            failures=$((failures + 1))
+        fi
     done
 
-    mv "$data_tmp_path" "$data_path"
-    echo "Done."
+    if [[ $failures -eq 0 ]]; then
+        mv "$data_tmp_path" "$data_path"
+        echo "Done."
+    else
+        echo "Warning: Refresh had some problems." 1>&2
+    fi
 }
 
 list() {

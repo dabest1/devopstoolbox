@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.1"
+version="1.0.2"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -19,7 +19,9 @@ profile="${AWS_PROFILE:-default}"
 function usage {
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
+    echo
     echo "    $script_name name|instance_id instance_type"
+    echo
     echo "Example:"
     echo "    $script_name myhost m3.medium"
     exit 1
@@ -56,8 +58,12 @@ fi
 echo
 
 echo "Modify instance type..."
+if [[ $instance_type == "m3.medium" ]]; then
+    aws --profile "$profile" ec2 modify-instance-attribute --instance-id "$instance_id" --no-ebs-optimized
+    rc=$?
+fi
 aws --profile "$profile" ec2 modify-instance-attribute --instance-id "$instance_id" --instance-type "$instance_type"
-rc=$?
+rc=$(($? + $rc))
 if [[ $rc -gt 0 ]]; then
     echo "Error: Instance type could not be changed."
     exit 1

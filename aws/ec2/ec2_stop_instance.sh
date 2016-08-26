@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.3"
+version="1.0.4"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -15,11 +15,12 @@ log="$script_dir/${script_name/.sh/.log}"
 function usage {
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
+    echo
     echo "    $script_name [-w|--wait] name|instance_id"
     echo
     echo "Description:"
-    echo "    -h, --help    Show this help."
     echo "    -w, --wait    Wait for 'stopped' state before finishing."
+    echo "    -h, --help    Show this help."
     exit 1
 }
 
@@ -54,13 +55,18 @@ else
     instance_id=$(aws --profile "$profile" ec2 describe-instances --filters "Name=tag:Name, Values=$name" --query 'Reservations[].Instances[].[InstanceId]' --output text)
     rc=$?
     if [[ $rc -gt 0 ]]; then
-        echo "Error: Failed to query AWS."
+        echo "Error: Failed to query AWS." | tee -a $log
         exit 1
     fi
 fi
 echo "instance_id: $instance_id" | tee -a $log
 
 aws --profile "$profile" ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, Placement.AvailabilityZone, InstanceType, State.Name]' --output table
+rc=$?
+if [[ $rc -gt 0 ]]; then
+    echo "Error: Failed to query AWS." | tee -a $log
+    exit 1
+fi
 aws --profile "$profile" ec2 describe-instances --instance-ids "$instance_id" --output table >> $log
 
 aws --profile "$profile" ec2 describe-volumes --filters "Name=attachment.instance-id, Values=$instance_id" --query 'Volumes[*].{VolumeId:VolumeId,InstanceId:Attachments[0].InstanceId,State:Attachments[0].State,DeleteOnTermination:Attachments[0].DeleteOnTermination,Device:Attachments[0].Device,Size:Size}' --output table | tee -a $log

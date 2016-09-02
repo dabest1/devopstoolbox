@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>3.0</version>
-    <date>2016-09-02T03:56:56Z</date>
+    <date>2016-09-02T04:05:05Z</date>
     <groups>
         <group>
             <name>Templates</name>
@@ -25,7 +25,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ActiveTransactions&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;ActiveTransactions&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -64,7 +64,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;AuroraBinlogReplicaLag&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;AuroraBinlogReplicaLag&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -103,7 +103,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;AuroraReplicaLag&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;AuroraReplicaLag&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -142,7 +142,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;AuroraReplicaLagMaximum&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;AuroraReplicaLagMaximum&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -181,7 +181,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;AuroraReplicaLagMinimum&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;AuroraReplicaLagMinimum&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -220,7 +220,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;BinLogDiskUsage&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;BinLogDiskUsage&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -259,7 +259,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;BlockedTransactions&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;BlockedTransactions&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -298,7 +298,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;BufferCacheHitRatio&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;BufferCacheHitRatio&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -415,7 +415,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;CPUUtilization&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;CPUUtilization&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -454,7 +454,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;CommitLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;CommitLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -493,7 +493,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;CommitThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;CommitThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -532,7 +532,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;DDLLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;DDLLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -571,7 +571,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;DDLThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;DDLThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -610,7 +610,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;DMLLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;DMLLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -649,7 +649,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;DMLThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;DMLThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -688,7 +688,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;DatabaseConnections&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;DatabaseConnections&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -727,7 +727,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;Deadlocks&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;Deadlocks&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -766,7 +766,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;DeleteLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;DeleteLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -805,7 +805,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;DeleteThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;DeleteThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -844,7 +844,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;DiskQueueDepth&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;DiskQueueDepth&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -883,7 +883,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;EngineUptime&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;EngineUptime&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -922,7 +922,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;FreeLocalStorage&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;FreeLocalStorage&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -1000,7 +1000,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;FreeableMemory&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;FreeableMemory&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -1039,7 +1039,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;InsertLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;InsertLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -1078,7 +1078,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;InsertThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;InsertThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -1117,7 +1117,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;LoginFailures&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;LoginFailures&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -1156,7 +1156,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;NetworkReceiveThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;NetworkReceiveThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -1195,7 +1195,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;NetworkTransmitThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;NetworkTransmitThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -1234,7 +1234,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;Queries&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;Queries&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -1273,7 +1273,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ReadIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;ReadIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -1312,7 +1312,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ReadLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;ReadLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -1351,7 +1351,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ReadThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;ReadThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -1429,7 +1429,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ResultSetCacheHitRatio&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;ResultSetCacheHitRatio&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -1468,7 +1468,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;SelectLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;SelectLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -1507,7 +1507,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;SelectThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;SelectThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -1585,7 +1585,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;UpdateLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;UpdateLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -1624,7 +1624,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;UpdateThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;UpdateThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -1663,7 +1663,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;WriteIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;WriteIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -1702,7 +1702,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;WriteLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;WriteLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -1741,7 +1741,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;WriteThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;WriteThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -2068,7 +2068,7 @@
     </templates>
     <triggers>
         <trigger>
-            <expression>{Template AWS RDS:rds_aurora_stats.py[&quot;--metric&quot;,&quot;CPUUtilization&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;].avg(#2)}&gt;85</expression>
+            <expression>{Template AWS RDS:aws_rds_stats.py[&quot;--metric&quot;,&quot;CPUUtilization&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;].avg(#2)}&gt;85</expression>
             <name>High CPU on {HOST.NAME}</name>
             <url/>
             <status>0</status>
@@ -2078,7 +2078,7 @@
             <dependencies/>
         </trigger>
         <trigger>
-            <expression>{Template AWS RDS:rds_aurora_stats.py[&quot;--metric&quot;,&quot;FreeStorageSpace&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;].last()}&lt;200</expression>
+            <expression>{Template AWS RDS:aws_rds_stats.py[&quot;--metric&quot;,&quot;FreeStorageSpace&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;].last()}&lt;200</expression>
             <name>Low Disk Space on {HOST.NAME}</name>
             <url/>
             <status>0</status>
@@ -2116,7 +2116,7 @@
                     <type>0</type>
                     <item>
                         <host>Template AWS RDS</host>
-                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;CPUUtilization&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;CPUUtilization&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -2148,7 +2148,7 @@
                     <type>0</type>
                     <item>
                         <host>Template AWS RDS</host>
-                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;DatabaseConnections&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;DatabaseConnections&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -2180,7 +2180,7 @@
                     <type>0</type>
                     <item>
                         <host>Template AWS RDS</host>
-                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;DiskQueueDepth&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;DiskQueueDepth&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -2212,7 +2212,7 @@
                     <type>0</type>
                     <item>
                         <host>Template AWS RDS</host>
-                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;FreeableMemory&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;FreeableMemory&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -2244,7 +2244,7 @@
                     <type>0</type>
                     <item>
                         <host>Template AWS RDS</host>
-                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;FreeStorageSpace&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;FreeStorageSpace&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -2276,7 +2276,7 @@
                     <type>0</type>
                     <item>
                         <host>Template AWS RDS</host>
-                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ReadIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;ReadIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
                 <graph_item>
@@ -2288,7 +2288,7 @@
                     <type>0</type>
                     <item>
                         <host>Template AWS RDS</host>
-                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;WriteIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;WriteIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -2320,7 +2320,7 @@
                     <type>0</type>
                     <item>
                         <host>Template AWS RDS</host>
-                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;NetworkReceiveThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;NetworkReceiveThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
                 <graph_item>
@@ -2332,7 +2332,7 @@
                     <type>0</type>
                     <item>
                         <host>Template AWS RDS</host>
-                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;NetworkTransmitThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;NetworkTransmitThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -2364,7 +2364,7 @@
                     <type>0</type>
                     <item>
                         <host>Template AWS RDS</host>
-                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ReadIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;ReadIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -2396,7 +2396,7 @@
                     <type>0</type>
                     <item>
                         <host>Template AWS RDS</host>
-                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ReadLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;ReadLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -2428,7 +2428,7 @@
                     <type>0</type>
                     <item>
                         <host>Template AWS RDS</host>
-                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ReadThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;ReadThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -2460,7 +2460,7 @@
                     <type>0</type>
                     <item>
                         <host>Template AWS RDS</host>
-                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ReplicaLag&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;ReplicaLag&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -2492,7 +2492,7 @@
                     <type>0</type>
                     <item>
                         <host>Template AWS RDS</host>
-                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;SwapUsage&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;SwapUsage&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -2524,7 +2524,7 @@
                     <type>0</type>
                     <item>
                         <host>Template AWS RDS</host>
-                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;WriteIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;WriteIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -2556,7 +2556,7 @@
                     <type>0</type>
                     <item>
                         <host>Template AWS RDS</host>
-                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;WriteLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;WriteLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -2588,7 +2588,7 @@
                     <type>0</type>
                     <item>
                         <host>Template AWS RDS</host>
-                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;WriteThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <key>aws_rds_stats.py[&quot;--metric&quot;,&quot;WriteThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>

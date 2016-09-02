@@ -4,7 +4,7 @@ import sys
 from optparse import OptionParser
 import boto.ec2.cloudwatch
 
-version = "1.0.1"
+version = "1.0.2"
 
 ### Arguments
 parser = OptionParser()
@@ -89,17 +89,15 @@ for r in boto.ec2.cloudwatch.regions():
 conn = boto.ec2.cloudwatch.CloudWatchConnection(options.access_key, options.secret_key,region=region)
 
 for k,vh in metrics.items():
-
     if (k == options.metric):
-
         try:
                 res = conn.get_metric_statistics(60, start, end, k, "AWS/RDS", "Average", {"DBInstanceIdentifier": options.instance_id})
         except Exception, e:
                 print "status err Error running rds_stats: %s" % e.error_message
                 sys.exit(1)
         average = res[-1]["Average"] # last item in result set
-        if (k == "FreeStorageSpace" or k == "FreeableMemory"):
-                average = average / 1024.0**3.0
+        #if (k == "FreeStorageSpace" or k == "FreeableMemory"):
+                #average = average / 1024.0**3.0
         if vh["type"] == "float":
                 metrics[k]["value"] = "%.4f" % average
         if vh["type"] == "int":

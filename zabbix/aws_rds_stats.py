@@ -4,9 +4,9 @@ import sys
 from optparse import OptionParser
 import boto.ec2.cloudwatch
 
-version = "1.0.3"
+version = "1.0.4"
 
-### Arguments
+# Arguments
 parser = OptionParser()
 parser.add_option("-i", "--instance-id", dest="instance_id",
                 help="DBInstanceIdentifier")
@@ -30,7 +30,7 @@ if (options.secret_key == None):
 if (options.metric == None):
     parser.error("-m RDS cloudwatch metric is required")
 
-### Real code
+# Main
 metrics = {
     "ActiveTransactions":{"type":"float", "value":None},
     "AuroraBinlogReplicaLag":{"type":"float", "value":None},
@@ -95,11 +95,13 @@ conn = boto.ec2.cloudwatch.CloudWatchConnection(options.access_key, options.secr
 for k,vh in metrics.items():
     if (k == options.metric):
         try:
-                res = conn.get_metric_statistics(60, start, end, k, "AWS/RDS", "Average", {"DBInstanceIdentifier": options.instance_id})
+                res = conn.get_metric_statistics(60, start, end, options.metric, "AWS/RDS", "Average", {"DBInstanceIdentifier": options.instance_id})
         except Exception, e:
                 print "status err Error running rds_stats: %s" % e.error_message
                 sys.exit(1)
-        average = res[-1]["Average"] # last item in result set
+        if not res: # If result is empty, then exit.
+                sys.exit(1)
+        average = res[-1]["Average"] # Last item in result set.
         #if (k == "FreeStorageSpace" or k == "FreeableMemory"):
                 #average = average / 1024.0**3.0
         if vh["type"] == "float":
@@ -109,4 +111,4 @@ for k,vh in metrics.items():
 
         #print "metric %s %s %s" % (k, vh["type"], vh["value"])
         print "%s" % (vh["value"])
-        break
+        sys.exit(0)

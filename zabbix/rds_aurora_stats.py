@@ -4,7 +4,7 @@ import sys
 from optparse import OptionParser
 import boto.ec2.cloudwatch
 
-version = "1.0.2"
+version = "1.0.3"
 
 ### Arguments
 parser = OptionParser()
@@ -40,6 +40,8 @@ metrics = {
     "BinLogDiskUsage":{"type":"float", "value":None},
     "BlockedTransactions":{"type":"float", "value":None},
     "BufferCacheHitRatio":{"type":"float", "value":None},
+    "CPUCreditBalance":{"type":"float", "value":None},
+    "CPUCreditUsage":{"type":"float", "value":None},
     "CPUUtilization":{"type":"float", "value":None},
     "CommitLatency":{"type":"float", "value":None},
     "CommitThroughput":{"type":"float", "value":None},
@@ -53,21 +55,23 @@ metrics = {
     "DeleteThroughput":{"type":"float", "value":None},
     "DiskQueueDepth":{"type":"float", "value":None},
     "EngineUptime":{"type":"float", "value":None},
-    "FreeLocalStorage":{"type":"float", "value":None},
     "FreeableMemory":{"type":"float", "value":None},
+    "FreeLocalStorage":{"type":"float", "value":None},
+    "FreeStorageSpace":{"type":"float", "value":None},
     "InsertLatency":{"type":"float", "value":None},
     "InsertThroughput":{"type":"float", "value":None},
     "LoginFailures":{"type":"float", "value":None},
     "NetworkReceiveThroughput":{"type":"float", "value":None},
-    "NetworkThroughput":{"type":"float", "value":None},
     "NetworkTransmitThroughput":{"type":"float", "value":None},
     "Queries":{"type":"float", "value":None},
     "ReadIOPS":{"type":"float", "value":None},
     "ReadLatency":{"type":"float", "value":None},
     "ReadThroughput":{"type":"float", "value":None},
+    "ReplicaLag":{"type":"float", "value":None},
     "ResultSetCacheHitRatio":{"type":"float", "value":None},
     "SelectLatency":{"type":"float", "value":None},
     "SelectThroughput":{"type":"float", "value":None},
+    "SwapUsage":{"type":"float", "value":None},
     "UpdateLatency":{"type":"float", "value":None},
     "UpdateThroughput":{"type":"float", "value":None},
     "WriteIOPS":{"type":"float", "value":None},

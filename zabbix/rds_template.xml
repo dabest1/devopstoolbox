@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>3.0</version>
-    <date>2016-06-06T06:18:48Z</date>
+    <date>2016-09-02T03:51:38Z</date>
     <groups>
         <group>
             <name>Templates</name>
@@ -9,8 +9,8 @@
     </groups>
     <templates>
         <template>
-            <template>Template AWS RDS</template>
-            <name>Template AWS RDS</name>
+            <template>Template AWS RDS Aurora</template>
+            <name>Template AWS RDS Aurora</name>
             <description/>
             <groups>
                 <group>
@@ -20,12 +20,636 @@
             <applications/>
             <items>
                 <item>
+                    <name>ActiveTransactions</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ActiveTransactions&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>AuroraBinlogReplicaLag</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;AuroraBinlogReplicaLag&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>AuroraReplicaLag</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;AuroraReplicaLag&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>AuroraReplicaLagMaximum</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;AuroraReplicaLagMaximum&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>AuroraReplicaLagMinimum</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;AuroraReplicaLagMinimum&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>BinLogDiskUsage</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;BinLogDiskUsage&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>BlockedTransactions</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;BlockedTransactions&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>BufferCacheHitRatio</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;BufferCacheHitRatio&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>CPUCreditBalance</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_stats.py[&quot;--metric&quot;,&quot;CPUCreditBalance&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>CPUCreditUsage</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_stats.py[&quot;--metric&quot;,&quot;CPUCreditUsage&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
                     <name>CPUUtilization</name>
                     <type>10</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_stats.py[&quot;--metric&quot;,&quot;CPUUtilization&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;CPUUtilization&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>CommitLatency</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;CommitLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>CommitThroughput</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;CommitThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>DDLLatency</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;DDLLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>DDLThroughput</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;DDLThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>DMLLatency</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;DMLLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>DMLThroughput</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;DMLThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -64,14 +688,131 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_stats.py[&quot;--metric&quot;,&quot;DatabaseConnections&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;DatabaseConnections&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
                     <status>0</status>
-                    <value_type>3</value_type>
+                    <value_type>0</value_type>
                     <allowed_hosts/>
-                    <units/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>Deadlocks</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;Deadlocks&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>DeleteLatency</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;DeleteLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>DeleteThroughput</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;DeleteThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
                     <delta>0</delta>
                     <snmpv3_contextname/>
                     <snmpv3_securityname/>
@@ -103,14 +844,14 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_stats.py[&quot;--metric&quot;,&quot;DiskQueueDepth&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;DiskQueueDepth&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
                     <status>0</status>
                     <value_type>0</value_type>
                     <allowed_hosts/>
-                    <units/>
+                    <units>%</units>
                     <delta>0</delta>
                     <snmpv3_contextname/>
                     <snmpv3_securityname/>
@@ -137,19 +878,58 @@
                     <logtimefmt/>
                 </item>
                 <item>
-                    <name>FreeableMemory</name>
+                    <name>EngineUptime</name>
                     <type>10</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_stats.py[&quot;--metric&quot;,&quot;FreeableMemory&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;EngineUptime&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
                     <status>0</status>
                     <value_type>0</value_type>
                     <allowed_hosts/>
-                    <units>GB</units>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>FreeLocalStorage</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;FreeLocalStorage&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
                     <delta>0</delta>
                     <snmpv3_contextname/>
                     <snmpv3_securityname/>
@@ -188,7 +968,7 @@
                     <status>0</status>
                     <value_type>0</value_type>
                     <allowed_hosts/>
-                    <units>GB</units>
+                    <units>%</units>
                     <delta>0</delta>
                     <snmpv3_contextname/>
                     <snmpv3_securityname/>
@@ -215,19 +995,19 @@
                     <logtimefmt/>
                 </item>
                 <item>
-                    <name>Network Receive Throughput</name>
+                    <name>FreeableMemory</name>
                     <type>10</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_stats.py[&quot;--metric&quot;,&quot;NetworkReceiveThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;FreeableMemory&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
                     <status>0</status>
                     <value_type>0</value_type>
                     <allowed_hosts/>
-                    <units>bps</units>
+                    <units>%</units>
                     <delta>0</delta>
                     <snmpv3_contextname/>
                     <snmpv3_securityname/>
@@ -254,19 +1034,214 @@
                     <logtimefmt/>
                 </item>
                 <item>
-                    <name>Network Transmit Throughput</name>
+                    <name>InsertLatency</name>
                     <type>10</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_stats.py[&quot;--metric&quot;,&quot;NetworkTransmitThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;InsertLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
                     <status>0</status>
                     <value_type>0</value_type>
                     <allowed_hosts/>
-                    <units>bps</units>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>InsertThroughput</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;InsertThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>LoginFailures</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;LoginFailures&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>NetworkReceiveThroughput</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;NetworkReceiveThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>NetworkTransmitThroughput</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;NetworkTransmitThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>Queries</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;Queries&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
                     <delta>0</delta>
                     <snmpv3_contextname/>
                     <snmpv3_securityname/>
@@ -298,14 +1273,14 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_stats.py[&quot;--metric&quot;,&quot;ReadIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ReadIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
                     <status>0</status>
                     <value_type>0</value_type>
                     <allowed_hosts/>
-                    <units/>
+                    <units>%</units>
                     <delta>0</delta>
                     <snmpv3_contextname/>
                     <snmpv3_securityname/>
@@ -337,14 +1312,14 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_stats.py[&quot;--metric&quot;,&quot;ReadLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ReadLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
                     <status>0</status>
                     <value_type>0</value_type>
                     <allowed_hosts/>
-                    <units>ms</units>
+                    <units>%</units>
                     <delta>0</delta>
                     <snmpv3_contextname/>
                     <snmpv3_securityname/>
@@ -376,14 +1351,14 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_stats.py[&quot;--metric&quot;,&quot;ReadThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ReadThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
                     <status>0</status>
                     <value_type>0</value_type>
                     <allowed_hosts/>
-                    <units>Bytes/Second</units>
+                    <units>%</units>
                     <delta>0</delta>
                     <snmpv3_contextname/>
                     <snmpv3_securityname/>
@@ -410,7 +1385,7 @@
                     <logtimefmt/>
                 </item>
                 <item>
-                    <name>Replica Lag</name>
+                    <name>ReplicaLag</name>
                     <type>10</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
@@ -422,7 +1397,124 @@
                     <status>0</status>
                     <value_type>0</value_type>
                     <allowed_hosts/>
-                    <units>s</units>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>ResultSetCacheHitRatio</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ResultSetCacheHitRatio&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>SelectLatency</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;SelectLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>SelectThroughput</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;SelectThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
                     <delta>0</delta>
                     <snmpv3_contextname/>
                     <snmpv3_securityname/>
@@ -461,7 +1553,85 @@
                     <status>0</status>
                     <value_type>0</value_type>
                     <allowed_hosts/>
-                    <units>Bytes</units>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>UpdateLatency</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;UpdateLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
+                    <delta>0</delta>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <formula>1</formula>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <data_type>0</data_type>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description/>
+                    <inventory_link>0</inventory_link>
+                    <applications/>
+                    <valuemap/>
+                    <logtimefmt/>
+                </item>
+                <item>
+                    <name>UpdateThroughput</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <multiplier>0</multiplier>
+                    <snmp_oid/>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;UpdateThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <delay>60</delay>
+                    <history>90</history>
+                    <trends>365</trends>
+                    <status>0</status>
+                    <value_type>0</value_type>
+                    <allowed_hosts/>
+                    <units>%</units>
                     <delta>0</delta>
                     <snmpv3_contextname/>
                     <snmpv3_securityname/>
@@ -493,14 +1663,14 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_stats.py[&quot;--metric&quot;,&quot;WriteIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;WriteIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
                     <status>0</status>
                     <value_type>0</value_type>
                     <allowed_hosts/>
-                    <units/>
+                    <units>%</units>
                     <delta>0</delta>
                     <snmpv3_contextname/>
                     <snmpv3_securityname/>
@@ -532,14 +1702,14 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_stats.py[&quot;--metric&quot;,&quot;WriteLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;WriteLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
                     <status>0</status>
                     <value_type>0</value_type>
                     <allowed_hosts/>
-                    <units>ms</units>
+                    <units>%</units>
                     <delta>0</delta>
                     <snmpv3_contextname/>
                     <snmpv3_securityname/>
@@ -571,14 +1741,14 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>rds_stats.py[&quot;--metric&quot;,&quot;WriteThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                    <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;WriteThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     <delay>60</delay>
                     <history>90</history>
                     <trends>365</trends>
                     <status>0</status>
                     <value_type>0</value_type>
                     <allowed_hosts/>
-                    <units>Bytes/Second</units>
+                    <units>%</units>
                     <delta>0</delta>
                     <snmpv3_contextname/>
                     <snmpv3_securityname/>
@@ -644,7 +1814,7 @@
                             <sort_triggers>0</sort_triggers>
                             <resource>
                                 <name>CPUUtilization</name>
-                                <host>Template AWS RDS</host>
+                                <host>Template AWS RDS Aurora</host>
                             </resource>
                             <max_columns>3</max_columns>
                             <application/>
@@ -666,7 +1836,7 @@
                             <sort_triggers>0</sort_triggers>
                             <resource>
                                 <name>FreeableMemory</name>
-                                <host>Template AWS RDS</host>
+                                <host>Template AWS RDS Aurora</host>
                             </resource>
                             <max_columns>3</max_columns>
                             <application/>
@@ -688,7 +1858,7 @@
                             <sort_triggers>0</sort_triggers>
                             <resource>
                                 <name>ReadIOPS</name>
-                                <host>Template AWS RDS</host>
+                                <host>Template AWS RDS Aurora</host>
                             </resource>
                             <max_columns>3</max_columns>
                             <application/>
@@ -710,7 +1880,7 @@
                             <sort_triggers>0</sort_triggers>
                             <resource>
                                 <name>WriteIOPS</name>
-                                <host>Template AWS RDS</host>
+                                <host>Template AWS RDS Aurora</host>
                             </resource>
                             <max_columns>3</max_columns>
                             <application/>
@@ -732,7 +1902,7 @@
                             <sort_triggers>0</sort_triggers>
                             <resource>
                                 <name>ReadThroughput</name>
-                                <host>Template AWS RDS</host>
+                                <host>Template AWS RDS Aurora</host>
                             </resource>
                             <max_columns>3</max_columns>
                             <application/>
@@ -754,7 +1924,7 @@
                             <sort_triggers>0</sort_triggers>
                             <resource>
                                 <name>WriteThroughput</name>
-                                <host>Template AWS RDS</host>
+                                <host>Template AWS RDS Aurora</host>
                             </resource>
                             <max_columns>3</max_columns>
                             <application/>
@@ -776,7 +1946,7 @@
                             <sort_triggers>0</sort_triggers>
                             <resource>
                                 <name>ReadLatency</name>
-                                <host>Template AWS RDS</host>
+                                <host>Template AWS RDS Aurora</host>
                             </resource>
                             <max_columns>3</max_columns>
                             <application/>
@@ -798,7 +1968,7 @@
                             <sort_triggers>0</sort_triggers>
                             <resource>
                                 <name>WriteLatency</name>
-                                <host>Template AWS RDS</host>
+                                <host>Template AWS RDS Aurora</host>
                             </resource>
                             <max_columns>3</max_columns>
                             <application/>
@@ -820,7 +1990,7 @@
                             <sort_triggers>0</sort_triggers>
                             <resource>
                                 <name>FreeStorageSpace</name>
-                                <host>Template AWS RDS</host>
+                                <host>Template AWS RDS Aurora</host>
                             </resource>
                             <max_columns>3</max_columns>
                             <application/>
@@ -842,7 +2012,7 @@
                             <sort_triggers>0</sort_triggers>
                             <resource>
                                 <name>SwapUsage</name>
-                                <host>Template AWS RDS</host>
+                                <host>Template AWS RDS Aurora</host>
                             </resource>
                             <max_columns>3</max_columns>
                             <application/>
@@ -864,7 +2034,7 @@
                             <sort_triggers>0</sort_triggers>
                             <resource>
                                 <name>DatabaseConnections</name>
-                                <host>Template AWS RDS</host>
+                                <host>Template AWS RDS Aurora</host>
                             </resource>
                             <max_columns>3</max_columns>
                             <application/>
@@ -886,7 +2056,7 @@
                             <sort_triggers>0</sort_triggers>
                             <resource>
                                 <name>DiskQueueDepth</name>
-                                <host>Template AWS RDS</host>
+                                <host>Template AWS RDS Aurora</host>
                             </resource>
                             <max_columns>3</max_columns>
                             <application/>
@@ -898,7 +2068,7 @@
     </templates>
     <triggers>
         <trigger>
-            <expression>{Template AWS RDS:rds_stats.py[&quot;--metric&quot;,&quot;CPUUtilization&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;].avg(#2)}&gt;85</expression>
+            <expression>{Template AWS RDS Aurora:rds_aurora_stats.py[&quot;--metric&quot;,&quot;CPUUtilization&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;].avg(#2)}&gt;85</expression>
             <name>High CPU on {HOST.NAME}</name>
             <url/>
             <status>0</status>
@@ -908,7 +2078,7 @@
             <dependencies/>
         </trigger>
         <trigger>
-            <expression>{Template AWS RDS:rds_stats.py[&quot;--metric&quot;,&quot;FreeStorageSpace&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;].last()}&lt;200</expression>
+            <expression>{Template AWS RDS Aurora:rds_aurora_stats.py[&quot;--metric&quot;,&quot;FreeStorageSpace&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;].last()}&lt;200</expression>
             <name>Low Disk Space on {HOST.NAME}</name>
             <url/>
             <status>0</status>
@@ -945,8 +2115,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS</host>
-                        <key>rds_stats.py[&quot;--metric&quot;,&quot;CPUUtilization&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <host>Template AWS RDS Aurora</host>
+                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;CPUUtilization&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -977,8 +2147,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS</host>
-                        <key>rds_stats.py[&quot;--metric&quot;,&quot;DatabaseConnections&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <host>Template AWS RDS Aurora</host>
+                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;DatabaseConnections&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -1009,8 +2179,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS</host>
-                        <key>rds_stats.py[&quot;--metric&quot;,&quot;DiskQueueDepth&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <host>Template AWS RDS Aurora</host>
+                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;DiskQueueDepth&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -1041,8 +2211,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS</host>
-                        <key>rds_stats.py[&quot;--metric&quot;,&quot;FreeableMemory&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <host>Template AWS RDS Aurora</host>
+                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;FreeableMemory&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -1073,8 +2243,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS</host>
-                        <key>rds_stats.py[&quot;--metric&quot;,&quot;FreeStorageSpace&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <host>Template AWS RDS Aurora</host>
+                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;FreeStorageSpace&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -1105,8 +2275,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS</host>
-                        <key>rds_stats.py[&quot;--metric&quot;,&quot;ReadIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <host>Template AWS RDS Aurora</host>
+                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ReadIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
                 <graph_item>
@@ -1117,8 +2287,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS</host>
-                        <key>rds_stats.py[&quot;--metric&quot;,&quot;WriteIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <host>Template AWS RDS Aurora</host>
+                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;WriteIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -1149,8 +2319,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS</host>
-                        <key>rds_stats.py[&quot;--metric&quot;,&quot;NetworkReceiveThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <host>Template AWS RDS Aurora</host>
+                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;NetworkReceiveThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
                 <graph_item>
@@ -1161,8 +2331,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS</host>
-                        <key>rds_stats.py[&quot;--metric&quot;,&quot;NetworkTransmitThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <host>Template AWS RDS Aurora</host>
+                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;NetworkTransmitThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -1193,8 +2363,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS</host>
-                        <key>rds_stats.py[&quot;--metric&quot;,&quot;ReadIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <host>Template AWS RDS Aurora</host>
+                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ReadIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -1225,8 +2395,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS</host>
-                        <key>rds_stats.py[&quot;--metric&quot;,&quot;ReadLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <host>Template AWS RDS Aurora</host>
+                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ReadLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -1257,8 +2427,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS</host>
-                        <key>rds_stats.py[&quot;--metric&quot;,&quot;ReadThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <host>Template AWS RDS Aurora</host>
+                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ReadThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -1289,8 +2459,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS</host>
-                        <key>rds_stats.py[&quot;--metric&quot;,&quot;ReplicaLag&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <host>Template AWS RDS Aurora</host>
+                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ReplicaLag&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -1321,8 +2491,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS</host>
-                        <key>rds_stats.py[&quot;--metric&quot;,&quot;SwapUsage&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <host>Template AWS RDS Aurora</host>
+                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;SwapUsage&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -1353,8 +2523,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS</host>
-                        <key>rds_stats.py[&quot;--metric&quot;,&quot;WriteIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <host>Template AWS RDS Aurora</host>
+                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;WriteIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -1385,8 +2555,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS</host>
-                        <key>rds_stats.py[&quot;--metric&quot;,&quot;WriteLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <host>Template AWS RDS Aurora</host>
+                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;WriteLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
@@ -1417,8 +2587,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS</host>
-                        <key>rds_stats.py[&quot;--metric&quot;,&quot;WriteThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
+                        <host>Template AWS RDS Aurora</host>
+                        <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;WriteThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>

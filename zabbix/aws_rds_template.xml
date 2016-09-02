@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>3.0</version>
-    <date>2016-09-02T03:51:38Z</date>
+    <date>2016-09-02T03:56:56Z</date>
     <groups>
         <group>
             <name>Templates</name>
@@ -9,8 +9,8 @@
     </groups>
     <templates>
         <template>
-            <template>Template AWS RDS Aurora</template>
-            <name>Template AWS RDS Aurora</name>
+            <template>Template AWS RDS</template>
+            <name>Template AWS RDS</name>
             <description/>
             <groups>
                 <group>
@@ -1814,7 +1814,7 @@
                             <sort_triggers>0</sort_triggers>
                             <resource>
                                 <name>CPUUtilization</name>
-                                <host>Template AWS RDS Aurora</host>
+                                <host>Template AWS RDS</host>
                             </resource>
                             <max_columns>3</max_columns>
                             <application/>
@@ -1836,7 +1836,7 @@
                             <sort_triggers>0</sort_triggers>
                             <resource>
                                 <name>FreeableMemory</name>
-                                <host>Template AWS RDS Aurora</host>
+                                <host>Template AWS RDS</host>
                             </resource>
                             <max_columns>3</max_columns>
                             <application/>
@@ -1858,7 +1858,7 @@
                             <sort_triggers>0</sort_triggers>
                             <resource>
                                 <name>ReadIOPS</name>
-                                <host>Template AWS RDS Aurora</host>
+                                <host>Template AWS RDS</host>
                             </resource>
                             <max_columns>3</max_columns>
                             <application/>
@@ -1880,7 +1880,7 @@
                             <sort_triggers>0</sort_triggers>
                             <resource>
                                 <name>WriteIOPS</name>
-                                <host>Template AWS RDS Aurora</host>
+                                <host>Template AWS RDS</host>
                             </resource>
                             <max_columns>3</max_columns>
                             <application/>
@@ -1902,7 +1902,7 @@
                             <sort_triggers>0</sort_triggers>
                             <resource>
                                 <name>ReadThroughput</name>
-                                <host>Template AWS RDS Aurora</host>
+                                <host>Template AWS RDS</host>
                             </resource>
                             <max_columns>3</max_columns>
                             <application/>
@@ -1924,7 +1924,7 @@
                             <sort_triggers>0</sort_triggers>
                             <resource>
                                 <name>WriteThroughput</name>
-                                <host>Template AWS RDS Aurora</host>
+                                <host>Template AWS RDS</host>
                             </resource>
                             <max_columns>3</max_columns>
                             <application/>
@@ -1946,7 +1946,7 @@
                             <sort_triggers>0</sort_triggers>
                             <resource>
                                 <name>ReadLatency</name>
-                                <host>Template AWS RDS Aurora</host>
+                                <host>Template AWS RDS</host>
                             </resource>
                             <max_columns>3</max_columns>
                             <application/>
@@ -1968,7 +1968,7 @@
                             <sort_triggers>0</sort_triggers>
                             <resource>
                                 <name>WriteLatency</name>
-                                <host>Template AWS RDS Aurora</host>
+                                <host>Template AWS RDS</host>
                             </resource>
                             <max_columns>3</max_columns>
                             <application/>
@@ -1990,7 +1990,7 @@
                             <sort_triggers>0</sort_triggers>
                             <resource>
                                 <name>FreeStorageSpace</name>
-                                <host>Template AWS RDS Aurora</host>
+                                <host>Template AWS RDS</host>
                             </resource>
                             <max_columns>3</max_columns>
                             <application/>
@@ -2012,7 +2012,7 @@
                             <sort_triggers>0</sort_triggers>
                             <resource>
                                 <name>SwapUsage</name>
-                                <host>Template AWS RDS Aurora</host>
+                                <host>Template AWS RDS</host>
                             </resource>
                             <max_columns>3</max_columns>
                             <application/>
@@ -2034,7 +2034,7 @@
                             <sort_triggers>0</sort_triggers>
                             <resource>
                                 <name>DatabaseConnections</name>
-                                <host>Template AWS RDS Aurora</host>
+                                <host>Template AWS RDS</host>
                             </resource>
                             <max_columns>3</max_columns>
                             <application/>
@@ -2056,7 +2056,7 @@
                             <sort_triggers>0</sort_triggers>
                             <resource>
                                 <name>DiskQueueDepth</name>
-                                <host>Template AWS RDS Aurora</host>
+                                <host>Template AWS RDS</host>
                             </resource>
                             <max_columns>3</max_columns>
                             <application/>
@@ -2068,7 +2068,7 @@
     </templates>
     <triggers>
         <trigger>
-            <expression>{Template AWS RDS Aurora:rds_aurora_stats.py[&quot;--metric&quot;,&quot;CPUUtilization&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;].avg(#2)}&gt;85</expression>
+            <expression>{Template AWS RDS:rds_aurora_stats.py[&quot;--metric&quot;,&quot;CPUUtilization&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;].avg(#2)}&gt;85</expression>
             <name>High CPU on {HOST.NAME}</name>
             <url/>
             <status>0</status>
@@ -2078,7 +2078,7 @@
             <dependencies/>
         </trigger>
         <trigger>
-            <expression>{Template AWS RDS Aurora:rds_aurora_stats.py[&quot;--metric&quot;,&quot;FreeStorageSpace&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;].last()}&lt;200</expression>
+            <expression>{Template AWS RDS:rds_aurora_stats.py[&quot;--metric&quot;,&quot;FreeStorageSpace&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;].last()}&lt;200</expression>
             <name>Low Disk Space on {HOST.NAME}</name>
             <url/>
             <status>0</status>
@@ -2115,7 +2115,7 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS Aurora</host>
+                        <host>Template AWS RDS</host>
                         <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;CPUUtilization&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
@@ -2147,7 +2147,7 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS Aurora</host>
+                        <host>Template AWS RDS</host>
                         <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;DatabaseConnections&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
@@ -2179,7 +2179,7 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS Aurora</host>
+                        <host>Template AWS RDS</host>
                         <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;DiskQueueDepth&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
@@ -2211,7 +2211,7 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS Aurora</host>
+                        <host>Template AWS RDS</host>
                         <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;FreeableMemory&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
@@ -2243,7 +2243,7 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS Aurora</host>
+                        <host>Template AWS RDS</host>
                         <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;FreeStorageSpace&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
@@ -2275,7 +2275,7 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS Aurora</host>
+                        <host>Template AWS RDS</host>
                         <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ReadIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
@@ -2287,7 +2287,7 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS Aurora</host>
+                        <host>Template AWS RDS</host>
                         <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;WriteIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
@@ -2319,7 +2319,7 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS Aurora</host>
+                        <host>Template AWS RDS</host>
                         <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;NetworkReceiveThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
@@ -2331,7 +2331,7 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS Aurora</host>
+                        <host>Template AWS RDS</host>
                         <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;NetworkTransmitThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
@@ -2363,7 +2363,7 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS Aurora</host>
+                        <host>Template AWS RDS</host>
                         <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ReadIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
@@ -2395,7 +2395,7 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS Aurora</host>
+                        <host>Template AWS RDS</host>
                         <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ReadLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
@@ -2427,7 +2427,7 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS Aurora</host>
+                        <host>Template AWS RDS</host>
                         <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ReadThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
@@ -2459,7 +2459,7 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS Aurora</host>
+                        <host>Template AWS RDS</host>
                         <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;ReplicaLag&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
@@ -2491,7 +2491,7 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS Aurora</host>
+                        <host>Template AWS RDS</host>
                         <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;SwapUsage&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
@@ -2523,7 +2523,7 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS Aurora</host>
+                        <host>Template AWS RDS</host>
                         <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;WriteIOPS&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
@@ -2555,7 +2555,7 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS Aurora</host>
+                        <host>Template AWS RDS</host>
                         <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;WriteLatency&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>
@@ -2587,7 +2587,7 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template AWS RDS Aurora</host>
+                        <host>Template AWS RDS</host>
                         <key>rds_aurora_stats.py[&quot;--metric&quot;,&quot;WriteThroughput&quot;,&quot;--instance-id&quot;,&quot;{HOST.HOST}&quot;,&quot;--access-key&quot;,&quot;{$AWS_ACCESS_KEY}&quot;,&quot;--secret-key&quot;,&quot;{$AWS_SECRET_KEY}&quot;,&quot;--region&quot;,&quot;{$REGION}&quot;]</key>
                     </item>
                 </graph_item>

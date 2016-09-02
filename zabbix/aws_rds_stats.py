@@ -4,30 +4,24 @@ import sys
 from optparse import OptionParser
 import boto.ec2.cloudwatch
 
-version = "1.0.4"
+version = "1.0.5"
 
 # Arguments
 parser = OptionParser()
-parser.add_option("-i", "--instance-id", dest="instance_id",
-                help="DBInstanceIdentifier")
-parser.add_option("-a", "--access-key", dest="access_key",
-                help="AWS Access Key")
-parser.add_option("-k", "--secret-key", dest="secret_key",
-                help="AWS Secret Access Key")
-parser.add_option("-m", "--metric", dest="metric",
-                help="RDS cloudwatch metric")
-parser.add_option("-r", "--region", dest="region",
-                help="RDS region")
-
+parser.add_option("-i", "--instance-id", dest="instance_id", help="DBInstanceIdentifier")
+parser.add_option("-a", "--access-key", dest="access_key", help="AWS Access Key")
+parser.add_option("-k", "--secret-key", dest="secret_key", help="AWS Secret Access Key")
+parser.add_option("-m", "--metric", dest="metric", help="RDS cloudwatch metric")
+parser.add_option("-r", "--region", dest="region", help="RDS region")
 (options, args) = parser.parse_args()
 
-if (options.instance_id == None):
+if options.instance_id is None:
     parser.error("-i DBInstanceIdentifier is required")
-if (options.access_key == None):
+if options.access_key is None:
     parser.error("-a AWS Access Key is required")
-if (options.secret_key == None):
+if options.secret_key is None:
     parser.error("-k AWS Secret Key is required")
-if (options.metric == None):
+if options.metric is None:
     parser.error("-m RDS cloudwatch metric is required")
 
 # Main
@@ -82,32 +76,32 @@ end = datetime.datetime.utcnow()
 start = end - datetime.timedelta(minutes=5)
 
 # Get the region.
-if (options.region == None):
+if options.region is None:
     options.region = 'us-east-1'
-    
+
 for r in boto.ec2.cloudwatch.regions():
-   if (r.name == options.region):
-      region = r
-      break
+    if r.name == options.region:
+        region = r
+        break
 
-conn = boto.ec2.cloudwatch.CloudWatchConnection(options.access_key, options.secret_key,region=region)
+conn = boto.ec2.cloudwatch.CloudWatchConnection(options.access_key, options.secret_key, region=region)
 
-for k,vh in metrics.items():
-    if (k == options.metric):
+for k, vh in metrics.items():
+    if k == options.metric:
         try:
-                res = conn.get_metric_statistics(60, start, end, options.metric, "AWS/RDS", "Average", {"DBInstanceIdentifier": options.instance_id})
+            res = conn.get_metric_statistics(60, start, end, options.metric, "AWS/RDS", "Average", {"DBInstanceIdentifier": options.instance_id})
         except Exception, e:
-                print "status err Error running rds_stats: %s" % e.error_message
-                sys.exit(1)
+            print "status err Error running rds_stats: %s" % e.error_message
+            sys.exit(1)
         if not res: # If result is empty, then exit.
-                sys.exit(1)
+            sys.exit(1)
         average = res[-1]["Average"] # Last item in result set.
-        #if (k == "FreeStorageSpace" or k == "FreeableMemory"):
-                #average = average / 1024.0**3.0
+        #if k == "FreeStorageSpace" or k == "FreeableMemory":
+            #average = average / 1024.0**3.0
         if vh["type"] == "float":
-                metrics[k]["value"] = "%.4f" % average
+            metrics[k]["value"] = "%.4f" % average
         if vh["type"] == "int":
-                metrics[k]["value"] = "%i" % average
+            metrics[k]["value"] = "%i" % average
 
         #print "metric %s %s %s" % (k, vh["type"], vh["value"])
         print "%s" % (vh["value"])

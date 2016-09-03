@@ -4,7 +4,7 @@ import sys
 from optparse import OptionParser
 import boto.ec2.cloudwatch
 
-version = "1.0.5"
+version = "1.0.6"
 
 # Arguments
 parser = OptionParser()
@@ -34,20 +34,20 @@ metrics = {
     "BinLogDiskUsage":{"type":"float", "value":None},
     "BlockedTransactions":{"type":"float", "value":None},
     "BufferCacheHitRatio":{"type":"float", "value":None},
+    "CommitLatency":{"type":"float", "value":None},
+    "CommitThroughput":{"type":"float", "value":None},
     "CPUCreditBalance":{"type":"float", "value":None},
     "CPUCreditUsage":{"type":"float", "value":None},
     "CPUUtilization":{"type":"float", "value":None},
-    "CommitLatency":{"type":"float", "value":None},
-    "CommitThroughput":{"type":"float", "value":None},
+    "DatabaseConnections":{"type":"float", "value":None},
     "DDLLatency":{"type":"float", "value":None},
     "DDLThroughput":{"type":"float", "value":None},
-    "DMLLatency":{"type":"float", "value":None},
-    "DMLThroughput":{"type":"float", "value":None},
-    "DatabaseConnections":{"type":"float", "value":None},
     "Deadlocks":{"type":"float", "value":None},
     "DeleteLatency":{"type":"float", "value":None},
     "DeleteThroughput":{"type":"float", "value":None},
     "DiskQueueDepth":{"type":"float", "value":None},
+    "DMLLatency":{"type":"float", "value":None},
+    "DMLThroughput":{"type":"float", "value":None},
     "EngineUptime":{"type":"float", "value":None},
     "FreeableMemory":{"type":"float", "value":None},
     "FreeLocalStorage":{"type":"float", "value":None},

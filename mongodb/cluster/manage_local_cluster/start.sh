@@ -3,7 +3,9 @@
 # Purpose:
 #     Create and start MongoDB cluster.
 
-version="1.0.2"
+version="1.0.3"
+
+hostname="$(hostname | awk -F. '{print $1}')"
 
 mkdir a1 a2 a3 b1 b2 b3 c1 c2 c3 d1 d2 d3 cfg1 cfg2 cfg3
 
@@ -29,10 +31,10 @@ mongod --shardsvr --replSet d --dbpath d3 --logpath d3.log --port 27302 --fork -
 
 echo
 echo mongos processes
-mongos --configdb myhost:26050,myhost:26051,myhost:26052 --fork --logappend --logpath mongos1.log --port 27017
-mongos --configdb myhost:26050,myhost:26051,myhost:26052 --fork --logappend --logpath mongos2.log --port 26061
-mongos --configdb myhost:26050,myhost:26051,myhost:26052 --fork --logappend --logpath mongos3.log --port 26062
-mongos --configdb myhost:26050,myhost:26051,myhost:26052 --fork --logappend --logpath mongos4.log --port 26063
+mongos --configdb "$hostname:26050,$hostname:26051,$hostname:26052" --fork --logappend --logpath mongos1.log --port 27017
+mongos --configdb "$hostname:26050,$hostname:26051,$hostname:26052" --fork --logappend --logpath mongos2.log --port 26061
+mongos --configdb "$hostname:26050,$hostname:26051,$hostname:26052" --fork --logappend --logpath mongos3.log --port 26062
+mongos --configdb "$hostname:26050,$hostname:26051,$hostname:26052" --fork --logappend --logpath mongos4.log --port 26063
 
 echo
 echo process list

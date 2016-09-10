@@ -1,3 +1,10 @@
+#!/bin/bash
+
+# Purpose:
+#     Set up sharding.
+
+version="1.0.1"
+
 mongo --port 27017 --eval '
 sh.addShard("a/myhost:27000");
 sh.addShard("b/myhost:27100");

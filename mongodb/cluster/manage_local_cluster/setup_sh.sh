@@ -3,12 +3,15 @@
 # Purpose:
 #     Set up sharding.
 
-version="1.0.1"
+version="1.0.2"
 
-mongo --port 27017 --eval '
-sh.addShard("a/myhost:27000");
-sh.addShard("b/myhost:27100");
-sh.addShard("c/myhost:27200");
-sh.addShard("d/myhost:27300");
+hostname="$(hostname | awk -F. '{print $1}')"
+
+mongo --port 27017 --eval "$(cat <<HERE_DOCUMENT
+sh.addShard("a/$hostname:27000");
+sh.addShard("b/$hostname:27100");
+sh.addShard("c/$hostname:27200");
+sh.addShard("d/$hostname:27300");
 sh.status();
-'
+HERE_DOCUMENT
+)"

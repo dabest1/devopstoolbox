@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.3"
+version="1.0.4"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -25,7 +25,9 @@ profile="${AWS_PROFILE:-default}"
 function usage {
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
+    echo
     echo "    $script_name hostname volume_mount volume_size_GiB volume_type device privs owner group"
+    echo
     echo "Example:"
     echo "    $script_name my_host /data 1024 gp2 /dev/sdf 770 myuser mygroup"
     exit 1

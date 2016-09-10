@@ -1,3 +1,10 @@
+#!/bin/bash
+
+# Purpose:
+#     Create and start MongoDB cluster.
+
+version="1.0.1"
+
 mkdir a1 a2 a3 b1 b2 b3 c1 c2 c3 d1 d2 d3 cfg1 cfg2 cfg3
 
 echo config servers
@@ -31,6 +38,10 @@ echo
 echo process list
 ps -A | grep [m]ongo
 
+echo
+echo set up replica sets
 ./setup_rs.sh
+
 sleep 3
+echo set up sharding
 ./setup_sh.sh

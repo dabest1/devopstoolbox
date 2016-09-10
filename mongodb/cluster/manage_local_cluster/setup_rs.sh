@@ -1,3 +1,10 @@
+#!/bin/bash
+
+# Purpose:
+#     Set up replica sets.
+
+version="1.0.1"
+
 mongo --port 27000 --eval '
 cfg = {
       "_id" : "a",

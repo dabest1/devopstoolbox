@@ -4,21 +4,13 @@
 #     Copy backup to AWS S3 and manage the number of backups retained on S3.
 ################################################################################
 
-# Version.
-version="1.0.6"
+version="1.0.7"
 
 start_time="$(date -u +'%F %T %Z')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 config_path="$script_dir/${script_name/.sh/.cfg}"
 
-if [[ $# -ne 2 ]]; then
-    echo 'Usage:'
-    echo '    $script_name dir_to_upload s3_bucket_path'
-    echo 'Example:'
-    echo '    $script_name /backups/20160101T010101Z.monthly s3://bucket/mongodb/hostname/'
-    exit 1
-fi
 dir_to_upload="$1"
 s3_bucket_path="$2"
 if ! echo "$s3_bucket_path" | grep -q '/$'; then
@@ -31,6 +23,19 @@ source "$config_path"
 
 s3cmd="aws --profile $aws_profile s3"
 backup_types="daily weekly monthly yearly"
+
+function usage {
+    echo "Usage:"
+    echo "    $script_name dir_to_upload s3_bucket_path"
+    echo
+    echo "Example:"
+    echo "    $script_name /backups/20160101T010101Z.monthly s3://bucket/mongodb/hostname/"
+    exit 1
+}
+
+if [[ $# -ne 2 ]]; then
+    usage
+fi
 
 # Redirect stderr into error log, stdout and stderr into log.
 log="${log:-/tmp/s3_backup.log}"

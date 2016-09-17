@@ -6,7 +6,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.0"
+version="1.0.1"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -25,17 +25,17 @@ if [[ $1 == "--help" ]]; then
     exit 1
 fi
 
-# If name is not supplied, then we want all instances.
-if [[ -z $name ]]; then
-    name='*'
-fi
-
 date -u +'%FT%TZ'
 echo "profile: $profile"
 if echo "$name" | grep -q "snap-"; then
     SnapshotIds="$name"
 else
-    SnapshotIds=$(aws --profile "$profile" ec2 describe-snapshots --filters "Name=tag:Name, Values=$name" --query 'Snapshots[].SnapshotId' --output text)
+    # If name is not supplied, then we want all instances.
+    if [[ -z $name ]]; then
+        SnapshotIds=$(aws --profile "$profile" ec2 describe-snapshots --query 'Snapshots[].SnapshotId' --output text)
+    else
+        SnapshotIds=$(aws --profile "$profile" ec2 describe-snapshots --filters "Name=tag:Name, Values=$name" --query 'Snapshots[].SnapshotId' --output text)
+    fi
 fi
 if [[ -z $SnapshotIds ]]; then
     exit 1

@@ -6,7 +6,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.1"
+version="1.0.2"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -25,16 +25,15 @@ if [[ $1 == "--help" ]]; then
     exit 1
 fi
 
-date -u +'%FT%TZ'
 echo "profile: $profile"
 if echo "$name" | grep -q "snap-"; then
     SnapshotIds="$name"
 else
     # If name is not supplied, then we want all instances.
     if [[ -z $name ]]; then
-        SnapshotIds=$(aws --profile "$profile" ec2 describe-snapshots --query 'Snapshots[].SnapshotId' --output text)
+        SnapshotIds=$(aws --profile "$profile" ec2 describe-snapshots --owner-ids "self" --query 'Snapshots[].SnapshotId' --output text)
     else
-        SnapshotIds=$(aws --profile "$profile" ec2 describe-snapshots --filters "Name=tag:Name, Values=$name" --query 'Snapshots[].SnapshotId' --output text)
+        SnapshotIds=$(aws --profile "$profile" ec2 describe-snapshots --owner-ids "self" --filters "Name=tag:Name, Values=$name" --query 'Snapshots[].SnapshotId' --output text)
     fi
 fi
 if [[ -z $SnapshotIds ]]; then
@@ -53,9 +52,9 @@ for SnapshotId in $SnapshotIds; do
     result=$( { aws --profile "$profile" ec2 describe-volumes --volume-ids "$VolumeId" --query 'Volumes[].Attachemnts.[InstanceId, State]' --output text | cat - 2>&4 1>&3; } 2>&1 )
     exec 3>&- 4>&- # Release the extra file descriptors.
     if echo "$result" | grep -q "The volume '.*' does not exist."; then
-        InstanceId="None"
+        InstanceId="VOLUME_DOES_NOT_EXIST"
     else
-        echo "$result"
+        echo "Debug: $result"
     fi
     echo "$SnapshotId $Snapshot_State $VolumeId $InstanceId"
 done

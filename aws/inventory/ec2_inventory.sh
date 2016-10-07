@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.8"
+version="1.0.9"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -78,7 +78,7 @@ list() {
         cat "$data_path"
     else
         echo "$header_row"
-        cat "$data_path" | sed '1d' | grep "$regex"
+        cat "$data_path" | sed '1d' | grep -E "$regex"
     fi
 }
 

@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.0"
+version="1.0.1"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -30,4 +30,4 @@ if [[ $1 == "--help" || -z $1 || -z $2 ]]; then
     usage
 fi
 
-aws --profile "$profile" iam create-user --user-name "$username" --group-name "$groupname"
+aws --profile "$profile" iam add-user-to-group --user-name "$username" --group-name "$groupname"

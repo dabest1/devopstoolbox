@@ -12,8 +12,7 @@
 #     mongorestore --oplogReplay --dir "backup_path"
 ################################################################################
 
-# Version.
-version="1.1.7"
+version="1.1.8"
 
 start_time="$(date -u +'%F %T %Z')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -41,6 +40,7 @@ if [[ -z "$user" ]]; then
 else
     mongo_option="-u $user -p $pass"
 fi
+port="${port:-27017}"
 
 echo "**************************************************"
 echo "* Backup MongoDB Database"
@@ -121,7 +121,7 @@ if [[ $uuid_insert == yes ]]; then
     echo "Insert UUID into database for restore validation."
     uuid=$(uuidgen)
     echo "uuid: $uuid"
-    "$mongo" --quiet $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.insert( { uuid: \"$uuid\" } )"
+    "$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.insert( { uuid: \"$uuid\" } )"
     echo
 fi
 
@@ -129,12 +129,12 @@ date -u +'start:  %F %T %Z'
 if echo "$HOSTNAME" | grep -q 'cfgdb'; then
     # Config server
     echo "Backing up config server."
-    "$mongodump" $mongo_option -o "$bkup_dir/$bkup_date.$bkup_type" --authenticationDatabase admin 2> "$bkup_dir/$bkup_date.$bkup_type/mongodump.log"
+    "$mongodump" --port "$port" $mongo_option -o "$bkup_dir/$bkup_date.$bkup_type" --authenticationDatabase admin 2> "$bkup_dir/$bkup_date.$bkup_type/mongodump.log"
     rc=$?
 else
     # Replica set member
     echo "Backing up all dbs except local with --oplog option."
-    "$mongodump" $mongo_option -o "$bkup_dir/$bkup_date.$bkup_type" --authenticationDatabase admin --oplog 2> "$bkup_dir/$bkup_date.$bkup_type/mongodump.log"
+    "$mongodump" --port "$port" $mongo_option -o "$bkup_dir/$bkup_date.$bkup_type" --authenticationDatabase admin --oplog 2> "$bkup_dir/$bkup_date.$bkup_type/mongodump.log"
     rc=$?
 fi
 if [[ $rc -ne 0 ]]; then
@@ -145,7 +145,7 @@ echo
 
 if [[ $uuid_insert == yes ]]; then
     echo "Remove UUID."
-    "$mongo" --quiet $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.remove( { uuid: \"$uuid\" } )"
+    "$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.remove( { uuid: \"$uuid\" } )"
     echo
 fi
 

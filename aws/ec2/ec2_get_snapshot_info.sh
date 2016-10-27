@@ -6,7 +6,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.2"
+version="1.0.3"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -19,14 +19,12 @@ if [[ $1 == "--help" ]]; then
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
     echo
-    echo "    $script_name [name|snapshot_id]"
-    echo "    or"
-    echo "    $script_name 'partial_name*'"
+    echo "    $script_name [name | 'partial_name*'  | snapshot_id]"
     exit 1
 fi
 
 echo "profile: $profile"
-if echo "$name" | grep -q "snap-"; then
+if echo "$name" | grep -q '^snap-'; then
     SnapshotIds="$name"
 else
     # If name is not supplied, then we want all instances.
@@ -55,6 +53,7 @@ for SnapshotId in $SnapshotIds; do
         InstanceId="VOLUME_DOES_NOT_EXIST"
     else
         echo "Debug: $result"
+        InstanceId="UNKNOWN"
     fi
     echo "$SnapshotId $Snapshot_State $VolumeId $InstanceId"
 done

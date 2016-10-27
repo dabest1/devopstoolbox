@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.0"
+version="1.0.1"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -55,5 +55,5 @@ fi
 aws --profile "$profile" ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, Placement.AvailabilityZone, InstanceType, State.Name]' --output table
 
 echo "Remove termination protection..." | tee -a $log
-aws --profile "$profile" ec2 modify-instance-attribute --instance-id "$instance_id" --disable-api-termination --output table | tee -a $log
+aws --profile "$profile" ec2 modify-instance-attribute --instance-id "$instance_id" --no-disable-api-termination --output table | tee -a $log
 echo 'Done.' | tee -a $log

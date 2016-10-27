@@ -6,7 +6,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.9"
+version="1.0.10"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -19,13 +19,13 @@ if [[ $1 == "--help" ]]; then
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
     echo
-    echo "    $script_name {name|'partial_name*'|instance_id}"
+    echo "    $script_name {name | 'partial_name*' | instance_id}"
     exit 1
 fi
 
 # If name is not supplied, then we want all instances.
 if [[ -z $name ]]; then
-    name="*"
+    name='*'
 fi
 
 date -u +'%F %T %Z'

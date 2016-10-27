@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.4"
+version="1.0.5"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -16,7 +16,7 @@ function usage {
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
     echo
-    echo "    $script_name [-w|--wait] name|instance_id"
+    echo "    $script_name [-w] {name | instance_id}"
     echo
     echo "Description:"
     echo "    -w, --wait    Wait for 'stopped' state before finishing."
@@ -48,7 +48,7 @@ echo >> $log
 echo >> $log
 date +'%F %T %z' >> $log
 echo "profile: $profile" | tee -a $log
-if echo "$name" | grep -q 'i-'; then
+if echo "$name" | grep -q '^i-'; then
     instance_id="$name"
 else
     echo "name: $name" | tee -a $log

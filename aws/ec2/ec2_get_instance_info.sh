@@ -6,7 +6,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version=1.0.8
+version="1.0.9"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -15,27 +15,24 @@ script_name="$(basename "$0")"
 name="$1"
 profile="${AWS_PROFILE:-default}"
 
-if [[ $1 == '--help' ]]; then
-    echo 'Usage:'
-    echo '    export AWS_PROFILE=profile'
+if [[ $1 == "--help" ]]; then
+    echo "Usage:"
+    echo "    export AWS_PROFILE=profile"
     echo
-    echo "    $script_name name|instance_id"
-    echo '    or'
-    echo "    $script_name 'partial_name*'"
+    echo "    $script_name {name|'partial_name*'|instance_id}"
     exit 1
 fi
 
 # If name is not supplied, then we want all instances.
 if [[ -z $name ]]; then
-    name='*'
+    name="*"
 fi
 
 date -u +'%F %T %Z'
 echo "profile: $profile"
-if echo "$name" | grep -q 'i-'; then
+if echo "$name" | grep -q '^i-'; then
     instance_ids="$name"
 else
-    #echo "name: $name"
     instance_ids=$(aws --profile "$profile" ec2 describe-instances --filters "Name=tag:Name, Values=$name" --query 'Reservations[].Instances[].[InstanceId]' --output text)
     rc=$?
     if [[ $rc -gt 0 ]]; then

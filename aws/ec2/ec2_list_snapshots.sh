@@ -7,7 +7,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.3"
+version="1.0.4"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -20,9 +20,7 @@ function usage {
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
     echo
-    echo "    $script_name [name]"
-    echo "    or"
-    echo "    $script_name 'partial_name*'"
+    echo "    $script_name [name | 'partial_name*']"
     exit 1
 }
 

@@ -7,7 +7,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.7"
+version="1.0.8"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -19,7 +19,7 @@ function usage {
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
     echo
-    echo "    $script_name {[name]|'partial_name*'|-v tag-value}"
+    echo "    $script_name [name | 'partial_name*' | -v tag-value]"
     echo
     echo "Description:"
     echo "    -v, --tag-value    List instances which have the provided tag value in any of the tag keys."
@@ -54,7 +54,7 @@ if [[ -z $tag_value ]]; then
         name='*'
     fi
 
-    if echo "$name" | grep -q 'i-'; then
+    if echo "$name" | grep -q '^i-'; then
         instance_ids="$name"
     else
         instance_ids=$(aws --profile "$profile" ec2 describe-instances --filters "Name=tag:Name, Values=$name" --query 'Reservations[].Instances[].[InstanceId]' --output text)

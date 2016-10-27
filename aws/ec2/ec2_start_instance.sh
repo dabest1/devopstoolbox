@@ -3,9 +3,9 @@
 # Purpose:
 #     Start AWS instance.
 # Usage:
-#     Run script with no options to get usage.
+#     Run script with --help option to get usage.
 
-version="1.0.1"
+version="1.0.2"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -15,7 +15,7 @@ log="$script_dir/${script_name/.sh/.log}"
 function usage {
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
-    echo "    $script_name name|instance_id"
+    echo "    $script_name {name | instance_id}"
     echo
     echo "Description:"
     echo "    -h, --help    Show this help."
@@ -47,7 +47,7 @@ echo >> $log
 echo >> $log
 date +'%F %T %z' >> $log
 echo "profile: $profile" | tee -a $log
-if echo "$name" | grep -q 'i-'; then
+if echo "$name" | grep -q '^i-'; then
     instance_id="$name"
 else
     echo "name: $name" | tee -a $log

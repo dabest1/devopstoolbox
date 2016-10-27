@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.2"
+version="1.0.3"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -20,7 +20,7 @@ function usage {
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
     echo
-    echo "    $script_name name|instance_id instance_type"
+    echo "    $script_name {name | instance_id} instance_type"
     echo
     echo "Example:"
     echo "    $script_name myhost m3.medium"
@@ -35,7 +35,7 @@ echo >> $log
 echo >> $log
 date +'%F %T %z' >> $log
 echo "profile: $profile" | tee -a $log
-if echo "$name" | grep -q 'i-'; then
+if echo "$name" | grep -q '^i-'; then
     instance_id="$name"
 else
     echo "name: $name" | tee -a $log

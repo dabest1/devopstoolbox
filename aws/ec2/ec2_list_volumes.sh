@@ -6,7 +6,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.2"
+version="1.0.3"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -16,16 +16,14 @@ function usage {
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
     echo
-    echo "    $script_name instance_name|instance_id"
-    echo "    or"
-    echo "    $script_name 'partial_name*'"
+    echo "    $script_name [instance_name | 'partial_name*' | instance_id]"
     exit 1
 }
 
 name="$1"
 profile="${AWS_PROFILE:-default}"
 
-if [[ $1 == '--help' || $1 == '-h' ]]; then
+if [[ $1 == "--help" || $1 == "-h" ]]; then
     usage
 fi
 
@@ -38,7 +36,7 @@ echo "profile: $profile"
 echo
 echo "DeleteOnTermination Device InstanceId Size State VolumeId"
 
-if echo "$name" | grep -q 'i-'; then
+if echo "$name" | grep -q '^i-'; then
     instance_id="$name"
     aws --profile "$profile" ec2 describe-volumes --filters "Name=attachment.instance-id, Values=$instance_id" --query 'Volumes[*].{VolumeId:VolumeId,InstanceId:Attachments[0].InstanceId,State:Attachments[0].State,DeleteOnTermination:Attachments[0].DeleteOnTermination,Device:Attachments[0].Device,Size:Size}' --output text
 elif [[ $name == '*' ]]; then

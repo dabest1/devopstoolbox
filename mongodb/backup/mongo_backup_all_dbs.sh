@@ -2,19 +2,19 @@
 ################################################################################
 # Purpose:
 #     Backup all MongoDB databases using mongodump (local db is excluded.).
-#     --oplog option is used, so that backup will reflect a single moment in 
-#     time.
+#     --oplog option is used.
 #     Compress backup.
-#     Send email upon completion.
+#     Optionally run post backup script.
+#     Optionally send email upon completion.
 #
 #     To restore the backup:
 #     find "backup_path/" -name "*.bson.gz" -exec gunzip '{}' \;
 #     mongorestore --oplogReplay --dir "backup_path"
 ################################################################################
 
-version="1.1.8"
+version="1.1.9"
 
-start_time="$(date -u +'%F %T %Z')"
+start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 config_path="$script_dir/${script_name/.sh/.cfg}"
@@ -48,8 +48,7 @@ echo "* Time started: $start_time"
 echo "**************************************************"
 echo
 echo "Hostname: $HOSTNAME"
-echo "MongoDB version:"
-"$mongod" --version
+echo "MongoDB version: $("$mongod" --version | head -1)"
 echo
 
 # Decide on what type of backup to perform.
@@ -85,8 +84,7 @@ echo "Backup type: $bkup_type"
 echo "Number of backups to retain for this type: $num_bkups"
 echo
 
-echo "Backup will be created in:"
-echo "$bkup_dir/$bkup_date.$bkup_type"
+echo "Backup will be created in: $bkup_dir/$bkup_date.$bkup_type"
 echo
 mkdir "$bkup_dir/$bkup_date.$bkup_type"
 # Move logs into dated backup directory.
@@ -100,7 +98,7 @@ echo "Disk space before purge:"
 df -h "$bkup_dir"
 echo
 
-echo "Purge old backups."
+echo "Purge old backups..."
 list_of_bkups="$(find "$bkup_dir/" -name "*.$bkup_type" | sort)"
 if [[ ! -z "$list_of_bkups" ]]; then
     while [[ "$(echo "$list_of_bkups" | wc -l)" -gt $num_bkups ]]; do
@@ -109,6 +107,7 @@ if [[ ! -z "$list_of_bkups" ]]; then
         rm -r "$old_bkup"
         list_of_bkups="$(find "$bkup_dir/" -name "*.$bkup_type" | sort)"
     done
+    echo "Done."
     echo
 fi
 
@@ -125,22 +124,25 @@ if [[ $uuid_insert == yes ]]; then
     echo
 fi
 
-date -u +'start:  %F %T %Z'
 if echo "$HOSTNAME" | grep -q 'cfgdb'; then
-    # Config server
+    # Config server.
     echo "Backing up config server."
-    "$mongodump" --port "$port" $mongo_option -o "$bkup_dir/$bkup_date.$bkup_type" --authenticationDatabase admin 2> "$bkup_dir/$bkup_date.$bkup_type/mongodump.log"
+    date -u +'start: %FT%TZ'
+    echo "Note: Need to identify in which cases --oplog does not work on config server. MongoDB 2.6 supports it. https://docs.mongodb.com/v2.6/tutorial/backup-sharded-cluster-with-database-dumps/#backup-one-config-server"
+    #"$mongodump" --port "$port" $mongo_option -o "$bkup_dir/$bkup_date.$bkup_type" --authenticationDatabase admin 2> "$bkup_dir/$bkup_date.$bkup_type/mongodump.log"
+    "$mongodump" --port "$port" $mongo_option -o "$bkup_dir/$bkup_date.$bkup_type" --authenticationDatabase admin --oplog 2> "$bkup_dir/$bkup_date.$bkup_type/mongodump.log"
     rc=$?
 else
-    # Replica set member
+    # Replica set member.
     echo "Backing up all dbs except local with --oplog option."
+    date -u +'start: %FT%TZ'
     "$mongodump" --port "$port" $mongo_option -o "$bkup_dir/$bkup_date.$bkup_type" --authenticationDatabase admin --oplog 2> "$bkup_dir/$bkup_date.$bkup_type/mongodump.log"
     rc=$?
 fi
 if [[ $rc -ne 0 ]]; then
     cat "$bkup_dir/$bkup_date.$bkup_type/mongodump.log" >&2
 fi
-date -u +'finish: %F %T %Z'
+date -u +'finish: %FT%TZ'
 echo
 
 if [[ $uuid_insert == yes ]]; then
@@ -157,9 +159,9 @@ echo
 
 # Compress backup.
 echo "Compress backup."
-date -u +'start:  %F %T %Z'
+date -u +'start: %FT%TZ'
 find "$bkup_dir/$bkup_date.$bkup_type" -name "*.bson" -exec gzip '{}' \;
-date -u +'finish: %F %T %Z'
+date -u +'finish: %FT%TZ'
 echo
 echo "Total compressed disk usage:"
 du -sb "$bkup_dir/$bkup_date.$bkup_type"
@@ -172,18 +174,18 @@ if [[ ! -z $post_backup ]]; then
     echo "Post backup process."
     echo "Command:"
     eval echo "$post_backup"
-    date -u +'start:  %F %T %Z'
+    date -u +'start: %FT%TZ'
     eval "$post_backup"
     post_backup_rc=$?
     if [[ $post_backup_rc -gt 0 ]]; then
         echo 'Error: There was some kind of problem with post backup process. Please review the log.'
     fi
-    date -u +'finish: %F %T %Z'
+    date -u +'finish: %FT%TZ'
     echo
 fi
 
 echo "**************************************************"
-echo "* Time finished: $(date -u +'%F %T %Z')"
+echo "* Time finished: $(date -u +'%FT%TZ')"
 echo "**************************************************"
 
 # Send email.

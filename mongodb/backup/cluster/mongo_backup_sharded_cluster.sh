@@ -13,12 +13,17 @@
 #     mongorestore --oplogReplay --dir "backup_path"
 ################################################################################
 
-version="1.2.1"
+version="1.2.2"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 config_path="$script_dir/${script_name/.sh/.cfg}"
+
+rundeck_execution_check_iterations=2160
+rundeck_sleep_seconds_between_execution_checks=60
+mongodb_is_balancer_running_iterations=3600
+mongodb_sleep_seconds_between_is_balancer_running=1
 
 # Load configuration settings.
 source "$config_path"
@@ -170,15 +175,15 @@ if echo "$HOSTNAME" | grep -q 'cfgdb'; then
         start_balancer
         die "Balancer could not be stopped."
     fi
-    for (( i=1; i<=3600; i++ )); do
+    for (( i=1; i<="$mongodb_is_balancer_running_iterations"; i++ )); do
         result="$("$mongo" --quiet "$mongos_host_port" --eval "sh.isBalancerRunning()")"
         if [[ $result = "false" ]]; then
             break
         fi
-        sleep 1
+        sleep "$mongodb_sleep_seconds_between_is_balancer_running"
     done
     if [[ $result != "false" ]]; then
-        echo "Balancer is still running." >&2
+        echo "Balancer is still running, aborting." >&2
         start_balancer
         die "Balancer is still running."
     fi
@@ -223,10 +228,11 @@ if echo "$HOSTNAME" | grep -q 'cfgdb'; then
     done
 
     # Wait for completion of Rundeck jobs for replica set backups.
+    echo
+    echo "Rundeck executions:"
     for host in $replset_hosts_bkup; do
-        echo
         echo "host: $host"
-        for (( i=1; i<=1440; i++ )); do
+        for (( i=1; i<="$rundeck_execution_check_iterations"; i++ )); do
             #rundeck_execution_output="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${replset_bkup_execution_id[$host]}/output/node/${host}?authtoken=${rundeck_api_token}")"
             rundeck_execution_state="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${replset_bkup_execution_id[$host]}/state?authtoken=${rundeck_api_token}")"
             #echo "$rundeck_execution_state" | jq .
@@ -236,15 +242,19 @@ if echo "$HOSTNAME" | grep -q 'cfgdb'; then
                 die "Rundeck API call failed."
             fi
             execution_state="$(echo "$rundeck_execution_state" | jq '.executionState' | tr -d '"')"
-            echo "execution_state: $execution_state"
             if [[ $execution_state = "RUNNING" ]]; then
-                sleep 60
+                sleep "$rundeck_sleep_seconds_between_execution_checks"
             elif [[ $execution_state = "SUCCEEDED" ]]; then
+                echo "execution_state: $execution_state"
                 break
             else
+                echo "execution_state: $execution_state"
                 die "Backup job on replica set failed."
             fi
         done
+        if [[ $execution_state != "SUCCEEDED" ]]; then
+            die "Backup is taking too long to run."
+        fi
     done
 
     echo

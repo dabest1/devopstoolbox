@@ -13,7 +13,7 @@
 #     mongorestore --oplogReplay --dir "backup_path"
 ################################################################################
 
-version="1.2.2"
+version="1.2.3"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -279,7 +279,7 @@ if [[ $uuid_insert == yes ]]; then
     echo
 fi
 
-echo "Total disk usage:"
+echo "Backup size in bytes:"
 du -sb "$bkup_dir/$bkup_date.$bkup_type"
 echo "Disk space after backup:"
 df -h "$bkup_dir"
@@ -291,7 +291,7 @@ date -u +'start: %FT%TZ'
 find "$bkup_dir/$bkup_date.$bkup_type" -name "*.bson" -exec gzip '{}' \;
 date -u +'finish: %FT%TZ'
 echo
-echo "Total compressed disk usage:"
+echo "Compressed backup size in bytes:"
 du -sb "$bkup_dir/$bkup_date.$bkup_type"
 echo "Disk space after compression:"
 df -h "$bkup_dir"

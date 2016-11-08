@@ -1,7 +1,7 @@
 #!/bin/bash
 ################################################################################
 # Purpose:
-#     Perform MongoDB cluster backup with the use of Rundeck.
+#     MongoDB cluster backup with the use of Rundeck.
 #     Backup all MongoDB databases using mongodump (local db is excluded.).
 #     --oplog option is used.
 #     Compress backup.
@@ -12,7 +12,7 @@
 #     mongorestore --oplogReplay --dir "backup_path"
 ################################################################################
 
-version="1.1.9"
+version="1.2.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

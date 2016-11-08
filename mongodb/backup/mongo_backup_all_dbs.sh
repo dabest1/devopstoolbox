@@ -1,7 +1,7 @@
 #!/bin/bash
 ################################################################################
 # Purpose:
-#     Backup all MongoDB databases using mongodump (local db is excluded.).
+#     Backup all MongoDB databases using mongodump (local db is excluded).
 #     --oplog option is used.
 #     Compress backup.
 #     Optionally run post backup script.
@@ -12,7 +12,7 @@
 #     mongorestore --oplogReplay --dir "backup_path"
 ################################################################################
 
-version="1.1.9"
+version="1.1.10"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -42,6 +42,23 @@ else
 fi
 port="${port:-27017}"
 
+# Functions.
+error_exit() {
+    echo
+    echo "$@" >&2
+    if [[ ! -z "$mail_on_error" ]]; then
+        mail -s "Error - MongoDB Backup $HOSTNAME" "$mail_on_error" < "$log"
+    fi
+    exit 1
+}
+trap "error_exit 'Received signal SIGHUP'" SIGHUP
+trap "error_exit 'Received signal SIGINT'" SIGINT
+trap "error_exit 'Received signal SIGTERM'" SIGTERM
+
+shopt -s expand_aliases
+alias die='error_exit "ERROR: ${0}(@$LINENO):"'
+
+# Main.
 echo "**************************************************"
 echo "* Backup MongoDB Database"
 echo "* Time started: $start_time"
@@ -107,9 +124,9 @@ if [[ ! -z "$list_of_bkups" ]]; then
         rm -r "$old_bkup"
         list_of_bkups="$(find "$bkup_dir/" -name "*.$bkup_type" | sort)"
     done
-    echo "Done."
-    echo
 fi
+echo "Done."
+echo
 
 # Perform backup.
 echo "Disk space before backup:"
@@ -172,13 +189,13 @@ echo
 if [[ ! -z $post_backup ]]; then
     cd "$script_dir"
     echo "Post backup process."
+    date -u +'start: %FT%TZ'
     echo "Command:"
     eval echo "$post_backup"
-    date -u +'start: %FT%TZ'
     eval "$post_backup"
-    post_backup_rc=$?
-    if [[ $post_backup_rc -gt 0 ]]; then
-        echo 'Error: There was some kind of problem with post backup process. Please review the log.'
+    rc=$?
+    if [[ $rc -gt 0 ]]; then
+        die "Post backup process failed."
     fi
     date -u +'finish: %FT%TZ'
     echo
@@ -189,14 +206,13 @@ echo "* Time finished: $(date -u +'%FT%TZ')"
 echo "**************************************************"
 
 # Send email.
-if [[ -s "$log_err" || $post_backup_rc -gt 0 ]]; then
+if [[ -s "$log_err" ]]; then
     if [[ ! -z "$mail_on_error" ]]; then
         mail -s "Error - MongoDB Backup $HOSTNAME" "$mail_on_error" < "$log"
     fi
-    exit 1
+    die "Uknown error."
 else
     if [[ ! -z "$mail_on_success" ]]; then
         mail -s "Success - MongoDB Backup $HOSTNAME" "$mail_on_success" < "$log"
     fi
-    exit 0
 fi

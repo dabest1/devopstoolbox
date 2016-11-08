@@ -13,7 +13,7 @@
 #     mongorestore --oplogReplay --dir "backup_path"
 ################################################################################
 
-version="1.2.4"
+version="1.2.5"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -22,8 +22,8 @@ config_path="$script_dir/${script_name/.sh/.cfg}"
 
 rundeck_execution_check_iterations=2160
 rundeck_sleep_seconds_between_execution_checks=60
-mongodb_is_balancer_running_iterations=3600
-mongodb_sleep_seconds_between_is_balancer_running=1
+mongodb_is_balancer_running_iterations=720
+mongodb_sleep_seconds_between_is_balancer_running=5
 
 # Load configuration settings.
 source "$config_path"

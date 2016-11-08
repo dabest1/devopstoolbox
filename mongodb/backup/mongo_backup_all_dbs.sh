@@ -12,7 +12,7 @@
 #     mongorestore --oplogReplay --dir "backup_path"
 ################################################################################
 
-version="1.1.12"
+version="1.1.13"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -199,6 +199,10 @@ else
     # Replica set member.
     echo "Backing up all dbs except local with --oplog option."
     date -u +'start: %FT%TZ'
+    is_master="$("$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin --eval 'JSON.stringify(db.isMaster())' | jq '.ismaster')"
+    if [[ $is_master != "false" ]]; then
+        die "This is not a secondary node."
+    fi
     "$mongodump" --port "$port" $mongo_option -o "$bkup_dir/$bkup_date.$bkup_type" --authenticationDatabase admin --oplog 1> "$bkup_dir/$bkup_date.$bkup_type/mongodump.log" 2> >(tee -ia "$bkup_dir/$bkup_date.$bkup_type/mongodump.log" > "$bkup_dir/$bkup_date.$bkup_type/mongodump.err")
     rc=$?
     if [[ $rc -ne 0 ]]; then

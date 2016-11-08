@@ -13,7 +13,7 @@
 #     mongorestore --oplogReplay --dir "backup_path"
 ################################################################################
 
-version="1.2.7"
+version="1.2.8"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -151,11 +151,39 @@ select_backup_type() {
     echo
 }
 
+# Start MongoDB balancer.
 start_balancer() {
     echo "Start the balancer."
     "$mongo" --quiet "$mongos_host_port" --eval "sh.startBalancer()"
     balancer_state="$("$mongo" --quiet "$mongos_host_port" --eval "sh.getBalancerState()")"
     echo "Balancer state: $balancer_state"
+}
+
+# Stop MongoDB balancer.
+stop_balancer() {
+    result="$("$mongo" --quiet "$mongos_host_port" --eval "sh.getBalancerState()")"
+    echo "Balancer state: $result"
+    echo "Stop the balancer..."
+    "$mongo" --quiet "$mongos_host_port" --eval "sh.stopBalancer()"
+    result="$("$mongo" --quiet "$mongos_host_port" --eval "sh.getBalancerState()")"
+    echo "Balancer state: $result"
+    if [[ $result != "false" ]]; then
+        echo "Balancer could not be stopped." >&2
+        start_balancer
+        die "Balancer could not be stopped."
+    fi
+    for (( i=1; i<="$mongodb_is_balancer_running_iterations"; i++ )); do
+        result="$("$mongo" --quiet "$mongos_host_port" --eval "sh.isBalancerRunning()")"
+        if [[ $result = "false" ]]; then
+            break
+        fi
+        sleep "$mongodb_sleep_seconds_between_is_balancer_running"
+    done
+    if [[ $result != "false" ]]; then
+        echo "Balancer is still running, aborting." >&2
+        start_balancer
+        die "Balancer is still running."
+    fi
 }
 
 shopt -s expand_aliases
@@ -206,29 +234,7 @@ if echo "$HOSTNAME" | grep -q 'cfgdb'; then
         die "mongos was not found."
     fi
 
-    result="$("$mongo" --quiet "$mongos_host_port" --eval "sh.getBalancerState()")"
-    echo "Balancer state: $result"
-    echo "Stop the balancer..."
-    "$mongo" --quiet "$mongos_host_port" --eval "sh.stopBalancer()"
-    result="$("$mongo" --quiet "$mongos_host_port" --eval "sh.getBalancerState()")"
-    echo "Balancer state: $result"
-    if [[ $result != "false" ]]; then
-        echo "Balancer could not be stopped." >&2
-        start_balancer
-        die "Balancer could not be stopped."
-    fi
-    for (( i=1; i<="$mongodb_is_balancer_running_iterations"; i++ )); do
-        result="$("$mongo" --quiet "$mongos_host_port" --eval "sh.isBalancerRunning()")"
-        if [[ $result = "false" ]]; then
-            break
-        fi
-        sleep "$mongodb_sleep_seconds_between_is_balancer_running"
-    done
-    if [[ $result != "false" ]]; then
-        echo "Balancer is still running, aborting." >&2
-        start_balancer
-        die "Balancer is still running."
-    fi
+    stop_balancer
 
     echo
     echo "Backing up config server."

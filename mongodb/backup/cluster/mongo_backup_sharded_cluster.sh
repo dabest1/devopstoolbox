@@ -13,7 +13,7 @@
 #     mongorestore --oplogReplay --dir "backup_path"
 ################################################################################
 
-version="1.2.5"
+version="1.2.6"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -257,11 +257,11 @@ if echo "$HOSTNAME" | grep -q 'cfgdb'; then
         rc=$?
         if [[ $rc != 0 ]]; then
             echo "$rundeck_job" >&2
+            start_balancer
             die "Rundeck API call failed."
         fi
         job_status="$(echo "$rundeck_job" | jq '.status' | tr -d '"')"
         if [[ $job_status != "running" ]]; then
-            #echo "$rundeck_job" >&2
             start_balancer
             die "Rundeck job could not be executed."
         fi
@@ -280,6 +280,7 @@ if echo "$HOSTNAME" | grep -q 'cfgdb'; then
             rc=$?
             if [[ $rc != 0 ]]; then
                 echo "$rundeck_execution_state" >&2
+                start_balancer
                 die "Rundeck API call failed."
             fi
             execution_state="$(echo "$rundeck_execution_state" | jq '.executionState' | tr -d '"')"
@@ -290,10 +291,12 @@ if echo "$HOSTNAME" | grep -q 'cfgdb'; then
                 break
             else
                 echo "execution_state: $execution_state"
+                start_balancer
                 die "Backup job on replica set failed."
             fi
         done
         if [[ $execution_state != "SUCCEEDED" ]]; then
+            start_balancer
             die "Backup is taking too long to run."
         fi
     done

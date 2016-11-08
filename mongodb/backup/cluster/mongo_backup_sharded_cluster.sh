@@ -2,17 +2,18 @@
 ################################################################################
 # Purpose:
 #     MongoDB cluster backup with the use of Rundeck.
-#     Backup all MongoDB databases using mongodump (local db is excluded.).
+#     Backup all MongoDB databases using mongodump (local db is excluded).
 #     --oplog option is used.
 #     Compress backup.
-#     Send email upon completion.
+#     Optionally run post backup script.
+#     Optionally send email upon completion.
 #
 #     To restore the backup:
 #     find "backup_path/" -name "*.bson.gz" -exec gunzip '{}' \;
 #     mongorestore --oplogReplay --dir "backup_path"
 ################################################################################
 
-version="1.2.0"
+version="1.2.1"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -44,7 +45,7 @@ else
 fi
 port="${port:-27017}"
 
-# Functions
+# Functions.
 error_exit() {
     echo
     echo "$@" >&2
@@ -53,6 +54,9 @@ error_exit() {
     fi
     exit 1
 }
+trap "error_exit 'Received signal SIGHUP'" SIGHUP
+trap "error_exit 'Received signal SIGINT'" SIGINT
+trap "error_exit 'Received signal SIGTERM'" SIGTERM
 
 start_balancer() {
     echo "Start the balancer."
@@ -61,14 +65,10 @@ start_balancer() {
     echo "Balancer state: $balancer_state"
 }
 
-trap "error_exit 'Received signal SIGHUP'" SIGHUP
-trap "error_exit 'Received signal SIGINT'" SIGINT
-trap "error_exit 'Received signal SIGTERM'" SIGTERM
-
 shopt -s expand_aliases
 alias die='error_exit "ERROR: ${0}(@$LINENO):"'
 
-# Main
+# Main.
 echo "**************************************************"
 echo "* Backup MongoDB Sharded Cluster"
 echo "* Time started: $start_time"
@@ -290,13 +290,13 @@ echo
 if [[ ! -z $post_backup ]]; then
     cd "$script_dir"
     echo "Post backup process."
+    date -u +'start: %FT%TZ'
     echo "Command:"
     eval echo "$post_backup"
-    date -u +'start: %FT%TZ'
     eval "$post_backup"
-    post_backup_rc=$?
-    if [[ $post_backup_rc -gt 0 ]]; then
-        echo 'Error: There was some kind of problem with post backup process. Please review the log.'
+    rc=$?
+    if [[ $rc -gt 0 ]]; then
+        die "Post backup process failed."
     fi
     date -u +'finish: %FT%TZ'
     echo
@@ -307,14 +307,13 @@ echo "* Time finished: $(date -u +'%FT%TZ')"
 echo "**************************************************"
 
 # Send email.
-if [[ -s "$log_err" || $post_backup_rc -gt 0 ]]; then
+if [[ -s "$log_err" ]]; then
     if [[ ! -z "$mail_on_error" ]]; then
         mail -s "Error - MongoDB Backup $HOSTNAME" "$mail_on_error" < "$log"
     fi
-    exit 1
+    die "Uknown error."
 else
     if [[ ! -z "$mail_on_success" ]]; then
         mail -s "Success - MongoDB Backup $HOSTNAME" "$mail_on_success" < "$log"
     fi
-    exit 0
 fi

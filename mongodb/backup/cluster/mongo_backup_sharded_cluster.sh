@@ -13,7 +13,7 @@
 #     mongorestore --oplogReplay --dir "backup_path"
 ################################################################################
 
-version="1.2.8"
+version="1.2.9"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -32,6 +32,18 @@ if [[ -z $bkup_dir ]]; then
     echo "Error: Some variables were not provided in configuration file." >&2
     exit 1
 fi
+
+# Process options.
+while test -n "$1"; do
+    case "$1" in
+    --version)
+        echo "version: $version"
+        exit
+        ;;
+    *)
+        shift
+    esac
+done
 
 declare -A replset_bkup_execution_id
 

@@ -13,15 +13,15 @@
 #     mongorestore --oplogReplay --dir "backup_path"
 ################################################################################
 
-version="2.0.0"
+version="2.0.1"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 config_path="$script_dir/${script_name/.sh/.cfg}"
 
-rundeck_execution_check_iterations=2160
-rundeck_sleep_seconds_between_execution_checks=60
+rundeck_execution_check_iterations=60
+rundeck_sleep_seconds_between_execution_checks=5
 mongodb_is_balancer_running_iterations=720
 mongodb_sleep_seconds_between_is_balancer_running=5
 
@@ -40,18 +40,20 @@ while test -n "$1"; do
         echo "version: $version"
         exit
         ;;
+    start)
+        command="start"
+        shift
+        ;;
+    status)
+        command="status"
+        shift
+        ;;
     *)
         shift
     esac
 done
 
 declare -A replset_bkup_execution_id
-
-# Redirect stderr into error log, stdout and stderr into log and terminal.
-log="${log:-/tmp/backup.log}"
-log_err="${log_err:-/tmp/backup.err}"
-rm "$log" "$log_err" 2> /dev/null
-exec 1> >(tee -ia "$log") 2> >(tee -ia "$log" >&2) 2> >(tee -ia "$log_err" >&2)
 
 bkup_date="$(date -d "$start_time" +'%Y%m%dT%H%M%SZ')"
 bkup_dow="$(date -d "$start_time" +'%w')"
@@ -68,20 +70,20 @@ port="${port:-27017}"
 compress_backup() {
     echo "Compress backup."
     date -u +'start: %FT%TZ'
-    find "$bkup_dir/$bkup_date.$bkup_type" -name "*.bson" -exec gzip '{}' \;
+    find "$bkup_path" -name "*.bson" -exec gzip '{}' \;
     date -u +'finish: %FT%TZ'
     echo
     echo "Compressed backup size in bytes:"
-    du -sb "$bkup_dir/$bkup_date.$bkup_type"
+    du -sb "$bkup_path"
     echo "Disk space after compression:"
-    df -h "$bkup_dir"
+    df -h "$bkup_dir/"
     echo
 }
 
 error_exit() {
     echo
     echo "$@" >&2
-    if [[ ! -z "$mail_on_error" ]]; then
+    if [[ ! -z $mail_on_error ]]; then
         mail -s "Error - MongoDB Backup $HOSTNAME" "$mail_on_error" < "$log"
     fi
     exit 1
@@ -89,6 +91,191 @@ error_exit() {
 trap "error_exit 'Received signal SIGHUP'" SIGHUP
 trap "error_exit 'Received signal SIGINT'" SIGINT
 trap "error_exit 'Received signal SIGTERM'" SIGTERM
+
+main() {
+    echo "**************************************************"
+    echo "* Backup MongoDB Sharded Cluster"
+    echo "* Time started: $start_time"
+    echo "**************************************************"
+    echo
+    echo "Hostname: $HOSTNAME"
+    echo "MongoDB version: $("$mongod" --version | head -1)"
+    echo "Backup type: $bkup_type"
+    echo "Number of backups to retain for this type: $num_bkups"
+    echo "Backup will be created in: $bkup_path"
+    echo
+alias
+    mkdir "$bkup_path" || error_exit "ERROR: ${0}(@$LINENO): Could not create directory."
+    # Move logs into dated backup directory.
+    mv "$log" "$bkup_path/"
+    mv "$log_err" "$bkup_path/"
+    log="$bkup_path/$(basename "$log")"
+    log_err="$bkup_path/$(basename "$log_err")"
+
+    # Create backup status file.
+     cat <<HERE_DOC > "$bkup_status_file"
+{
+  "start-time": "$start_time",
+  "backup-path": "$bkup_path",
+  "status": "running"
+}
+HERE_DOC
+
+    purge_old_backups
+
+    # Perform backup.
+    echo "Disk space before backup:"
+    df -h "$bkup_dir/"
+    echo
+
+    if [[ $uuid_insert == yes ]]; then
+        echo "Insert UUID into database for restore validation."
+        uuid=$(uuidgen)
+        echo "uuid: $uuid"
+        "$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.insert( { uuid: \"$uuid\" } )"
+        echo
+    fi
+
+    if echo "$HOSTNAME" | grep -q 'cfgdb'; then
+        # Config server.
+        echo "This is a config server."
+        mongos_host_port="$(mongo localhost:27017/config --quiet --eval 'rs.slaveOk(); var timeOffset = new Date(); timeOffset.setTime(timeOffset.getTime() - 60*60*1000); var cursor = db.mongos.find({ping:{$gte:timeOffset}},{_id:1}).sort({ping:-1}); while(cursor.hasNext()) { print(JSON.stringify(cursor.next())) }' | awk -F'"' '{print $4}' | head -1)"
+        if [[ -z $mongos_host_port ]]; then
+            error_exit "ERROR: ${0}(@$LINENO): mongos was not found."
+        fi
+
+        stop_balancer
+
+        echo
+        echo "Backing up config server."
+        date -u +'start: %FT%TZ'
+        echo "Note: Need to identify in which cases --oplog does not work on config server. MongoDB 2.6 supports it. https://docs.mongodb.com/v2.6/tutorial/backup-sharded-cluster-with-database-dumps/#backup-one-config-server"
+        "$mongodump" --port "$port" $mongo_option -o "$bkup_path" --authenticationDatabase admin --oplog 2> "$bkup_dir/$bkup_date.$bkup_type/mongodump.log"
+        rc=$?
+        if [[ $rc -ne 0 ]]; then
+            start_balancer
+            error_exit "ERROR: ${0}(@$LINENO): mongodump failed."
+        fi
+        date -u +'finish: %FT%TZ'
+
+        # Get shard servers (replica set members).
+        replset_hosts_ports="$("$mongo" --quiet config --eval 'var myCursor = db.shards.find(); myCursor.forEach(printjson)' | jq '.host' | tr -d '"' | awk -F'/' '{print $2}' | tr ',' '\n')"
+        replset_hosts="$(echo "$replset_hosts_ports" | awk -F: '{print $1}')"
+        replset_hosts_bkup="$(echo "$replset_hosts" | grep "$bkup_host_regex")"
+
+        # Backup replica sets.
+        for host in $replset_hosts_bkup; do
+            echo
+            echo "Initiating backup job on replica set $host via Rundeck."
+            rundeck_job="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X POST "${rundeck_server_url}/api/17/job/${rundeck_job_id}/run?authtoken=${rundeck_api_token}&filter=${host}")"
+            echo "$rundeck_job" | jq .
+            rc=$?
+            if [[ $rc != 0 ]]; then
+                echo "$rundeck_job" >&2
+                start_balancer
+                error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
+            fi
+            job_status="$(echo "$rundeck_job" | jq '.status' | tr -d '"')"
+            if [[ $job_status != "running" ]]; then
+                start_balancer
+                error_exit "ERROR: ${0}(@$LINENO): Rundeck job could not be executed."
+            fi
+            replset_bkup_execution_id["$host"]="$(echo "$rundeck_job" | jq '.id')"
+        done
+
+        # Wait for completion of Rundeck jobs for replica set backups.
+        echo
+        echo "Rundeck executions:"
+        for host in $replset_hosts_bkup; do
+            echo "host: $host"
+            for (( i=1; i<="$rundeck_execution_check_iterations"; i++ )); do
+                #rundeck_execution_output="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${replset_bkup_execution_id[$host]}/output/node/${host}?authtoken=${rundeck_api_token}")"
+                rundeck_execution_state="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${replset_bkup_execution_id[$host]}/state?authtoken=${rundeck_api_token}")"
+                #echo "$rundeck_execution_state" | jq .
+                rc=$?
+                if [[ $rc != 0 ]]; then
+                    echo "$rundeck_execution_state" >&2
+                    start_balancer
+                    error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
+                fi
+                execution_state="$(echo "$rundeck_execution_state" | jq '.executionState' | tr -d '"')"
+                if [[ $execution_state = "RUNNING" ]]; then
+                    sleep "$rundeck_sleep_seconds_between_execution_checks"
+                elif [[ $execution_state = "SUCCEEDED" ]]; then
+                    echo "execution_state: $execution_state"
+                    break
+                else
+                    echo "execution_state: $execution_state"
+                    start_balancer
+                    error_exit "ERROR: ${0}(@$LINENO): Backup job on replica set failed."
+                fi
+            done
+            if [[ $execution_state != "SUCCEEDED" ]]; then
+                start_balancer
+                error_exit "ERROR: ${0}(@$LINENO): Backup is taking too long to run."
+            fi
+        done
+
+        echo
+        start_balancer
+    else
+        # Replica set member.
+        echo "Backing up all dbs except local with --oplog option."
+        date -u +'start: %FT%TZ'
+        is_master="$("$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin --eval 'JSON.stringify(db.isMaster())' | jq '.ismaster')"
+        if [[ $is_master != "false" ]]; then
+            error_exit "ERROR: ${0}(@$LINENO): This is not a secondary node."
+        fi
+        "$mongodump" --port "$port" $mongo_option -o "$bkup_path" --authenticationDatabase admin --oplog 2> "$bkup_dir/$bkup_date.$bkup_type/mongodump.log"
+        rc=$?
+        if [[ $rc -ne 0 ]]; then
+            error_exit "ERROR: ${0}(@$LINENO): mongodump failed."
+        fi
+        date -u +'finish: %FT%TZ'
+    fi
+    echo
+
+    if [[ $uuid_insert == yes ]]; then
+        echo "Remove UUID."
+        "$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.remove( { uuid: \"$uuid\" } )"
+        echo
+    fi
+
+    echo "Backup size in bytes:"
+    du -sb "$bkup_path"
+    echo "Disk space after backup:"
+    df -h "$bkup_dir/"
+    echo
+
+    compress_backup
+
+    post_backup_process
+
+    echo "**************************************************"
+    echo "* Time finished: $(date -u +'%FT%TZ')"
+    echo "**************************************************"
+
+    # Send email.
+    if [[ -s "$log_err" ]]; then
+        if [[ ! -z "$mail_on_error" ]]; then
+            mail -s "Error - MongoDB Backup $HOSTNAME" "$mail_on_error" < "$log"
+        fi
+        error_exit "ERROR: ${0}(@$LINENO): Uknown error."
+    else
+        if [[ ! -z "$mail_on_success" ]]; then
+            mail -s "Success - MongoDB Backup $HOSTNAME" "$mail_on_success" < "$log"
+        fi
+    fi
+
+    # Update backup status file.
+     cat <<HERE_DOC > "$bkup_status_file"
+{
+  "start-time": "$start_time",
+  "backup-path": "$bkup_path",
+  "status": "completed"
+}
+HERE_DOC
+}
 
 # Post backup process.
 post_backup_process() {
@@ -101,7 +288,7 @@ post_backup_process() {
         eval "$post_backup"
         rc=$?
         if [[ $rc -gt 0 ]]; then
-            die "Post backup process failed."
+            error_exit "ERROR: ${0}(@$LINENO): Post backup process failed."
         fi
         date -u +'finish: %FT%TZ'
         echo
@@ -111,7 +298,7 @@ post_backup_process() {
 # Purge old backups.
 purge_old_backups() {
     echo "Disk space before purge:"
-    df -h "$bkup_dir"
+    df -h "$bkup_dir/"
     echo
 
     echo "Purge old backups..."
@@ -158,9 +345,6 @@ select_backup_type() {
             num_bkups=$num_daily_bkups
         fi
     fi
-    echo "Backup type: $bkup_type"
-    echo "Number of backups to retain for this type: $num_bkups"
-    echo
 }
 
 # Start MongoDB balancer.
@@ -182,7 +366,7 @@ stop_balancer() {
     if [[ $result != "false" ]]; then
         echo "Balancer could not be stopped." >&2
         start_balancer
-        die "Balancer could not be stopped."
+        error_exit "ERROR: ${0}(@$LINENO): Balancer could not be stopped."
     fi
     for (( i=1; i<="$mongodb_is_balancer_running_iterations"; i++ )); do
         result="$("$mongo" --quiet "$mongos_host_port" --eval "sh.isBalancerRunning()")"
@@ -194,179 +378,47 @@ stop_balancer() {
     if [[ $result != "false" ]]; then
         echo "Balancer is still running, aborting." >&2
         start_balancer
-        die "Balancer is still running."
+        error_exit "ERROR: ${0}(@$LINENO): Balancer is still running."
     fi
 }
 
-shopt -s expand_aliases
-alias die='error_exit "ERROR: ${0}(@$LINENO):"'
-
-# Main.
-
-echo "**************************************************"
-echo "* Backup MongoDB Sharded Cluster"
-echo "* Time started: $start_time"
-echo "**************************************************"
-echo
-echo "Hostname: $HOSTNAME"
-echo "MongoDB version: $("$mongod" --version | head -1)"
-echo
-
-select_backup_type
-
-echo "Backup will be created in: $bkup_dir/$bkup_date.$bkup_type"
-echo
-mkdir "$bkup_dir/$bkup_date.$bkup_type"
-# Move logs into dated backup directory.
-mv "$log" "$bkup_dir/$bkup_date.$bkup_type/"
-mv "$log_err" "$bkup_dir/$bkup_date.$bkup_type/"
-log="$bkup_dir/$bkup_date.$bkup_type/$(basename "$log")"
-log_err="$bkup_dir/$bkup_date.$bkup_type/$(basename "$log_err")"
-
-purge_old_backups
-
-# Perform backup.
-echo "Disk space before backup:"
-df -h "$bkup_dir"
-echo
-
-if [[ $uuid_insert == yes ]]; then
-    echo "Insert UUID into database for restore validation."
-    uuid=$(uuidgen)
-    echo "uuid: $uuid"
-    "$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.insert( { uuid: \"$uuid\" } )"
-    echo
-fi
-
-if echo "$HOSTNAME" | grep -q 'cfgdb'; then
-    # Config server.
-    echo "This is a config server."
-    mongos_host_port="$(mongo localhost:27017/config --quiet --eval 'rs.slaveOk(); var timeOffset = new Date(); timeOffset.setTime(timeOffset.getTime() - 60*60*1000); var cursor = db.mongos.find({ping:{$gte:timeOffset}},{_id:1}).sort({ping:-1}); while(cursor.hasNext()) { print(JSON.stringify(cursor.next())) }' | awk -F'"' '{print $4}' | head -1)"
-    if [[ -z $mongos_host_port ]]; then
-        die "mongos was not found."
-    fi
-
-    stop_balancer
-
-    echo
-    echo "Backing up config server."
-    date -u +'start: %FT%TZ'
-    echo "Note: Need to identify in which cases --oplog does not work on config server. MongoDB 2.6 supports it. https://docs.mongodb.com/v2.6/tutorial/backup-sharded-cluster-with-database-dumps/#backup-one-config-server"
-    "$mongodump" --port "$port" $mongo_option -o "$bkup_dir/$bkup_date.$bkup_type" --authenticationDatabase admin --oplog 1> "$bkup_dir/$bkup_date.$bkup_type/mongodump.log" 2> >(tee -ia "$bkup_dir/$bkup_date.$bkup_type/mongodump.log" > "$bkup_dir/$bkup_date.$bkup_type/mongodump.err")
-    rc=$?
-    if [[ $rc -ne 0 ]]; then
-        cat "$bkup_dir/$bkup_date.$bkup_type/mongodump.err" >&2
-        start_balancer
-        die "mongodump failed."
-    fi
-    date -u +'finish: %FT%TZ'
-
-    # Get shard servers (replica set members).
-    replset_hosts_ports="$("$mongo" --quiet config --eval 'var myCursor = db.shards.find(); myCursor.forEach(printjson)' | jq '.host' | tr -d '"' | awk -F'/' '{print $2}' | tr ',' '\n')"
-    replset_hosts="$(echo "$replset_hosts_ports" | awk -F: '{print $1}')"
-    replset_hosts_bkup="$(echo "$replset_hosts" | grep "$bkup_host_regex")"
-
-    # Backup replica sets.
-    for host in $replset_hosts_bkup; do
-        echo
-        echo "Initiating backup job on replica set $host via Rundeck."
-        rundeck_job="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X POST "${rundeck_server_url}/api/17/job/${rundeck_job_id}/run?authtoken=${rundeck_api_token}&filter=${host}")"
-        echo "$rundeck_job" | jq .
-        rc=$?
-        if [[ $rc != 0 ]]; then
-            echo "$rundeck_job" >&2
-            start_balancer
-            die "Rundeck API call failed."
-        fi
-        job_status="$(echo "$rundeck_job" | jq '.status' | tr -d '"')"
-        if [[ $job_status != "running" ]]; then
-            start_balancer
-            die "Rundeck job could not be executed."
-        fi
-        replset_bkup_execution_id["$host"]="$(echo "$rundeck_job" | jq '.id')"
-    done
-
-    # Wait for completion of Rundeck jobs for replica set backups.
-    echo
-    echo "Rundeck executions:"
-    for host in $replset_hosts_bkup; do
-        echo "host: $host"
-        for (( i=1; i<="$rundeck_execution_check_iterations"; i++ )); do
-            #rundeck_execution_output="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${replset_bkup_execution_id[$host]}/output/node/${host}?authtoken=${rundeck_api_token}")"
-            rundeck_execution_state="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${replset_bkup_execution_id[$host]}/state?authtoken=${rundeck_api_token}")"
-            #echo "$rundeck_execution_state" | jq .
-            rc=$?
-            if [[ $rc != 0 ]]; then
-                echo "$rundeck_execution_state" >&2
-                start_balancer
-                die "Rundeck API call failed."
-            fi
-            execution_state="$(echo "$rundeck_execution_state" | jq '.executionState' | tr -d '"')"
-            if [[ $execution_state = "RUNNING" ]]; then
-                sleep "$rundeck_sleep_seconds_between_execution_checks"
-            elif [[ $execution_state = "SUCCEEDED" ]]; then
-                echo "execution_state: $execution_state"
-                break
-            else
-                echo "execution_state: $execution_state"
-                start_balancer
-                die "Backup job on replica set failed."
-            fi
-        done
-        if [[ $execution_state != "SUCCEEDED" ]]; then
-            start_balancer
-            die "Backup is taking too long to run."
-        fi
-    done
-
-    echo
-    start_balancer
+if [[ $command = "start" ]]; then
+    # Start backup in daemon mode.
+    select_backup_type
+    bkup_path="$bkup_dir/$bkup_date.$bkup_type"
+    bkup_status_file="$bkup_path/backup_status.json"
+    echo "{"
+    echo "  \"start-time\": \"$start_time\","
+    echo "  \"backup-path\": \"$bkup_path\","
+    echo "  \"status\": \"started\""
+    echo "}"
+    exec 1> "$log" 2> "$log" 2> "$log_err"
+    main &
+elif [[ $command = "status" ]]; then
+    # Get backup status.
+    bkup_date_and_type="$(ls -1 "$bkup_dir/" | tail -1)"
+    bkup_path="$(ls -1d -- $bkup_dir/*T*Z.*/ | tail -1)"
+    bkup_path="${bkup_path%?}" # Remove last character.
+    bkup_status_file="$bkup_path/backup_status.json"
+    if [[ -f $bkup_status_file ]]; then
+        cat "$bkup_status_file"
+    else
+        #start_time="$(date -d "$bkup_date" +'%FT%TZ')"
+        echo "{"
+        #echo "  \"start-time\": \"$start_time\","
+        echo "  \"backup-path\": \"$bkup_path\","
+        echo "  \"status\": \"unknown\""
+        echo "}"
+    fi 
 else
-    # Replica set member.
-    echo "Backing up all dbs except local with --oplog option."
-    date -u +'start: %FT%TZ'
-    is_master="$("$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin --eval 'JSON.stringify(db.isMaster())' | jq '.ismaster')"
-    if [[ $is_master != "false" ]]; then
-        die "This is not a secondary node."
-    fi
-    "$mongodump" --port "$port" $mongo_option -o "$bkup_dir/$bkup_date.$bkup_type" --authenticationDatabase admin --oplog 1> "$bkup_dir/$bkup_date.$bkup_type/mongodump.log" 2> >(tee -ia "$bkup_dir/$bkup_date.$bkup_type/mongodump.log" > "$bkup_dir/$bkup_date.$bkup_type/mongodump.err")
-    rc=$?
-    if [[ $rc -ne 0 ]]; then
-        cat "$bkup_dir/$bkup_date.$bkup_type/mongodump.err" >&2
-        die "mongodump failed."
-    fi
-    date -u +'finish: %FT%TZ'
-fi
-echo
-
-if [[ $uuid_insert == yes ]]; then
-    echo "Remove UUID."
-    "$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.remove( { uuid: \"$uuid\" } )"
-    echo
-fi
-
-echo "Backup size in bytes:"
-du -sb "$bkup_dir/$bkup_date.$bkup_type"
-echo "Disk space after backup:"
-df -h "$bkup_dir"
-echo
-
-compress_backup
-
-post_backup_process
-
-echo "**************************************************"
-echo "* Time finished: $(date -u +'%FT%TZ')"
-echo "**************************************************"
-
-# Send email.
-if [[ -s "$log_err" ]]; then
-    if [[ ! -z "$mail_on_error" ]]; then
-        mail -s "Error - MongoDB Backup $HOSTNAME" "$mail_on_error" < "$log"
-    fi
-    die "Uknown error."
-else
-    if [[ ! -z "$mail_on_success" ]]; then
-        mail -s "Success - MongoDB Backup $HOSTNAME" "$mail_on_success" < "$log"
-    fi
+    # Start backup in regular mode.
+    # Redirect stderr into error log, stdout and stderr into log and terminal.
+    log="${log:-/tmp/backup.log}"
+    log_err="${log_err:-/tmp/backup.err}"
+    rm "$log" "$log_err" 2> /dev/null
+    exec 1> >(tee -ia "$log") 2> >(tee -ia "$log" >&2) 2> >(tee -ia "$log_err" >&2)
+    select_backup_type
+    bkup_path="$bkup_dir/$bkup_date.$bkup_type"
+    bkup_status_file="$bkup_path/backup_status.json"
+    main
 fi

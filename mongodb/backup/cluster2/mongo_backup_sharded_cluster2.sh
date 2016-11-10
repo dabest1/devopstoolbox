@@ -13,7 +13,7 @@
 #     mongorestore --oplogReplay --dir "backup_path"
 ################################################################################
 
-version="2.0.5"
+version="2.0.6"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -199,33 +199,11 @@ perform_backup() {
 
         # Wait for Rundeck jobs to complete.
         echo
-        echo "Rundeck executions:"
+        echo "Rundeck executions of start job on replica sets:"
         for host in $replset_hosts_bkup; do
             echo "host: $host"
-            for (( i=1; i<=60; i++ )); do
-                rundeck_execution_state="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${replset_bkup_execution_id[$host]}/state?authtoken=${rundeck_api_token}")"
-                rc=$?
-                if [[ $rc -ne 0 ]]; then
-                    echo "$rundeck_execution_state" >&2
-                    start_balancer
-                    error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
-                fi
-                execution_state="$(echo "$rundeck_execution_state" | jq '.executionState' | tr -d '"')"
-                if [[ $execution_state = "RUNNING" ]]; then
-                    sleep 5
-                elif [[ $execution_state = "SUCCEEDED" ]]; then
-                    echo "execution_state: $execution_state"
-                    break
-                else
-                    echo "execution_state: $execution_state"
-                    start_balancer
-                    error_exit "ERROR: ${0}(@$LINENO): Backup job on replica set failed."
-                fi
-            done
-            if [[ $execution_state != "SUCCEEDED" ]]; then
-                start_balancer
-                error_exit "ERROR: ${0}(@$LINENO): Backup is taking too long to start."
-            fi
+            exec_state="$(rundeck_wait_for_job_to_complete "${replset_bkup_execution_id[$host]}")"
+            echo "exec_state: $exec_state"
         done
 
         # Get output of Rundeck jobs.
@@ -246,33 +224,11 @@ perform_backup() {
 
         # Wait for Rundeck jobs to complete.
         echo
-        echo "Rundeck executions of start of replica set backup:"
+        echo "Rundeck executions of status on replica sets:"
         for host in $replset_hosts_bkup; do
             echo "host: $host"
-            for (( i=1; i<=60; i++ )); do
-                rundeck_execution_state="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${replset_bkup_execution_id[$host]}/state?authtoken=${rundeck_api_token}")"
-                rc=$?
-                if [[ $rc -ne 0 ]]; then
-                    echo "$rundeck_execution_state" >&2
-                    start_balancer
-                    error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
-                fi
-                execution_state="$(echo "$rundeck_execution_state" | jq '.executionState' | tr -d '"')"
-                if [[ $execution_state = "RUNNING" ]]; then
-                    sleep 5
-                elif [[ $execution_state = "SUCCEEDED" ]]; then
-                    echo "execution_state: $execution_state"
-                    break
-                else
-                    echo "execution_state: $execution_state"
-                    start_balancer
-                    error_exit "ERROR: ${0}(@$LINENO): Getting status of replica set failed."
-                fi
-            done
-            if [[ $execution_state != "SUCCEEDED" ]]; then
-                start_balancer
-                error_exit "ERROR: ${0}(@$LINENO): Status is taking too long to run."
-            fi
+            exec_state="$(rundeck_wait_for_job_to_complete "${replset_bkup_execution_id[$host]}")"
+            echo "exec_state: $exec_state"
         done
 
         # Get output of Rundeck jobs.
@@ -370,9 +326,6 @@ rundeck_get_bkup_path_from_job_log() {
 # Get status from Rundeck job log.
 rundeck_get_status_from_job_log() {
     local execution_id="$1"
-    local result
-    local status
-    local rc
 
     local result="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${execution_id}/output/node/${host}?authtoken=${rundeck_api_token}")"
     local status="$(echo "$result" | jq '.entries[].log' | sed 's/^"//;s/"$//;s/\\"/"/g' | jq '."status"' | tr -d '"')"
@@ -407,6 +360,42 @@ rundeck_run_job() {
         error_exit "ERROR: ${0}(@$LINENO): Rundeck job could not be executed."
     fi
     echo "$rundeck_job" | jq '.id'
+}
+
+# Wait for Rundeck job to complete.
+rundeck_wait_for_job_to_complete() {
+    local execution_id="$1"
+
+    local i
+    for (( i=1; i<=60; i++ )); do
+        local result="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${execution_id}/state?authtoken=${rundeck_api_token}")"
+        local rc=$?
+        if [[ $rc -ne 0 ]]; then
+            echo "$result" >&2
+            start_balancer
+            error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
+        fi
+        local execution_state="$(echo "$result" | jq '.executionState' | tr -d '"')"
+        local rc=$?
+        if [[ $rc -ne 0 ]]; then
+            start_balancer
+            error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
+        fi
+        if [[ $execution_state = "RUNNING" ]]; then
+            sleep 5
+        elif [[ $execution_state = "SUCCEEDED" ]]; then
+            echo "$execution_state"
+            break
+        else
+            echo "execution_state: $execution_state" >&2
+            start_balancer
+            error_exit "ERROR: ${0}(@$LINENO): Rundeck job failed."
+        fi
+    done
+    if [[ $execution_state != "SUCCEEDED" ]]; then
+        start_balancer
+        error_exit "ERROR: ${0}(@$LINENO): Rundeck job is taking too long to complete."
+    fi
 }
 
 # Decide on what type of backup to perform.

@@ -13,7 +13,7 @@
 #     mongorestore --oplogReplay --dir "backup_path"
 ################################################################################
 
-version="2.0.4"
+version="2.0.5"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -91,11 +91,8 @@ error_exit() {
     if [[ ! -z $mail_on_error ]]; then
         mail -s "Error - MongoDB Backup $HOSTNAME" "$mail_on_error" < "$log"
     fi
-    exit 1
+    exit 77
 }
-trap "error_exit 'Received signal SIGHUP'" SIGHUP
-trap "error_exit 'Received signal SIGINT'" SIGINT
-trap "error_exit 'Received signal SIGTERM'" SIGTERM
 
 main() {
     echo "**************************************************"
@@ -197,20 +194,7 @@ perform_backup() {
         for host in $replset_hosts_bkup; do
             echo
             echo "Initiating backup job on replica set $host via Rundeck."
-            rundeck_job="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X POST "${rundeck_server_url}/api/17/job/${rundeck_job_id_start}/run?authtoken=${rundeck_api_token}&filter=${host}")"
-            echo "$rundeck_job" | jq .
-            rc=$?
-            if [[ $rc != 0 ]]; then
-                echo "$rundeck_job" >&2
-                start_balancer
-                error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
-            fi
-            job_status="$(echo "$rundeck_job" | jq '.status' | tr -d '"')"
-            if [[ $job_status != "running" ]]; then
-                start_balancer
-                error_exit "ERROR: ${0}(@$LINENO): Rundeck job could not be executed."
-            fi
-            replset_bkup_execution_id["$host"]="$(echo "$rundeck_job" | jq '.id')"
+            replset_bkup_execution_id["$host"]="$(rundeck_run_job "$rundeck_job_id_start")"
         done
 
         # Wait for Rundeck jobs to complete.
@@ -247,13 +231,7 @@ perform_backup() {
         # Get output of Rundeck jobs.
         for host in $replset_hosts_bkup; do
             echo "host: $host"
-            rundeck_execution_output="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${replset_bkup_execution_id[$host]}/output/node/${host}?authtoken=${rundeck_api_token}")"
-            replset_bkup_path["$host"]="$(echo "$rundeck_execution_output" | jq '.entries[].log' | sed 's/^"//;s/"$//;s/\\"/"/g' | jq '."backup-path"' | tr -d '"')"
-            rc=$?
-            if [[ $rc -ne 0 ]]; then
-                start_balancer
-                error_exit "ERROR: ${0}(@$LINENO): Failed to get output of Rundeck job."
-            fi
+            replset_bkup_path["$host"]="$(rundeck_get_bkup_path_from_job_log "${replset_bkup_execution_id[$host]}")"
         done
 
         # Run Rundeck jobs to get status of replica set backups.
@@ -261,27 +239,14 @@ perform_backup() {
             echo
             for (( i=1; i<=5; i++ )); do
                 echo "Getting status from replica set $host via Rundeck."
-                rundeck_job="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X POST "${rundeck_server_url}/api/17/job/${rundeck_job_id_status}/run?authtoken=${rundeck_api_token}&filter=${host}" -d "{\"argString\":\"-command status -backup-path ${replset_bkup_path[$host]}\"}")"
-                echo "$rundeck_job" | jq .
-                rc=$?
-                if [[ $rc != 0 ]]; then
-                    echo "$rundeck_job" >&2
-                    start_balancer
-                    error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
-                fi
-                job_status="$(echo "$rundeck_job" | jq '.status' | tr -d '"')"
-                if [[ $job_status != "running" ]]; then
-                    start_balancer
-                    error_exit "ERROR: ${0}(@$LINENO): Rundeck job could not be executed."
-                fi
-                replset_bkup_execution_id["$host"]="$(echo "$rundeck_job" | jq '.id')"
+                replset_bkup_execution_id["$host"]="$(rundeck_run_job "$rundeck_job_id_status" "{\"argString\":\"-command status -backup-path ${replset_bkup_path[$host]}\"}")"
                 sleep 5
             done
         done
 
         # Wait for Rundeck jobs to complete.
         echo
-        echo "Rundeck executions:"
+        echo "Rundeck executions of start of replica set backup:"
         for host in $replset_hosts_bkup; do
             echo "host: $host"
             for (( i=1; i<=60; i++ )); do
@@ -311,15 +276,10 @@ perform_backup() {
         done
 
         # Get output of Rundeck jobs.
+        echo "Get output of Rundeck jobs:"
         for host in $replset_hosts_bkup; do
             echo "host: $host"
-            rundeck_execution_output="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${replset_bkup_execution_id[$host]}/output/node/${host}?authtoken=${rundeck_api_token}")"
-            status="$(echo "$rundeck_execution_output" | jq '.entries[].log' | sed 's/^"//;s/"$//;s/\\"/"/g' | jq '."status"' | tr -d '"')"
-            rc=$?
-            if [[ $rc -ne 0 ]]; then
-                start_balancer
-                error_exit "ERROR: ${0}(@$LINENO): Failed to get output of Rundeck job."
-            fi
+            status="$(rundeck_get_status_from_job_log "${replset_bkup_execution_id[$host]}")"
             echo status: $status
         done
 
@@ -393,6 +353,62 @@ purge_old_backups() {
     echo
 }
 
+# Get backup path from Rundeck job log.
+rundeck_get_bkup_path_from_job_log() {
+    local execution_id="$1"
+
+    local result="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${execution_id}/output/node/${host}?authtoken=${rundeck_api_token}")"
+    local bkup_path="$(echo "$result" | jq '.entries[].log' | sed 's/^"//;s/"$//;s/\\"/"/g' | jq '."backup-path"' | tr -d '"')"
+    local rc=$?
+    if [[ $rc -ne 0 ]]; then
+        start_balancer
+        error_exit "ERROR: ${0}(@$LINENO): Failed to get output of Rundeck job."
+    fi
+    echo "$bkup_path"
+}
+
+# Get status from Rundeck job log.
+rundeck_get_status_from_job_log() {
+    local execution_id="$1"
+    local result
+    local status
+    local rc
+
+    local result="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${execution_id}/output/node/${host}?authtoken=${rundeck_api_token}")"
+    local status="$(echo "$result" | jq '.entries[].log' | sed 's/^"//;s/"$//;s/\\"/"/g' | jq '."status"' | tr -d '"')"
+    local rc=$?
+    if [[ $rc -ne 0 ]]; then
+        start_balancer
+        error_exit "ERROR: ${0}(@$LINENO): Failed to get output of Rundeck job."
+    fi
+    echo "$status"
+}
+
+# Run Rundeck job. Return Rundeck job id.
+rundeck_run_job() {
+    local job_id="$1"
+    local data="$2"
+
+    if [[ -z $data ]]; then
+        local rundeck_job="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X POST "${rundeck_server_url}/api/17/job/${job_id}/run?authtoken=${rundeck_api_token}&filter=${host}")"
+    else
+        local rundeck_job="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X POST "${rundeck_server_url}/api/17/job/${job_id}/run?authtoken=${rundeck_api_token}&filter=${host}" -d "$data")"
+    fi
+    echo "$rundeck_job" | jq '.' > /dev/null # Check if this is valid JSON.
+    local rc=$?
+    if [[ $rc != 0 ]]; then
+        echo "$rundeck_job" >&2
+        start_balancer
+        error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
+    fi
+    local job_status="$(echo "$rundeck_job" | jq '.status' | tr -d '"')"
+    if [[ $job_status != "running" ]]; then
+        start_balancer
+        error_exit "ERROR: ${0}(@$LINENO): Rundeck job could not be executed."
+    fi
+    echo "$rundeck_job" | jq '.id'
+}
+
 # Decide on what type of backup to perform.
 select_backup_type() {
     if [[ -z "$bkup_type" ]]; then
@@ -459,6 +475,12 @@ stop_balancer() {
         error_exit "ERROR: ${0}(@$LINENO): Balancer is still running."
     fi
 }
+
+set -E
+trap '[ "$?" -ne 77 ] || exit 77' ERR
+trap "error_exit 'Received signal SIGHUP'" SIGHUP
+trap "error_exit 'Received signal SIGINT'" SIGINT
+trap "error_exit 'Received signal SIGTERM'" SIGTERM
 
 # Start backup in daemon mode.
 if [[ $command = "start" ]]; then

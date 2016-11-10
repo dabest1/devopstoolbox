@@ -13,7 +13,7 @@
 #     mongorestore --oplogReplay --dir "backup_path"
 ################################################################################
 
-version="2.0.2"
+version="2.0.3"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -118,7 +118,36 @@ HERE_DOC
 
     purge_old_backups
 
-    # Perform backup.
+    perform_backup
+
+    compress_backup
+
+    post_backup_process
+
+    echo "**************************************************"
+    echo "* Time finished: $(date -u +'%FT%TZ')"
+    echo "**************************************************"
+
+    # Send email.
+    if [[ -s "$log_err" ]]; then
+        if [[ ! -z "$mail_on_error" ]]; then
+            mail -s "Error - MongoDB Backup $HOSTNAME" "$mail_on_error" < "$log"
+        fi
+        error_exit "ERROR: ${0}(@$LINENO): Uknown error."
+    else
+        if [[ ! -z "$mail_on_success" ]]; then
+            mail -s "Success - MongoDB Backup $HOSTNAME" "$mail_on_success" < "$log"
+        fi
+    fi
+
+    # Update backup status file.
+    cat <<HERE_DOC > "$bkup_status_file"
+{"start-time":"$start_time","backup-path":"$bkup_path","status":"completed"}
+HERE_DOC
+}
+
+# Perform backup.
+perform_backup() {
     echo "Disk space before backup:"
     df -h "$bkup_dir/"
     echo
@@ -251,31 +280,6 @@ $rundeck_execution_output" | jq
     echo "Disk space after backup:"
     df -h "$bkup_dir/"
     echo
-
-    compress_backup
-
-    post_backup_process
-
-    echo "**************************************************"
-    echo "* Time finished: $(date -u +'%FT%TZ')"
-    echo "**************************************************"
-
-    # Send email.
-    if [[ -s "$log_err" ]]; then
-        if [[ ! -z "$mail_on_error" ]]; then
-            mail -s "Error - MongoDB Backup $HOSTNAME" "$mail_on_error" < "$log"
-        fi
-        error_exit "ERROR: ${0}(@$LINENO): Uknown error."
-    else
-        if [[ ! -z "$mail_on_success" ]]; then
-            mail -s "Success - MongoDB Backup $HOSTNAME" "$mail_on_success" < "$log"
-        fi
-    fi
-
-    # Update backup status file.
-    cat <<HERE_DOC > "$bkup_status_file"
-{"start-time":"$start_time","backup-path":"$bkup_path","status":"completed"}
-HERE_DOC
 }
 
 # Post backup process.

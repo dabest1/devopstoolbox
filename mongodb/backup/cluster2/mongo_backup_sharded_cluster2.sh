@@ -13,7 +13,7 @@
 #     mongorestore --oplogReplay --dir "backup_path"
 ################################################################################
 
-version="2.0.1"
+version="2.0.2"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -104,7 +104,6 @@ main() {
     echo "Number of backups to retain for this type: $num_bkups"
     echo "Backup will be created in: $bkup_path"
     echo
-alias
     mkdir "$bkup_path" || error_exit "ERROR: ${0}(@$LINENO): Could not create directory."
     # Move logs into dated backup directory.
     mv "$log" "$bkup_path/"
@@ -113,12 +112,8 @@ alias
     log_err="$bkup_path/$(basename "$log_err")"
 
     # Create backup status file.
-     cat <<HERE_DOC > "$bkup_status_file"
-{
-  "start-time": "$start_time",
-  "backup-path": "$bkup_path",
-  "status": "running"
-}
+    cat <<HERE_DOC > "$bkup_status_file"
+{"start-time":"$start_time","backup-path":"$bkup_path","status":"running"}
 HERE_DOC
 
     purge_old_backups
@@ -163,11 +158,11 @@ HERE_DOC
         replset_hosts="$(echo "$replset_hosts_ports" | awk -F: '{print $1}')"
         replset_hosts_bkup="$(echo "$replset_hosts" | grep "$bkup_host_regex")"
 
-        # Backup replica sets.
+        # Start backup on replica sets.
         for host in $replset_hosts_bkup; do
             echo
             echo "Initiating backup job on replica set $host via Rundeck."
-            rundeck_job="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X POST "${rundeck_server_url}/api/17/job/${rundeck_job_id}/run?authtoken=${rundeck_api_token}&filter=${host}")"
+            rundeck_job="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X POST "${rundeck_server_url}/api/17/job/${rundeck_job_id_start}/run?authtoken=${rundeck_api_token}&filter=${host}")"
             echo "$rundeck_job" | jq .
             rc=$?
             if [[ $rc != 0 ]]; then
@@ -183,7 +178,7 @@ HERE_DOC
             replset_bkup_execution_id["$host"]="$(echo "$rundeck_job" | jq '.id')"
         done
 
-        # Wait for completion of Rundeck jobs for replica set backups.
+        # Wait for start of Rundeck jobs for replica set backups.
         echo
         echo "Rundeck executions:"
         for host in $replset_hosts_bkup; do
@@ -212,8 +207,18 @@ HERE_DOC
             done
             if [[ $execution_state != "SUCCEEDED" ]]; then
                 start_balancer
-                error_exit "ERROR: ${0}(@$LINENO): Backup is taking too long to run."
+                error_exit "ERROR: ${0}(@$LINENO): Backup is taking too long to start."
             fi
+        done
+
+        # Check status of replica set backups.
+        for host in $replset_hosts_bkup; do
+            echo "host: $host"
+            for (( i=1; i<="$rundeck_execution_check_iterations"; i++ )); do
+                rundeck_execution_output="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${replset_bkup_execution_id[$host]}/output/node/${host}?authtoken=${rundeck_api_token}")"
+                echo "rundeck_execution_output:
+$rundeck_execution_output" | jq
+            done
         done
 
         echo
@@ -268,12 +273,8 @@ HERE_DOC
     fi
 
     # Update backup status file.
-     cat <<HERE_DOC > "$bkup_status_file"
-{
-  "start-time": "$start_time",
-  "backup-path": "$bkup_path",
-  "status": "completed"
-}
+    cat <<HERE_DOC > "$bkup_status_file"
+{"start-time":"$start_time","backup-path":"$bkup_path","status":"completed"}
 HERE_DOC
 }
 
@@ -387,11 +388,10 @@ if [[ $command = "start" ]]; then
     select_backup_type
     bkup_path="$bkup_dir/$bkup_date.$bkup_type"
     bkup_status_file="$bkup_path/backup_status.json"
-    echo "{"
-    echo "  \"start-time\": \"$start_time\","
-    echo "  \"backup-path\": \"$bkup_path\","
-    echo "  \"status\": \"started\""
-    echo "}"
+    # Output status in JSON.
+    cat <<HERE_DOC
+{"start-time":"$start_time","backup-path":"$bkup_path","status":"started"}
+HERE_DOC
     exec 1> "$log" 2> "$log" 2> "$log_err"
     main &
 elif [[ $command = "status" ]]; then
@@ -403,9 +403,7 @@ elif [[ $command = "status" ]]; then
     if [[ -f $bkup_status_file ]]; then
         cat "$bkup_status_file"
     else
-        #start_time="$(date -d "$bkup_date" +'%FT%TZ')"
         echo "{"
-        #echo "  \"start-time\": \"$start_time\","
         echo "  \"backup-path\": \"$bkup_path\","
         echo "  \"status\": \"unknown\""
         echo "}"

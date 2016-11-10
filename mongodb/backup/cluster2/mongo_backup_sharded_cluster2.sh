@@ -13,7 +13,7 @@
 #     mongorestore --oplogReplay --dir "backup_path"
 ################################################################################
 
-version="2.0.3"
+version="2.0.4"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -47,6 +47,8 @@ while test -n "$1"; do
     status)
         command="status"
         shift
+        bkup_path="$1"
+        shift
         ;;
     *)
         shift
@@ -54,6 +56,7 @@ while test -n "$1"; do
 done
 
 declare -A replset_bkup_execution_id
+declare -A replset_bkup_path
 
 bkup_date="$(date -d "$start_time" +'%Y%m%dT%H%M%SZ')"
 bkup_dow="$(date -d "$start_time" +'%w')"
@@ -63,6 +66,8 @@ else
     mongo_option="-u $user -p $pass"
 fi
 port="${port:-27017}"
+log="${log:-/tmp/backup.log}"
+log_err="${log_err:-/tmp/backup.err}"
 
 # Functions.
 
@@ -111,7 +116,8 @@ main() {
     log="$bkup_path/$(basename "$log")"
     log_err="$bkup_path/$(basename "$log_err")"
 
-    # Create backup status file.
+    # Create backup status and pid file.
+    echo "$$" > "$bkup_pid_file"
     cat <<HERE_DOC > "$bkup_status_file"
 {"start-time":"$start_time","backup-path":"$bkup_path","status":"running"}
 HERE_DOC
@@ -133,7 +139,7 @@ HERE_DOC
         if [[ ! -z "$mail_on_error" ]]; then
             mail -s "Error - MongoDB Backup $HOSTNAME" "$mail_on_error" < "$log"
         fi
-        error_exit "ERROR: ${0}(@$LINENO): Uknown error."
+        error_exit "ERROR: ${0}(@$LINENO): Unknown error."
     else
         if [[ ! -z "$mail_on_success" ]]; then
             mail -s "Success - MongoDB Backup $HOSTNAME" "$mail_on_success" < "$log"
@@ -187,7 +193,7 @@ perform_backup() {
         replset_hosts="$(echo "$replset_hosts_ports" | awk -F: '{print $1}')"
         replset_hosts_bkup="$(echo "$replset_hosts" | grep "$bkup_host_regex")"
 
-        # Start backup on replica sets.
+        # Run Rundeck jobs to start replica set backups.
         for host in $replset_hosts_bkup; do
             echo
             echo "Initiating backup job on replica set $host via Rundeck."
@@ -207,24 +213,22 @@ perform_backup() {
             replset_bkup_execution_id["$host"]="$(echo "$rundeck_job" | jq '.id')"
         done
 
-        # Wait for start of Rundeck jobs for replica set backups.
+        # Wait for Rundeck jobs to complete.
         echo
         echo "Rundeck executions:"
         for host in $replset_hosts_bkup; do
             echo "host: $host"
-            for (( i=1; i<="$rundeck_execution_check_iterations"; i++ )); do
-                #rundeck_execution_output="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${replset_bkup_execution_id[$host]}/output/node/${host}?authtoken=${rundeck_api_token}")"
+            for (( i=1; i<=60; i++ )); do
                 rundeck_execution_state="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${replset_bkup_execution_id[$host]}/state?authtoken=${rundeck_api_token}")"
-                #echo "$rundeck_execution_state" | jq .
                 rc=$?
-                if [[ $rc != 0 ]]; then
+                if [[ $rc -ne 0 ]]; then
                     echo "$rundeck_execution_state" >&2
                     start_balancer
                     error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
                 fi
                 execution_state="$(echo "$rundeck_execution_state" | jq '.executionState' | tr -d '"')"
                 if [[ $execution_state = "RUNNING" ]]; then
-                    sleep "$rundeck_sleep_seconds_between_execution_checks"
+                    sleep 5
                 elif [[ $execution_state = "SUCCEEDED" ]]; then
                     echo "execution_state: $execution_state"
                     break
@@ -240,14 +244,83 @@ perform_backup() {
             fi
         done
 
-        # Check status of replica set backups.
+        # Get output of Rundeck jobs.
         for host in $replset_hosts_bkup; do
             echo "host: $host"
-            for (( i=1; i<="$rundeck_execution_check_iterations"; i++ )); do
-                rundeck_execution_output="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${replset_bkup_execution_id[$host]}/output/node/${host}?authtoken=${rundeck_api_token}")"
-                echo "rundeck_execution_output:
-$rundeck_execution_output" | jq
+            rundeck_execution_output="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${replset_bkup_execution_id[$host]}/output/node/${host}?authtoken=${rundeck_api_token}")"
+            replset_bkup_path["$host"]="$(echo "$rundeck_execution_output" | jq '.entries[].log' | sed 's/^"//;s/"$//;s/\\"/"/g' | jq '."backup-path"' | tr -d '"')"
+            rc=$?
+            if [[ $rc -ne 0 ]]; then
+                start_balancer
+                error_exit "ERROR: ${0}(@$LINENO): Failed to get output of Rundeck job."
+            fi
+        done
+
+        # Run Rundeck jobs to get status of replica set backups.
+        for host in $replset_hosts_bkup; do
+            echo
+            for (( i=1; i<=5; i++ )); do
+                echo "Getting status from replica set $host via Rundeck."
+                rundeck_job="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X POST "${rundeck_server_url}/api/17/job/${rundeck_job_id_status}/run?authtoken=${rundeck_api_token}&filter=${host}" -d "{\"argString\":\"-command status -backup-path ${replset_bkup_path[$host]}\"}")"
+                echo "$rundeck_job" | jq .
+                rc=$?
+                if [[ $rc != 0 ]]; then
+                    echo "$rundeck_job" >&2
+                    start_balancer
+                    error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
+                fi
+                job_status="$(echo "$rundeck_job" | jq '.status' | tr -d '"')"
+                if [[ $job_status != "running" ]]; then
+                    start_balancer
+                    error_exit "ERROR: ${0}(@$LINENO): Rundeck job could not be executed."
+                fi
+                replset_bkup_execution_id["$host"]="$(echo "$rundeck_job" | jq '.id')"
+                sleep 5
             done
+        done
+
+        # Wait for Rundeck jobs to complete.
+        echo
+        echo "Rundeck executions:"
+        for host in $replset_hosts_bkup; do
+            echo "host: $host"
+            for (( i=1; i<=60; i++ )); do
+                rundeck_execution_state="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${replset_bkup_execution_id[$host]}/state?authtoken=${rundeck_api_token}")"
+                rc=$?
+                if [[ $rc -ne 0 ]]; then
+                    echo "$rundeck_execution_state" >&2
+                    start_balancer
+                    error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
+                fi
+                execution_state="$(echo "$rundeck_execution_state" | jq '.executionState' | tr -d '"')"
+                if [[ $execution_state = "RUNNING" ]]; then
+                    sleep 5
+                elif [[ $execution_state = "SUCCEEDED" ]]; then
+                    echo "execution_state: $execution_state"
+                    break
+                else
+                    echo "execution_state: $execution_state"
+                    start_balancer
+                    error_exit "ERROR: ${0}(@$LINENO): Getting status of replica set failed."
+                fi
+            done
+            if [[ $execution_state != "SUCCEEDED" ]]; then
+                start_balancer
+                error_exit "ERROR: ${0}(@$LINENO): Status is taking too long to run."
+            fi
+        done
+
+        # Get output of Rundeck jobs.
+        for host in $replset_hosts_bkup; do
+            echo "host: $host"
+            rundeck_execution_output="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${replset_bkup_execution_id[$host]}/output/node/${host}?authtoken=${rundeck_api_token}")"
+            status="$(echo "$rundeck_execution_output" | jq '.entries[].log' | sed 's/^"//;s/"$//;s/\\"/"/g' | jq '."status"' | tr -d '"')"
+            rc=$?
+            if [[ $rc -ne 0 ]]; then
+                start_balancer
+                error_exit "ERROR: ${0}(@$LINENO): Failed to get output of Rundeck job."
+            fi
+            echo status: $status
         done
 
         echo
@@ -387,40 +460,53 @@ stop_balancer() {
     fi
 }
 
+# Start backup in daemon mode.
 if [[ $command = "start" ]]; then
-    # Start backup in daemon mode.
     select_backup_type
     bkup_path="$bkup_dir/$bkup_date.$bkup_type"
-    bkup_status_file="$bkup_path/backup_status.json"
+    bkup_pid_file="$bkup_path/backup.pid"
+    bkup_status_file="$bkup_path/backup.status.json"
     # Output status in JSON.
     cat <<HERE_DOC
 {"start-time":"$start_time","backup-path":"$bkup_path","status":"started"}
 HERE_DOC
     exec 1> "$log" 2> "$log" 2> "$log_err"
     main &
+# Get backup status.
 elif [[ $command = "status" ]]; then
-    # Get backup status.
-    bkup_date_and_type="$(ls -1 "$bkup_dir/" | tail -1)"
-    bkup_path="$(ls -1d -- $bkup_dir/*T*Z.*/ | tail -1)"
-    bkup_path="${bkup_path%?}" # Remove last character.
-    bkup_status_file="$bkup_path/backup_status.json"
+    if [[ -z $bkup_path ]]; then
+        bkup_path="$(ls -1d -- $bkup_dir/*T*Z.*/ | tail -1)"
+        bkup_path="${bkup_path%?}" # Remove last character.
+    fi
+    bkup_pid_file="$bkup_path/backup.pid"
+    bkup_status_file="$bkup_path/backup.status.json"
     if [[ -f $bkup_status_file ]]; then
-        cat "$bkup_status_file"
-    else
-        echo "{"
-        echo "  \"backup-path\": \"$bkup_path\","
-        echo "  \"status\": \"unknown\""
-        echo "}"
-    fi 
+        status="$(cat "$bkup_status_file" | jq '.status' | tr -d '"')"
+        if [[ $status = "completed" ]]; then
+            cat "$bkup_status_file"
+            exit 0
+        fi
+        if [[ -f $bkup_pid_file ]]; then
+            pid="$(cat $bkup_pid_file)"
+            kill -0 "$pid" > /dev/null
+            rc=$?
+            if [[ $rc -eq 0 ]]; then
+                cat "$bkup_status_file"
+                exit 0
+            fi
+        fi
+    fi
+    # Output status in JSON.
+    cat <<HERE_DOC
+{"backup-path":"$bkup_path","status":"unknown"}
+HERE_DOC
+# Start backup in regular mode.
 else
-    # Start backup in regular mode.
     # Redirect stderr into error log, stdout and stderr into log and terminal.
-    log="${log:-/tmp/backup.log}"
-    log_err="${log_err:-/tmp/backup.err}"
-    rm "$log" "$log_err" 2> /dev/null
     exec 1> >(tee -ia "$log") 2> >(tee -ia "$log" >&2) 2> >(tee -ia "$log_err" >&2)
     select_backup_type
     bkup_path="$bkup_dir/$bkup_date.$bkup_type"
-    bkup_status_file="$bkup_path/backup_status.json"
+    bkup_pid_file="$bkup_path/backup.pid"
+    bkup_status_file="$bkup_path/backup.status.json"
     main
 fi

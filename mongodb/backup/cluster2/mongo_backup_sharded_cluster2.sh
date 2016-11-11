@@ -11,9 +11,14 @@
 #     To restore the backup:
 #     find "backup_path/" -name "*.bson.gz" -exec gunzip '{}' \;
 #     mongorestore --oplogReplay --dir "backup_path"
+#
+#     This version of the script does not rely on Rundeck to wait for the job 
+#     to complete. Instead it start the backup jobs in daemon mode and then 
+#     sends status calls via another Rundeck job to track progress of the 
+#     backup jobs.
 ################################################################################
 
-version="2.0.8"
+version="2.0.9"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -542,6 +547,7 @@ elif [[ $command = "status" ]]; then
             cat <<HERE_DOC
 {"backup-path":"$bkup_path","status":"failed"}
 HERE_DOC
+            exit 0
         fi
     fi
     # Output status in JSON.

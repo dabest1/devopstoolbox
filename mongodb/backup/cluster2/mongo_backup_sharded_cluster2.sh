@@ -18,15 +18,15 @@
 #     backup jobs.
 ################################################################################
 
-version="2.0.9"
+version="2.0.10"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 config_path="$script_dir/${script_name/.sh/.cfg}"
 
-rundeck_execution_check_iterations=60
-rundeck_sleep_seconds_between_execution_checks=5
+rundeck_status_check_iterations=432
+rundeck_sleep_seconds_between_status_checks=300
 mongodb_is_balancer_running_iterations=720
 mongodb_sleep_seconds_between_is_balancer_running=5
 
@@ -168,8 +168,8 @@ perform_backup() {
         echo
     fi
 
+    # Config server.
     if echo "$HOSTNAME" | grep -q 'cfgdb'; then
-        # Config server.
         echo "This is a config server."
         mongos_host_port="$(mongo localhost:27017/config --quiet --eval 'rs.slaveOk(); var timeOffset = new Date(); timeOffset.setTime(timeOffset.getTime() - 60*60*1000); var cursor = db.mongos.find({ping:{$gte:timeOffset}},{_id:1}).sort({ping:-1}); while(cursor.hasNext()) { print(JSON.stringify(cursor.next())) }' | awk -F'"' '{print $4}' | head -1)"
         if [[ -z $mongos_host_port ]]; then
@@ -224,7 +224,7 @@ perform_backup() {
             echo
             echo "Wait for replica set backup to complete."
             echo "host: $host"
-            for (( i=1; i<=10; i++ )); do
+            for (( i=1; i<="$rundeck_status_check_iterations"; i++ )); do
                 # Start get status from replica set via Rundeck.
                 replset_bkup_execution_id["$host"]="$(rundeck_run_job "$rundeck_job_id_status" "{\"argString\":\"-command status -backup-path ${replset_bkup_path[$host]}\"}")"
 
@@ -243,8 +243,9 @@ perform_backup() {
                     error_exit "ERROR: ${0}(@$LINENO): Backup of replica set on $host failed."
                 fi
 
-                sleep 5
+                sleep "$rundeck_sleep_seconds_between_status_checks"
             done
+
             if [[ $status != "completed" ]]; then
                 echo "status: $status"
                 start_balancer
@@ -254,8 +255,8 @@ perform_backup() {
 
         echo
         start_balancer
+    # Replica set member.
     else
-        # Replica set member.
         echo "Backing up all dbs except local with --oplog option."
         date -u +'start: %FT%TZ'
         is_master="$("$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin --eval 'JSON.stringify(db.isMaster())' | jq '.ismaster')"

@@ -13,7 +13,7 @@
 #     mongorestore --oplogReplay --dir "backup_path"
 ################################################################################
 
-version="2.0.7"
+version="2.0.8"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -189,22 +189,23 @@ perform_backup() {
         replset_hosts_ports="$("$mongo" --quiet config --eval 'var myCursor = db.shards.find(); myCursor.forEach(printjson)' | jq '.host' | tr -d '"' | awk -F'/' '{print $2}' | tr ',' '\n')"
         replset_hosts="$(echo "$replset_hosts_ports" | awk -F: '{print $1}')"
         replset_hosts_bkup="$(echo "$replset_hosts" | grep "$bkup_host_regex")"
+        echo
 
         # Run Rundeck jobs to start replica set backups.
         for host in $replset_hosts_bkup; do
-            echo
-            echo "Initiating backup job on replica set $host via Rundeck."
+            echo "host: $host"
+            echo "Start backup job on replica set via Rundeck."
             replset_bkup_execution_id["$host"]="$(rundeck_run_job "$rundeck_job_id_start")"
         done
+        echo
 
         # Wait for Rundeck jobs to complete.
-        echo
-        echo "Rundeck executions of start job on replica sets:"
         for host in $replset_hosts_bkup; do
             echo "host: $host"
             execution_state="$(rundeck_wait_for_job_to_complete "${replset_bkup_execution_id[$host]}")"
             echo "execution_state: $execution_state"
         done
+        echo
 
         # Get output of Rundeck jobs.
         for host in $replset_hosts_bkup; do
@@ -216,30 +217,34 @@ perform_backup() {
         # Run Rundeck jobs to get status of replica set backups.
         for host in $replset_hosts_bkup; do
             echo
-            for (( i=1; i<=5; i++ )); do
-                echo "Initiating get status from replica set $host via Rundeck."
+            echo "Wait for replica set backup to complete."
+            echo "host: $host"
+            for (( i=1; i<=10; i++ )); do
+                # Start get status from replica set via Rundeck.
                 replset_bkup_execution_id["$host"]="$(rundeck_run_job "$rundeck_job_id_status" "{\"argString\":\"-command status -backup-path ${replset_bkup_path[$host]}\"}")"
 
-                # Wait for Rundeck jobs to complete.
-                echo
-                echo "Rundeck executions of status on replica sets:"
-                for host in $replset_hosts_bkup; do
-                    echo "host: $host"
-                    execution_state="$(rundeck_wait_for_job_to_complete "${replset_bkup_execution_id[$host]}")"
-                    echo "execution_state: $execution_state"
-                done
+                # Wait for Rundeck job to complete.
+                execution_state="$(rundeck_wait_for_job_to_complete "${replset_bkup_execution_id[$host]}")"
 
-                # Get output of Rundeck jobs.
-                echo "Get output of Rundeck jobs:"
-                for host in $replset_hosts_bkup; do
-                    echo "host: $host"
-echo rundeck_get_status_from_job_log "${replset_bkup_execution_id[$host]}"
-                    status="$(rundeck_get_status_from_job_log "${replset_bkup_execution_id[$host]}")"
-                    echo status: $status
-                done
+                # Get output of Rundeck job.
+                status="$(rundeck_get_status_from_job_log "${replset_bkup_execution_id[$host]}")"
+
+                if [[ $status = "completed" ]]; then
+                    echo "status: $status"
+                    break
+                elif [[ $status = "failed" ]]; then
+                    echo "status: $status"
+                    start_balancer
+                    error_exit "ERROR: ${0}(@$LINENO): Backup of replica set on $host failed."
+                fi
 
                 sleep 5
             done
+            if [[ $status != "completed" ]]; then
+                echo "status: $status"
+                start_balancer
+                error_exit "ERROR: ${0}(@$LINENO): Backup of replica set on $host took too long."
+            fi
         done
 
         echo
@@ -520,20 +525,23 @@ elif [[ $command = "status" ]]; then
     fi
     bkup_pid_file="$bkup_path/backup.pid"
     bkup_status_file="$bkup_path/backup.status.json"
-    if [[ -f $bkup_status_file ]]; then
-        status="$(cat "$bkup_status_file" | jq '.status' | tr -d '"')"
-        if [[ $status = "completed" ]]; then
+    if [[ -f $bkup_pid_file ]] && [[ -f $bkup_status_file ]]; then
+        pid="$(cat $bkup_pid_file)"
+        kill -0 "$pid" 2> /dev/null
+        rc=$?
+        if [[ $rc -eq 0 ]]; then
             cat "$bkup_status_file"
             exit 0
-        fi
-        if [[ -f $bkup_pid_file ]]; then
-            pid="$(cat $bkup_pid_file)"
-            kill -0 "$pid" 2> /dev/null
-            rc=$?
-            if [[ $rc -eq 0 ]]; then
+        else
+            status="$(cat "$bkup_status_file" | jq '.status' | tr -d '"')"
+            if [[ $status = "completed" ]]; then
                 cat "$bkup_status_file"
                 exit 0
             fi
+            # Output status in JSON.
+            cat <<HERE_DOC
+{"backup-path":"$bkup_path","status":"failed"}
+HERE_DOC
         fi
     fi
     # Output status in JSON.

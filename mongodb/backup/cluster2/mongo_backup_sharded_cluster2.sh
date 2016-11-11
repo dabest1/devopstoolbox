@@ -13,22 +13,17 @@
 #     mongorestore --oplogReplay --dir "backup_path"
 #
 #     This version of the script does not rely on Rundeck to wait for the job 
-#     to complete. Instead it start the backup jobs in daemon mode and then 
+#     to complete. Instead it starts the backup jobs in daemon mode and then 
 #     sends status calls via another Rundeck job to track progress of the 
 #     backup jobs.
 ################################################################################
 
-version="2.0.11"
+version="2.0.12"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 config_path="$script_dir/${script_name/.sh/.cfg}"
-
-rundeck_status_check_iterations=432
-rundeck_sleep_seconds_between_status_checks=300
-mongodb_is_balancer_running_iterations=720
-mongodb_sleep_seconds_between_is_balancer_running=5
 
 # Load configuration settings.
 source "$config_path"
@@ -55,6 +50,8 @@ while test -n "$1"; do
     esac
 done
 
+# Variables.
+
 if [[ -z $bkup_dir || -z $rundeck_server_url || -z $rundeck_api_token || -z $rundeck_job_id ]]; then
     echo "Error: Not all equired variables were provided in configuration file." >&2
     exit 1
@@ -77,7 +74,12 @@ log_err="$bkup_dir/backup.err"
 mongo="${mongo:-$(which mongo)}"
 mongod="${mongod:-$(which mongod)}"
 mongodump="${mongodump:-$(which mongodump)}"
-bkup_host_regex="${bkup_host_regex:-'.*-2$'}"
+bkup_host_regex="${bkup_host_regex:-.*-2$}"
+rundeck_status_check_iterations=432
+rundeck_sleep_seconds_between_status_checks=300
+mongodb_is_balancer_running_iterations=720
+mongodb_sleep_seconds_between_is_balancer_running=5
+
 declare -A replset_bkup_execution_id
 declare -A replset_bkup_path
 
@@ -100,6 +102,7 @@ compress_backup() {
 error_exit() {
     echo
     echo "$@" >&2
+    start_balancer
     if [[ ! -z $mail_on_error ]]; then
         mail -s "Error - MongoDB Backup $HOSTNAME" "$mail_on_error" < "$log"
     fi
@@ -192,7 +195,6 @@ perform_backup() {
         "$mongodump" --port "$port" $mongo_option -o "$bkup_path" --authenticationDatabase admin --oplog 2> "$bkup_dir/$bkup_date.$bkup_type/mongodump.log"
         rc=$?
         if [[ $rc -ne 0 ]]; then
-            start_balancer
             error_exit "ERROR: ${0}(@$LINENO): mongodump failed."
         fi
         date -u +'finish: %FT%TZ'
@@ -247,7 +249,6 @@ perform_backup() {
                     break
                 elif [[ $status = "failed" ]]; then
                     echo "status: $status"
-                    start_balancer
                     error_exit "ERROR: ${0}(@$LINENO): Backup of replica set on $host failed."
                 fi
 
@@ -256,13 +257,13 @@ perform_backup() {
 
             if [[ $status != "completed" ]]; then
                 echo "status: $status"
-                start_balancer
                 error_exit "ERROR: ${0}(@$LINENO): Backup of replica set on $host took too long."
             fi
         done
 
         echo
         start_balancer
+
     # Replica set member.
     else
         echo "Backing up all dbs except local with --oplog option."
@@ -302,7 +303,7 @@ post_backup_process() {
         echo "Command:"
         eval echo "$post_backup"
         eval "$post_backup"
-        rc=$?
+        local rc=$?
         if [[ $rc -gt 0 ]]; then
             error_exit "ERROR: ${0}(@$LINENO): Post backup process failed."
         fi
@@ -318,7 +319,7 @@ purge_old_backups() {
     echo
 
     echo "Purge old backups..."
-    list_of_bkups="$(find "$bkup_dir/" -name "*.$bkup_type" | sort)"
+    local list_of_bkups="$(find "$bkup_dir/" -name "*.$bkup_type" | sort)"
     if [[ ! -z "$list_of_bkups" ]]; then
         while [[ "$(echo "$list_of_bkups" | wc -l)" -gt $num_bkups ]]; do
             old_bkup="$(echo "$list_of_bkups" | head -1)"
@@ -339,14 +340,12 @@ rundeck_get_bkup_path_from_job_log() {
     local rc=$?
     if [[ $rc -ne 0 ]]; then
         echo "$result" >&2
-        start_balancer
         error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
     fi
     local bkup_path="$(echo "$result" | jq '.entries[].log' | sed 's/^"//;s/"$//;s/\\"/"/g' | jq '."backup-path"' | tr -d '"')"
     local rc=$?
     if [[ $rc -ne 0 ]]; then
         echo "$result" >&2
-        start_balancer
         error_exit "ERROR: ${0}(@$LINENO): Could not parse Rundeck results."
     fi
     echo "$bkup_path"
@@ -360,14 +359,12 @@ rundeck_get_status_from_job_log() {
     local rc=$?
     if [[ $rc -ne 0 ]]; then
         echo "$result" >&2
-        start_balancer
         error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
     fi
     local status="$(echo "$result" | jq '.entries[].log' | sed 's/^"//;s/"$//;s/\\"/"/g' | jq '."status"' | tr -d '"')"
     local rc=$?
     if [[ $rc -ne 0 ]]; then
         echo "$result" >&2
-        start_balancer
         error_exit "ERROR: ${0}(@$LINENO): Could not parse Rundeck results."
     fi
     if [[ -z $status ]]; then
@@ -390,19 +387,16 @@ rundeck_run_job() {
     fi
     if [[ $rc != 0 ]]; then
         echo "$rundeck_job" >&2
-        start_balancer
         error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
     fi
     echo "$rundeck_job" | jq '.' > /dev/null # Check if this is valid JSON.
     local rc=$?
     if [[ $rc != 0 ]]; then
         echo "$rundeck_job" >&2
-        start_balancer
         error_exit "ERROR: ${0}(@$LINENO): Could not parse Rundeck results."
     fi
     local job_status="$(echo "$rundeck_job" | jq '.status' | tr -d '"')"
     if [[ $job_status != "running" ]]; then
-        start_balancer
         error_exit "ERROR: ${0}(@$LINENO): Rundeck job could not be executed."
     fi
     echo "$rundeck_job" | jq '.id'
@@ -418,14 +412,12 @@ rundeck_wait_for_job_to_complete() {
         local rc=$?
         if [[ $rc -ne 0 ]]; then
             echo "$result" >&2
-            start_balancer
             error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
         fi
         local execution_state="$(echo "$result" | jq '.executionState' | tr -d '"')"
         local rc=$?
         if [[ $rc -ne 0 ]]; then
             echo "$result" >&2
-            start_balancer
             error_exit "ERROR: ${0}(@$LINENO): Could not parse Rundeck results."
         fi
         if [[ $execution_state = "RUNNING" ]]; then
@@ -435,12 +427,10 @@ rundeck_wait_for_job_to_complete() {
             break
         else
             echo "execution_state: $execution_state" >&2
-            start_balancer
             error_exit "ERROR: ${0}(@$LINENO): Rundeck job failed."
         fi
     done
     if [[ $execution_state != "SUCCEEDED" ]]; then
-        start_balancer
         error_exit "ERROR: ${0}(@$LINENO): Rundeck job is taking too long to complete."
     fi
 }
@@ -479,36 +469,35 @@ select_backup_type() {
 
 # Start MongoDB balancer.
 start_balancer() {
-    echo "Start the balancer."
-    "$mongo" --quiet "$mongos_host_port" --eval "sh.startBalancer()"
-    balancer_state="$("$mongo" --quiet "$mongos_host_port" --eval "sh.getBalancerState()")"
-    echo "Balancer state: $balancer_state"
+    if [[ $need_to_start_balancer = "true" ]]; then
+        echo "Start the balancer."
+        "$mongo" --quiet "$mongos_host_port" --eval "sh.startBalancer()"
+        local balancer_state="$("$mongo" --quiet "$mongos_host_port" --eval "sh.getBalancerState()")"
+        echo "Balancer state: $balancer_state"
+    fi
 }
 
 # Stop MongoDB balancer.
 stop_balancer() {
-    result="$("$mongo" --quiet "$mongos_host_port" --eval "sh.getBalancerState()")"
+    need_to_start_balancer="true"
+    local result="$("$mongo" --quiet "$mongos_host_port" --eval "sh.getBalancerState()")"
     echo "Balancer state: $result"
     echo "Stop the balancer..."
     "$mongo" --quiet "$mongos_host_port" --eval "sh.stopBalancer()"
-    result="$("$mongo" --quiet "$mongos_host_port" --eval "sh.getBalancerState()")"
+    local result="$("$mongo" --quiet "$mongos_host_port" --eval "sh.getBalancerState()")"
     echo "Balancer state: $result"
     if [[ $result != "false" ]]; then
-        echo "Balancer could not be stopped." >&2
-        start_balancer
         error_exit "ERROR: ${0}(@$LINENO): Balancer could not be stopped."
     fi
     for (( i=1; i<="$mongodb_is_balancer_running_iterations"; i++ )); do
-        result="$("$mongo" --quiet "$mongos_host_port" --eval "sh.isBalancerRunning()")"
+        local result="$("$mongo" --quiet "$mongos_host_port" --eval "sh.isBalancerRunning()")"
         if [[ $result = "false" ]]; then
             break
         fi
         sleep "$mongodb_sleep_seconds_between_is_balancer_running"
     done
     if [[ $result != "false" ]]; then
-        echo "Balancer is still running, aborting." >&2
-        start_balancer
-        error_exit "ERROR: ${0}(@$LINENO): Balancer is still running."
+        error_exit "ERROR: ${0}(@$LINENO): Balancer did not stop."
     fi
 }
 
@@ -518,6 +507,8 @@ trap '[ "$?" -ne 77 ] || exit 77' ERR
 trap "error_exit 'Received signal SIGHUP'" SIGHUP
 trap "error_exit 'Received signal SIGINT'" SIGINT
 trap "error_exit 'Received signal SIGTERM'" SIGTERM
+
+need_to_start_balancer="false"
 
 # Start backup in daemon mode.
 if [[ $command = "start" ]]; then

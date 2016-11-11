@@ -18,7 +18,7 @@
 #     backup jobs.
 ################################################################################
 
-version="2.0.10"
+version="2.0.11"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -32,11 +32,6 @@ mongodb_sleep_seconds_between_is_balancer_running=5
 
 # Load configuration settings.
 source "$config_path"
-
-if [[ -z $bkup_dir ]]; then
-    echo "Error: Some variables were not provided in configuration file." >&2
-    exit 1
-fi
 
 # Process options.
 while test -n "$1"; do
@@ -60,19 +55,31 @@ while test -n "$1"; do
     esac
 done
 
-declare -A replset_bkup_execution_id
-declare -A replset_bkup_path
-
+if [[ -z $bkup_dir || -z $rundeck_server_url || -z $rundeck_api_token || -z $rundeck_job_id ]]; then
+    echo "Error: Not all equired variables were provided in configuration file." >&2
+    exit 1
+fi
 bkup_date="$(date -d "$start_time" +'%Y%m%dT%H%M%SZ')"
 bkup_dow="$(date -d "$start_time" +'%w')"
+weekly_bkup_dow="${weekly_bkup_dow:-1}"
+num_daily_bkups="${num_daily_bkups:-5}"
+num_weekly_bkups="${num_weekly_bkups:-5}"
+num_monthly_bkups="${num_monthly_bkups:-2}"
+num_yearly_bkups="${num_yearly_bkups:-0}"
+port="${port:-27017}"
 if [[ -z "$user" ]]; then
     mongo_option=""
 else
     mongo_option="-u $user -p $pass"
 fi
-port="${port:-27017}"
-log="${log:-/tmp/backup.log}"
-log_err="${log_err:-/tmp/backup.err}"
+log="$bkup_dir/backup.log"
+log_err="$bkup_dir/backup.err"
+mongo="${mongo:-$(which mongo)}"
+mongod="${mongod:-$(which mongod)}"
+mongodump="${mongodump:-$(which mongodump)}"
+bkup_host_regex="${bkup_host_regex:-'.*-2$'}"
+declare -A replset_bkup_execution_id
+declare -A replset_bkup_path
 
 # Functions.
 
@@ -200,7 +207,7 @@ perform_backup() {
         for host in $replset_hosts_bkup; do
             echo "host: $host"
             echo "Start backup job on replica set via Rundeck."
-            replset_bkup_execution_id["$host"]="$(rundeck_run_job "$rundeck_job_id_start")"
+            replset_bkup_execution_id["$host"]="$(rundeck_run_job "$rundeck_job_id")"
         done
         echo
 
@@ -223,10 +230,11 @@ perform_backup() {
         for host in $replset_hosts_bkup; do
             echo
             echo "Wait for replica set backup to complete."
+            echo "Sleep for $rundeck_sleep_seconds_between_status_checks seconds between status checks."
             echo "host: $host"
             for (( i=1; i<="$rundeck_status_check_iterations"; i++ )); do
                 # Start get status from replica set via Rundeck.
-                replset_bkup_execution_id["$host"]="$(rundeck_run_job "$rundeck_job_id_status" "{\"argString\":\"-command status -backup-path ${replset_bkup_path[$host]}\"}")"
+                replset_bkup_execution_id["$host"]="$(rundeck_run_job "$rundeck_job_id" "{\"argString\":\"-command status -backup-path ${replset_bkup_path[$host]}\"}")"
 
                 # Wait for Rundeck job to complete.
                 execution_state="$(rundeck_wait_for_job_to_complete "${replset_bkup_execution_id[$host]}")"

@@ -18,7 +18,7 @@
 #     backup jobs.
 ################################################################################
 
-version="2.0.12"
+version="2.0.13"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -75,11 +75,13 @@ mongo="${mongo:-$(which mongo)}"
 mongod="${mongod:-$(which mongod)}"
 mongodump="${mongodump:-$(which mongodump)}"
 bkup_host_regex="${bkup_host_regex:-.*-2$}"
+config_server_regex="${config_server_regex:-cfgdb}"
+
 rundeck_status_check_iterations=432
 rundeck_sleep_seconds_between_status_checks=300
 mongodb_is_balancer_running_iterations=720
 mongodb_sleep_seconds_between_is_balancer_running=5
-
+need_to_start_balancer="false"
 declare -A replset_bkup_execution_id
 declare -A replset_bkup_path
 
@@ -179,7 +181,7 @@ perform_backup() {
     fi
 
     # Config server.
-    if echo "$HOSTNAME" | grep -q 'cfgdb'; then
+    if echo "$HOSTNAME" | grep -q "$config_server_regex"; then
         echo "This is a config server."
         mongos_host_port="$(mongo localhost:27017/config --quiet --eval 'rs.slaveOk(); var timeOffset = new Date(); timeOffset.setTime(timeOffset.getTime() - 60*60*1000); var cursor = db.mongos.find({ping:{$gte:timeOffset}},{_id:1}).sort({ping:-1}); while(cursor.hasNext()) { print(JSON.stringify(cursor.next())) }' | awk -F'"' '{print $4}' | head -1)"
         if [[ -z $mongos_host_port ]]; then
@@ -507,8 +509,6 @@ trap '[ "$?" -ne 77 ] || exit 77' ERR
 trap "error_exit 'Received signal SIGHUP'" SIGHUP
 trap "error_exit 'Received signal SIGINT'" SIGINT
 trap "error_exit 'Received signal SIGTERM'" SIGTERM
-
-need_to_start_balancer="false"
 
 # Start backup in daemon mode.
 if [[ $command = "start" ]]; then

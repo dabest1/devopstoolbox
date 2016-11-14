@@ -7,7 +7,7 @@
 #     Optionally send email upon completion.
 ################################################################################
 
-version="1.0.0"
+version="1.0.1"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -57,20 +57,6 @@ xtrabackup_parallel="${xtrabackup_parallel:-1}"
 
 # Functions.
 
-# Compress backup.
-compress_backup() {
-    echo "Compress backup."
-    date -u +'start: %FT%TZ'
-    find "$bkup_path" -name "*" -exec gzip '{}' \;
-    date -u +'finish: %FT%TZ'
-    echo
-    echo "Compressed backup size in bytes:"
-    du -sb "$bkup_path"
-    echo "Disk space after compression:"
-    df -h "$bkup_dir/"
-    echo
-}
-
 error_exit() {
     echo
     echo "$@" >&2
@@ -102,8 +88,6 @@ main() {
     purge_old_backups
 
     perform_backup
-
-    #compress_backup
 
     post_backup_process
 
@@ -137,10 +121,11 @@ perform_backup() {
         #echo
     #fi
 
-    echo "Backing up dbs."
+    echo "Backing up database."
     date -u +'start: %FT%TZ'
-    #"$innobackupex" --slave-info --stream=xbstream --parallel="$innobackupex_parallel" $mysql_option | gzip > "$bkup_path/mysql_backup.gz" 2> "$bkup_path/innobackupex.log"
-    "$xtrabackup" --backup --target-dir="$bkup_path" --slave-info --skip-secure-auth $mysql_option > "$bkup_path/xtrabackup.log" 2> "$bkup_path/xtrabackup.err"
+    # --parallel=4
+    # --compress-threads=4
+    "$xtrabackup" --backup --target-dir="$bkup_path" --slave-info --skip-secure-auth $mysql_option --compress 2> "$bkup_path/xtrabackup.log"
     rc=$?
     if [[ $rc -ne 0 ]]; then
         error_exit "ERROR: ${0}(@$LINENO): Backup failed."

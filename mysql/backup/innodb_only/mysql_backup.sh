@@ -1,13 +1,13 @@
 #!/bin/bash
 ################################################################################
 # Purpose:
-#     Backup MySQL database.
+#     Backup MySQL database (only InnoDB tables are backed up).
 #     Compress backup.
 #     Optionally run post backup script.
 #     Optionally send email upon completion.
 ################################################################################
 
-version="1.0.1"
+version="1.0.2"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

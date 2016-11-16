@@ -18,7 +18,7 @@
 #     backup jobs.
 ################################################################################
 
-version="2.0.13"
+version="2.0.14"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -202,9 +202,10 @@ perform_backup() {
         date -u +'finish: %FT%TZ'
 
         # Get shard servers (replica set members).
-        replset_hosts_ports="$("$mongo" --quiet config --eval 'var myCursor = db.shards.find(); myCursor.forEach(printjson)' | jq '.host' | tr -d '"' | awk -F'/' '{print $2}' | tr ',' '\n')"
-        replset_hosts="$(echo "$replset_hosts_ports" | awk -F: '{print $1}')"
-        replset_hosts_bkup="$(echo "$replset_hosts" | grep "$bkup_host_regex")"
+        replset_hosts_ports="$("$mongo" --quiet config --eval 'var myCursor = db.shards.find(); myCursor.forEach(printjson)' | jq '.host' | tr -d '"' | awk -F'/' '{print $2}' | awk -F, '{print $1}')"
+        for replset_host_port in $replset_hosts_ports; do
+            replset_hosts_bkup="$replset_hosts_bkup $("$mongo" "$replset_host_port" --quiet --eval 'JSON.stringify(rs.conf())' | jq '.members[].host' | tr -d '"' | awk -F: '{print $1}' | grep "$bkup_host_regex")"
+        done
         echo
 
         # Run Rundeck jobs to start replica set backups.

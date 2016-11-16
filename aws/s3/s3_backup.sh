@@ -4,7 +4,7 @@
 #     Copy backup to AWS S3 and manage the number of backups retained on S3.
 ################################################################################
 
-version="1.0.7"
+version="1.0.8"
 
 start_time="$(date -u +'%F %T %Z')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -54,7 +54,7 @@ echo "S3 Bucket path: $s3_bucket_path"
 echo
 echo 'Create md5 check sums.'
 cd "$dir_to_upload" || exit 1
-find . -type f | grep -v '[.]log$' | grep -v '[.]err$' | sort | xargs md5sum > md5sum.txt
+find . -type f | grep -v '[.]log$' | grep -v '[.]err$' | grep -v 'md5sum.txt' | sort | xargs md5sum > md5sum.txt
 
 echo
 echo 'List of backups on S3, before upload:'

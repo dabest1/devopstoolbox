@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.9"
+version="1.0.10"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -29,7 +29,7 @@ function usage {
     echo "    -r, --refresh    Refreshes the list of EC2 instances and their state."
     echo "    -l, --list       Displays cached list of EC2 instances and runs refresh afterwards. If no options are supplied, then this option is chosen by default."
     echo "    -g, --grep       Limits output to the regex provided."
-    echo "    -h, --help       Displays this help."
+    echo "    -h, --help       Display this help."
     exit 1
 }
 

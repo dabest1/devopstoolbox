@@ -1,13 +1,13 @@
 #!/bin/bash
 ################################################################################
 # Purpose:
-#     Backup MySQL database (only InnoDB tables are backed up).
+#     Backup MySQL database.
 #     Compress backup.
 #     Optionally run post backup script.
 #     Optionally send email upon completion.
 ################################################################################
 
-version="1.0.2"
+version="1.0.3"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -43,19 +43,34 @@ num_daily_bkups="${num_daily_bkups:-5}"
 num_weekly_bkups="${num_weekly_bkups:-5}"
 num_monthly_bkups="${num_monthly_bkups:-2}"
 num_yearly_bkups="${num_yearly_bkups:-0}"
-if [[ -z "$user" ]]; then
+if [[ -z "$username" ]]; then
     mysql_option=""
 else
-    mysql_option="--username=$user --password=$pass"
+    mysql_option="--user=$username --password=$password"
 fi
 log="$bkup_dir/backup.log"
 log_err="$bkup_dir/backup.err"
 mysql="${mysql:-$(which mysql)}"
 mysqld="${mysqld:-$(which mysqld)}"
-xtrabackup="${xtrabackup:-$(which xtrabackup)}"
-xtrabackup_parallel="${xtrabackup_parallel:-1}"
+PATH="$PATH:$xtrabackup_dir"
+innobackupex="$(which innobackupex)"
+innobackupex_parallel="${innobackupex_parallel:-1}"
 
 # Functions.
+
+# Compress backup.
+compress_backup() {
+    echo "Compress backup."
+    date -u +'start: %FT%TZ'
+    find "$bkup_path" -name "*" -exec gzip '{}' \;
+    date -u +'finish: %FT%TZ'
+    echo
+    echo "Compressed backup size in bytes:"
+    du -sb "$bkup_path"
+    echo "Disk space after compression:"
+    df -h "$bkup_dir/"
+    echo
+}
 
 error_exit() {
     echo
@@ -88,6 +103,8 @@ main() {
     purge_old_backups
 
     perform_backup
+
+    #compress_backup
 
     post_backup_process
 
@@ -123,10 +140,12 @@ perform_backup() {
 
     echo "Backing up database."
     date -u +'start: %FT%TZ'
-    # --parallel=4
-    # --compress-threads=4
-    "$xtrabackup" --backup --target-dir="$bkup_path" --slave-info --skip-secure-auth $mysql_option --compress 2> "$bkup_path/xtrabackup.log"
+    "$innobackupex" --slave-info --no-timestamp --compress --compress-threads=4 "$bkup_path/backup" $mysql_option 2> "$bkup_path/innobackupex.err"
     rc=$?
+
+    # Temporary workaround for failure after backup almost completes.
+    rc=0
+
     if [[ $rc -ne 0 ]]; then
         error_exit "ERROR: ${0}(@$LINENO): Backup failed."
     fi

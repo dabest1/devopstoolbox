@@ -18,7 +18,7 @@
 #     backup jobs.
 ################################################################################
 
-version="2.0.14"
+version="2.0.15"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -193,9 +193,15 @@ perform_backup() {
         echo
         echo "Backing up config server."
         date -u +'start: %FT%TZ'
-        echo "Note: Need to identify in which cases --oplog does not work on config server. MongoDB 2.6 supports it. https://docs.mongodb.com/v2.6/tutorial/backup-sharded-cluster-with-database-dumps/#backup-one-config-server"
-        "$mongodump" --port "$port" $mongo_option -o "$bkup_path" --authenticationDatabase admin --oplog 2> "$bkup_dir/$bkup_date.$bkup_type/mongodump.log"
+        "$mongodump" --port "$port" $mongo_option -o "$bkup_path" --authenticationDatabase admin --oplog 2> "$bkup_path/mongodump.log"
         rc=$?
+        if [[ $rc -ne 0 ]]; then
+            # Check if dump failed because the config server is not running with --configsvr option.
+            if grep -q 'No operations in oplog. Please ensure you are connecting to a master.' "$bkup_path/mongodump.log"; then
+                "$mongodump" --port "$port" $mongo_option -o "$bkup_path" --authenticationDatabase admin 2> "$bkup_path/mongodump.log"
+                rc=$?
+            fi
+        fi
         if [[ $rc -ne 0 ]]; then
             error_exit "ERROR: ${0}(@$LINENO): mongodump failed."
         fi
@@ -275,7 +281,7 @@ perform_backup() {
         if [[ $is_master != "false" ]]; then
             error_exit "ERROR: ${0}(@$LINENO): This is not a secondary node."
         fi
-        "$mongodump" --port "$port" $mongo_option -o "$bkup_path" --authenticationDatabase admin --oplog 2> "$bkup_dir/$bkup_date.$bkup_type/mongodump.log"
+        "$mongodump" --port "$port" $mongo_option -o "$bkup_path" --authenticationDatabase admin --oplog 2> "$bkup_path/mongodump.log"
         rc=$?
         if [[ $rc -ne 0 ]]; then
             error_exit "ERROR: ${0}(@$LINENO): mongodump failed."

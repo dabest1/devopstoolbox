@@ -1,7 +1,8 @@
 #!/bin/bash
 ################################################################################
 # Purpose:
-#     MongoDB cluster backup with the use of Rundeck.
+#     MongoDB cluster backup with the use of Rundeck. Replica set backups are 
+#     also supported.
 #     Backup all MongoDB databases using mongodump (local db is excluded).
 #     --oplog option is used.
 #     Compress backup.
@@ -18,7 +19,7 @@
 #     backup jobs.
 ################################################################################
 
-version="2.0.15"
+version="2.0.16"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -113,7 +114,7 @@ error_exit() {
 
 main() {
     echo "**************************************************"
-    echo "* Backup MongoDB Sharded Cluster"
+    echo "* Backup MongoDB"
     echo "* Time started: $start_time"
     echo "**************************************************"
     echo

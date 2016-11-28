@@ -7,7 +7,7 @@
 #     Optionally send email upon completion.
 ################################################################################
 
-version="1.0.3"
+version="1.0.4"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -58,20 +58,6 @@ innobackupex_parallel="${innobackupex_parallel:-1}"
 
 # Functions.
 
-# Compress backup.
-compress_backup() {
-    echo "Compress backup."
-    date -u +'start: %FT%TZ'
-    find "$bkup_path" -name "*" -exec gzip '{}' \;
-    date -u +'finish: %FT%TZ'
-    echo
-    echo "Compressed backup size in bytes:"
-    du -sb "$bkup_path"
-    echo "Disk space after compression:"
-    df -h "$bkup_dir/"
-    echo
-}
-
 error_exit() {
     echo
     echo "$@" >&2
@@ -103,8 +89,6 @@ main() {
     purge_old_backups
 
     perform_backup
-
-    #compress_backup
 
     post_backup_process
 
@@ -144,7 +128,9 @@ perform_backup() {
     rc=$?
 
     # Temporary workaround for failure after backup almost completes.
-    rc=0
+    if grep -q 'innobackupex: Backup created in directory' innobackupex.err; then
+        rc=0
+    fi
 
     if [[ $rc -ne 0 ]]; then
         error_exit "ERROR: ${0}(@$LINENO): Backup failed."

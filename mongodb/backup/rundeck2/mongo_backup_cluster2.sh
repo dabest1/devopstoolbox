@@ -13,13 +13,12 @@
 #     find "backup_path/" -name "*.bson.gz" -exec gunzip '{}' \;
 #     mongorestore --oplogReplay --dir "backup_path"
 #
-#     This version of the script does not rely on Rundeck to wait for the job 
-#     to complete. Instead it starts the backup jobs in daemon mode and then 
-#     sends status calls via another Rundeck job to track progress of the 
-#     backup jobs.
+#     This script does not rely on Rundeck to wait for the job to complete. 
+#     Instead it starts the backup jobs in daemon mode and then sends status 
+#     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.0.16"
+version="2.0.17"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -134,7 +133,7 @@ main() {
     # Create backup status and pid file.
     echo "$BASHPID" > "$bkup_pid_file"
     cat <<HERE_DOC > "$bkup_status_file"
-{"start-time":"$start_time","backup-path":"$bkup_path","status":"running"}
+{"start_time":"$start_time","backup_path":"$bkup_path","status":"running"}
 HERE_DOC
 
     purge_old_backups
@@ -163,7 +162,7 @@ HERE_DOC
 
     # Update backup status file.
     cat <<HERE_DOC > "$bkup_status_file"
-{"start-time":"$start_time","backup-path":"$bkup_path","status":"completed"}
+{"start_time":"$start_time","backup_path":"$bkup_path","status":"completed"}
 HERE_DOC
 }
 
@@ -352,7 +351,7 @@ rundeck_get_bkup_path_from_job_log() {
         echo "$result" >&2
         error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
     fi
-    local bkup_path="$(echo "$result" | jq '.entries[].log' | sed 's/^"//;s/"$//;s/\\"/"/g' | jq '."backup-path"' | tr -d '"')"
+    local bkup_path="$(echo "$result" | jq '.entries[].log' | sed 's/^"//;s/"$//;s/\\"/"/g' | jq '.backup_path' | tr -d '"')"
     local rc=$?
     if [[ $rc -ne 0 ]]; then
         echo "$result" >&2
@@ -371,7 +370,7 @@ rundeck_get_status_from_job_log() {
         echo "$result" >&2
         error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
     fi
-    local status="$(echo "$result" | jq '.entries[].log' | sed 's/^"//;s/"$//;s/\\"/"/g' | jq '."status"' | tr -d '"')"
+    local status="$(echo "$result" | jq '.entries[].log' | sed 's/^"//;s/"$//;s/\\"/"/g' | jq '.status' | tr -d '"')"
     local rc=$?
     if [[ $rc -ne 0 ]]; then
         echo "$result" >&2
@@ -526,7 +525,7 @@ if [[ $command = "start" ]]; then
     bkup_status_file="$bkup_path/backup.status.json"
     # Output status in JSON.
     cat <<HERE_DOC
-{"start-time":"$start_time","backup-path":"$bkup_path","status":"started"}
+{"start_time":"$start_time","backup_path":"$bkup_path","status":"started"}
 HERE_DOC
     exec 1> "$log" 2> "$log" 2> "$log_err"
     main &
@@ -553,14 +552,14 @@ elif [[ $command = "status" ]]; then
             fi
             # Output status in JSON.
             cat <<HERE_DOC
-{"backup-path":"$bkup_path","status":"failed"}
+{"backup_path":"$bkup_path","status":"failed"}
 HERE_DOC
             exit 0
         fi
     fi
     # Output status in JSON.
     cat <<HERE_DOC
-{"backup-path":"$bkup_path","status":"unknown"}
+{"backup_path":"$bkup_path","status":"unknown"}
 HERE_DOC
 # Start backup in regular mode.
 else

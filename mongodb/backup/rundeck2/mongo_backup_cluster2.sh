@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.0.17"
+version="2.0.18"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -104,7 +104,7 @@ compress_backup() {
 error_exit() {
     echo
     echo "$@" >&2
-    start_balancer
+    start_balancer >&2
     if [[ ! -z $mail_on_error ]]; then
         mail -s "Error - MongoDB Backup $HOSTNAME" "$mail_on_error" < "$log"
     fi

@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.0.18"
+version="2.0.19"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -74,7 +74,7 @@ log_err="$bkup_dir/backup.err"
 mongo="${mongo:-$(which mongo)}"
 mongod="${mongod:-$(which mongod)}"
 mongodump="${mongodump:-$(which mongodump)}"
-bkup_host_regex="${bkup_host_regex:-.*-2$}"
+bkup_host_port_regex="${bkup_host_port_regex:-.*-2:[0-9]*}"
 config_server_regex="${config_server_regex:-cfgdb}"
 
 rundeck_status_check_iterations=432
@@ -161,9 +161,16 @@ HERE_DOC
     fi
 
     # Update backup status file.
-    cat <<HERE_DOC > "$bkup_status_file"
+    if [[ -z $replset_hosts_ports_bkup ]]; then
+        cat <<HERE_DOC > "$bkup_status_file"
 {"start_time":"$start_time","backup_path":"$bkup_path","status":"completed"}
 HERE_DOC
+    else
+        replset_hosts_ports_bkup="$(tr '\n' ',' <<<"$replset_hosts_ports_bkup" | sed 's/,$//')"
+        cat <<HERE_DOC > "$bkup_status_file"
+{"start_time":"$start_time","backup_path":"$bkup_path","status":"completed","backup_nodes":"$replset_hosts_ports_bkup"}
+HERE_DOC
+    fi
 }
 
 # Perform backup.
@@ -210,39 +217,44 @@ perform_backup() {
         # Get shard servers (replica set members).
         replset_hosts_ports="$("$mongo" --quiet config --eval 'var myCursor = db.shards.find(); myCursor.forEach(printjson)' | jq '.host' | tr -d '"' | awk -F'/' '{print $2}' | awk -F, '{print $1}')"
         for replset_host_port in $replset_hosts_ports; do
-            replset_hosts_bkup="$replset_hosts_bkup $("$mongo" "$replset_host_port" --quiet --eval 'JSON.stringify(rs.conf())' | jq '.members[].host' | tr -d '"' | awk -F: '{print $1}' | grep "$bkup_host_regex")"
+            replset_hosts_ports="$("$mongo" "$replset_host_port" --quiet --eval 'JSON.stringify(rs.conf())' | jq '.members[].host' | tr -d '"')"
+            if [[ -z $replset_hosts_ports_bkup ]]; then
+                replset_hosts_ports_bkup="$(egrep "$bkup_host_port_regex" <<<"$replset_hosts_ports")"
+            else
+                replset_hosts_ports_bkup="$replset_hosts_ports_bkup"$'\n'"$(egrep "$bkup_host_port_regex" <<<"$replset_hosts_ports")"
+            fi
         done
         echo
 
         # Run Rundeck jobs to start replica set backups.
-        for host in $replset_hosts_bkup; do
-            echo "host: $host"
+        while IFS=':' read host port; do
+            echo "host: $host:$port"
             echo "Start backup job on replica set via Rundeck."
             replset_bkup_execution_id["$host"]="$(rundeck_run_job "$rundeck_job_id")"
-        done
+        done <<<"$replset_hosts_ports_bkup"
         echo
 
         # Wait for Rundeck jobs to complete.
-        for host in $replset_hosts_bkup; do
-            echo "host: $host"
+        while IFS=':' read host port; do
+            echo "host: $host:$port"
             execution_state="$(rundeck_wait_for_job_to_complete "${replset_bkup_execution_id[$host]}")"
             echo "execution_state: $execution_state"
-        done
+        done <<<"$replset_hosts_ports_bkup"
         echo
 
         # Get output of Rundeck jobs.
-        for host in $replset_hosts_bkup; do
-            echo "host: $host"
+        while IFS=':' read host port; do
+            echo "host: $host:$port"
             replset_bkup_path["$host"]="$(rundeck_get_bkup_path_from_job_log "${replset_bkup_execution_id[$host]}")"
             echo "replset_bkup_path: ${replset_bkup_path[$host]}"
-        done
+        done <<<"$replset_hosts_ports_bkup"
 
         # Run Rundeck jobs to get status of replica set backups.
-        for host in $replset_hosts_bkup; do
+        while IFS=':' read host port; do
             echo
             echo "Wait for replica set backup to complete."
             echo "Sleep for $rundeck_sleep_seconds_between_status_checks seconds between status checks."
-            echo "host: $host"
+            echo "host: $host:$port"
             for (( i=1; i<="$rundeck_status_check_iterations"; i++ )); do
                 # Start get status from replica set via Rundeck.
                 replset_bkup_execution_id["$host"]="$(rundeck_run_job "$rundeck_job_id" "{\"argString\":\"-command status -backup-path ${replset_bkup_path[$host]}\"}")"
@@ -268,7 +280,7 @@ perform_backup() {
                 echo "status: $status"
                 error_exit "ERROR: ${0}(@$LINENO): Backup of replica set on $host took too long."
             fi
-        done
+        done <<<"$replset_hosts_ports_bkup"
 
         echo
         start_balancer

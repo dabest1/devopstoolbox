@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.0.19"
+version="2.0.20"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -318,7 +318,7 @@ perform_backup() {
 # Post backup process.
 post_backup_process() {
     if [[ ! -z $post_backup ]]; then
-        cd "$script_dir"
+        cd "$script_dir" || error_exit "ERROR: ${0}(@$LINENO): Cannot change directory."
         echo "Post backup process."
         date -u +'start: %FT%TZ'
         echo "Command:"
@@ -335,12 +335,14 @@ post_backup_process() {
 
 # Purge old backups.
 purge_old_backups() {
+    local list_of_bkups
+
     echo "Disk space before purge:"
     df -h "$bkup_dir/"
     echo
 
     echo "Purge old backups..."
-    local list_of_bkups="$(find "$bkup_dir/" -name "*.$bkup_type" | sort)"
+    list_of_bkups="$(find "$bkup_dir/" -name "*.$bkup_type" | sort)"
     if [[ ! -z "$list_of_bkups" ]]; then
         while [[ "$(echo "$list_of_bkups" | wc -l)" -gt $num_bkups ]]; do
             old_bkup="$(echo "$list_of_bkups" | head -1)"
@@ -356,15 +358,18 @@ purge_old_backups() {
 # Get backup path from Rundeck job log.
 rundeck_get_bkup_path_from_job_log() {
     local execution_id="$1"
+    local result
+    local rc
+    local bkup_path
 
-    local result="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${execution_id}/output/node/${host}?authtoken=${rundeck_api_token}")"
-    local rc=$?
+    result="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${execution_id}/output/node/${host}?authtoken=${rundeck_api_token}")"
+    rc=$?
     if [[ $rc -ne 0 ]]; then
         echo "$result" >&2
         error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
     fi
-    local bkup_path="$(echo "$result" | jq '.entries[].log' | sed 's/^"//;s/"$//;s/\\"/"/g' | jq '.backup_path' | tr -d '"')"
-    local rc=$?
+    bkup_path="$(echo "$result" | jq '.entries[].log' | sed 's/^"//;s/"$//;s/\\"/"/g' | jq '.backup_path' | tr -d '"')"
+    rc=$?
     if [[ $rc -ne 0 ]]; then
         echo "$result" >&2
         error_exit "ERROR: ${0}(@$LINENO): Could not parse Rundeck results."
@@ -375,15 +380,18 @@ rundeck_get_bkup_path_from_job_log() {
 # Get status from Rundeck job log.
 rundeck_get_status_from_job_log() {
     local execution_id="$1"
+    local result
+    local rc
+    local status
 
-    local result="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${execution_id}/output/node/${host}?authtoken=${rundeck_api_token}")"
-    local rc=$?
+    result="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${execution_id}/output/node/${host}?authtoken=${rundeck_api_token}")"
+    rc=$?
     if [[ $rc -ne 0 ]]; then
         echo "$result" >&2
         error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
     fi
-    local status="$(echo "$result" | jq '.entries[].log' | sed 's/^"//;s/"$//;s/\\"/"/g' | jq '.status' | tr -d '"')"
-    local rc=$?
+    status="$(echo "$result" | jq '.entries[].log' | sed 's/^"//;s/"$//;s/\\"/"/g' | jq '.status' | tr -d '"')"
+    rc=$?
     if [[ $rc -ne 0 ]]; then
         echo "$result" >&2
         error_exit "ERROR: ${0}(@$LINENO): Could not parse Rundeck results."
@@ -398,25 +406,28 @@ rundeck_get_status_from_job_log() {
 rundeck_run_job() {
     local job_id="$1"
     local data="$2"
+    local rundeck_job
+    local rc
+    local job_status
 
     if [[ -z $data ]]; then
-        local rundeck_job="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X POST "${rundeck_server_url}/api/17/job/${job_id}/run?authtoken=${rundeck_api_token}&filter=${host}")"
-        local rc=$?
+        rundeck_job="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X POST "${rundeck_server_url}/api/17/job/${job_id}/run?authtoken=${rundeck_api_token}&filter=${host}")"
+        rc=$?
     else
-        local rundeck_job="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X POST "${rundeck_server_url}/api/17/job/${job_id}/run?authtoken=${rundeck_api_token}&filter=${host}" -d "$data")"
-        local rc=$?
+        rundeck_job="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X POST "${rundeck_server_url}/api/17/job/${job_id}/run?authtoken=${rundeck_api_token}&filter=${host}" -d "$data")"
+        rc=$?
     fi
     if [[ $rc != 0 ]]; then
         echo "$rundeck_job" >&2
         error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
     fi
     echo "$rundeck_job" | jq '.' > /dev/null # Check if this is valid JSON.
-    local rc=$?
+    rc=$?
     if [[ $rc != 0 ]]; then
         echo "$rundeck_job" >&2
         error_exit "ERROR: ${0}(@$LINENO): Could not parse Rundeck results."
     fi
-    local job_status="$(echo "$rundeck_job" | jq '.status' | tr -d '"')"
+    job_status="$(echo "$rundeck_job" | jq '.status' | tr -d '"')"
     if [[ $job_status != "running" ]]; then
         error_exit "ERROR: ${0}(@$LINENO): Rundeck job could not be executed."
     fi
@@ -426,17 +437,20 @@ rundeck_run_job() {
 # Wait for Rundeck job to complete.
 rundeck_wait_for_job_to_complete() {
     local execution_id="$1"
+    local result
+    local rc
+    local execution_state
 
     local i
     for (( i=1; i<=60; i++ )); do
-        local result="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${execution_id}/state?authtoken=${rundeck_api_token}")"
-        local rc=$?
+        result="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${execution_id}/state?authtoken=${rundeck_api_token}")"
+        rc=$?
         if [[ $rc -ne 0 ]]; then
             echo "$result" >&2
             error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
         fi
-        local execution_state="$(echo "$result" | jq '.executionState' | tr -d '"')"
-        local rc=$?
+        execution_state="$(echo "$result" | jq '.executionState' | tr -d '"')"
+        rc=$?
         if [[ $rc -ne 0 ]]; then
             echo "$result" >&2
             error_exit "ERROR: ${0}(@$LINENO): Could not parse Rundeck results."
@@ -490,28 +504,32 @@ select_backup_type() {
 
 # Start MongoDB balancer.
 start_balancer() {
+    local balancer_state
+
     if [[ $need_to_start_balancer = "true" ]]; then
         echo "Start the balancer."
         "$mongo" --quiet "$mongos_host_port" --eval "sh.startBalancer()"
-        local balancer_state="$("$mongo" --quiet "$mongos_host_port" --eval "sh.getBalancerState()")"
+        balancer_state="$("$mongo" --quiet "$mongos_host_port" --eval "sh.getBalancerState()")"
         echo "Balancer state: $balancer_state"
     fi
 }
 
 # Stop MongoDB balancer.
 stop_balancer() {
+    local result
+
     need_to_start_balancer="true"
-    local result="$("$mongo" --quiet "$mongos_host_port" --eval "sh.getBalancerState()")"
+    result="$("$mongo" --quiet "$mongos_host_port" --eval "sh.getBalancerState()")"
     echo "Balancer state: $result"
     echo "Stop the balancer..."
     "$mongo" --quiet "$mongos_host_port" --eval "sh.stopBalancer()"
-    local result="$("$mongo" --quiet "$mongos_host_port" --eval "sh.getBalancerState()")"
+    result="$("$mongo" --quiet "$mongos_host_port" --eval "sh.getBalancerState()")"
     echo "Balancer state: $result"
     if [[ $result != "false" ]]; then
         error_exit "ERROR: ${0}(@$LINENO): Balancer could not be stopped."
     fi
     for (( i=1; i<="$mongodb_is_balancer_running_iterations"; i++ )); do
-        local result="$("$mongo" --quiet "$mongos_host_port" --eval "sh.isBalancerRunning()")"
+        result="$("$mongo" --quiet "$mongos_host_port" --eval "sh.isBalancerRunning()")"
         if [[ $result = "false" ]]; then
             break
         fi
@@ -544,20 +562,19 @@ HERE_DOC
 # Get backup status.
 elif [[ $command = "status" ]]; then
     if [[ -z $bkup_path ]]; then
-        bkup_path="$(ls -1d -- $bkup_dir/*T*Z.*/ | tail -1)"
-        bkup_path="${bkup_path%?}" # Remove last character.
+        bkup_path="$(find "$bkup_dir" -maxdepth 1 -type d -name '[0-9]*T[0-9]*Z.*' | sort | tail -1)"
     fi
     bkup_pid_file="$bkup_path/backup.pid"
     bkup_status_file="$bkup_path/backup.status.json"
     if [[ -f $bkup_pid_file ]] && [[ -f $bkup_status_file ]]; then
-        pid="$(cat $bkup_pid_file)"
+        pid="$(cat "$bkup_pid_file")"
         kill -0 "$pid" 2> /dev/null
         rc=$?
         if [[ $rc -eq 0 ]]; then
             cat "$bkup_status_file"
             exit 0
         else
-            status="$(cat "$bkup_status_file" | jq '.status' | tr -d '"')"
+            status="$(jq '.status' < "$bkup_status_file" | tr -d '"')"
             if [[ $status = "completed" ]]; then
                 cat "$bkup_status_file"
                 exit 0

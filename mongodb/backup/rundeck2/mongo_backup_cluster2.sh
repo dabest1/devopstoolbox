@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.0.20"
+version="2.0.21"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -166,9 +166,14 @@ HERE_DOC
 {"start_time":"$start_time","backup_path":"$bkup_path","status":"completed"}
 HERE_DOC
     else
-        replset_hosts_ports_bkup="$(tr '\n' ',' <<<"$replset_hosts_ports_bkup" | sed 's/,$//')"
+        backup_nodes_json="\"backup_nodes\":["
+        while IFS=':' read host port; do
+            backup_nodes_json="${backup_nodes_json}{\"node\":\"$host:$port\",\"backup_path\":\"${replset_bkup_path["$host"]}\"},"
+        done <<<"$replset_hosts_ports_bkup"
+        backup_nodes_json="$(sed 's/,$//' <<<"$backup_nodes_json")]"
+
         cat <<HERE_DOC > "$bkup_status_file"
-{"start_time":"$start_time","backup_path":"$bkup_path","status":"completed","backup_nodes":"$replset_hosts_ports_bkup"}
+{"start_time":"$start_time","backup_path":"$bkup_path","status":"completed",$backup_nodes_json}
 HERE_DOC
     fi
 }

@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.0.22"
+version="2.0.23"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -84,6 +84,7 @@ mongodb_sleep_seconds_between_is_balancer_running=5
 need_to_start_balancer="false"
 declare -A replset_bkup_execution_id
 declare -A replset_bkup_path
+declare -A replset_start_time
 
 # Functions.
 
@@ -169,7 +170,7 @@ HERE_DOC
     else
         backup_nodes_json="\"backup_nodes\":["
         while IFS=':' read host port; do
-            backup_nodes_json="${backup_nodes_json}{\"node\":\"$host:$port\",\"backup_path\":\"${replset_bkup_path["$host"]}\"},"
+            backup_nodes_json="${backup_nodes_json}{\"node\":\"$host:$port\",\"start_time\":\"${replset_start_time[$host]}\",\"backup_path\":\"${replset_bkup_path[$host]}\"},"
         done <<<"$replset_hosts_ports_bkup"
         backup_nodes_json="$(sed 's/,$//' <<<"$backup_nodes_json")]"
 
@@ -253,6 +254,9 @@ perform_backup() {
             echo "host: $host:$port"
             replset_bkup_path["$host"]="$(rundeck_get_bkup_path_from_job_log "${replset_bkup_execution_id[$host]}")"
             echo "replset_bkup_path: ${replset_bkup_path[$host]}"
+
+            execution_log="$(rundeck_get_execution_output_log "$rundeck_server_url" "$rundeck_api_token" "${replset_bkup_execution_id[$host]}" "$host")"
+            replset_start_time["$host"]="$(jq '.start_time' <<<"$execution_log" | tr -d '"')"
         done <<<"$replset_hosts_ports_bkup"
 
         # Run Rundeck jobs to get status of replica set backups.
@@ -381,6 +385,31 @@ rundeck_get_bkup_path_from_job_log() {
         error_exit "ERROR: ${0}(@$LINENO): Could not parse Rundeck results."
     fi
     echo "$bkup_path"
+}
+
+# Get output from Rundeck execution, return just the log portion.
+rundeck_get_execution_output_log() {
+    local rundeck_server_url="$1"
+    local rundeck_api_token="$2"
+    local execution_id="$3"
+    local node_name="$4"
+    local rc
+    local result
+    local result_log
+
+    result="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${execution_id}/output/node/${node_name}?authtoken=${rundeck_api_token}")"
+    rc=$?
+    if [[ $rc -ne 0 ]]; then
+        echo "$result" >&2
+        error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
+    fi
+    result_log="$(echo "$result" | jq '.entries[].log' | sed 's/^"//;s/"$//;s/\\"/"/g')"
+    rc=$?
+    if [[ $rc -ne 0 ]]; then
+        echo "$result" >&2
+        error_exit "ERROR: ${0}(@$LINENO): Could not parse Rundeck results."
+    fi
+    echo "$result_log"
 }
 
 # Get status from Rundeck job log.

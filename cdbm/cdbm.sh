@@ -8,7 +8,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="1.0.1"
+version="1.0.2"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -30,7 +30,7 @@ while test -n "$1"; do
         shift
         db_type=$1
         shift
-        nodename=$1
+        node_name=$1
         shift
         execid=$1
         shift
@@ -47,69 +47,72 @@ done
 
 # Variables.
 
-if [[ -z $nodename ]]; then
-    log="$script_dir/cdbm.log"
-    log_err="$script_dir/cdbm.err"
-else
-    log="$script_dir/cdbm.$nodename.log"
-    log_err="$script_dir/cdbm.$nodename.err"
-fi
 cdbm_mysql_con="$cdbm_mysql --host=$cdbm_host --port=$cdbm_port --no-auto-rehash --silent --skip-column-names $cdbm_db --user=$cdbm_username --password=$cdbm_password"
-
-declare -A replset_bkup_execution_id
-declare -A replset_bkup_path
 
 # Functions.
 
-backup_started() {
-    #echo "Time started: $start_time"
+shopt -s expand_aliases
+alias die='error_exit "ERROR: $0: line $LINENO:"'
 
+backup_started() {
     # TODO: Need to pass port number to this script.
     if [[ $db_type == "mongodb" ]]; then
         port="27017"
     fi
 
-    rundeck_log="$(rundeck_get_execution_output_log "$rundeck_server_url" "$rundeck_api_token" "$execid" "$nodename")"
+    rundeck_log="$(rundeck_get_execution_output_log "$rundeck_server_url" "$rundeck_api_token" "$execid" "$node_name")"
     start_time="$(jq '.start_time' <<<"$rundeck_log" | tr -d '"')"
+    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not parse Rundeck results."; fi
     backup_path="$(jq '.backup_path' <<<"$rundeck_log" | tr -d '"')"
+    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not parse Rundeck results."; fi
     status="$(jq '.status' <<<"$rundeck_log" | tr -d '"')"
+    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not parse Rundeck results."; fi
 
     # TODO: Need to handle "Warning: Using a password on the command line interface can be insecure." warning.
-    result_node_id="$($cdbm_mysql_con -e "SELECT node_id FROM node WHERE nodename = '$nodename';" 2> /dev/null)"
-    rc=$?
-    if [[ $rc -ne 0 ]]; then error_exit; fi
+    node_id="$($cdbm_mysql_con -e "SELECT node_id FROM node WHERE node_name = '$node_name';" 2> /dev/null)"
+    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database."; fi
 
-    if [[ -z $result_node_id ]]; then
-        result="$($cdbm_mysql_con -e "INSERT INTO node (db_type, nodename, port) VALUES ('$db_type', '$nodename', '$port');" 2> /dev/null)"
-        rc=$?
-        if [[ $rc -ne 0 ]]; then error_exit; fi
+    if [[ -z $node_id ]]; then
+        if [[ $db_type == "mongodb" ]]; then
+            cluster_name="$(sed "s/cfgdb-[0-9]//" <<<"$node_name")"
+            echo "cluster_name: $cluster_name"
 
-        result_node_id="$($cdbm_mysql_con -e "SELECT node_id FROM node WHERE nodename = '$nodename';" 2> /dev/null)"
-        rc=$?
-        if [[ $rc -ne 0 ]]; then error_exit; fi
+            cluster_id="$($cdbm_mysql_con -e "SELECT cluster_id FROM cluster WHERE cluster_name = '$cluster_name';" 2> /dev/null)"
+            rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database."; fi
+
+            if [[ -z $cluster_id ]]; then
+                result="$($cdbm_mysql_con -e "INSERT INTO cluster (cluster_name) VALUES ('$cluster_name');" 2> /dev/null)"
+                rc=$?; if [[ $rc -ne 0 ]]; then die "Could not insert into database."; fi
+
+                cluster_id="$($cdbm_mysql_con -e "SELECT cluster_id FROM cluster WHERE cluster_name = '$cluster_name';" 2> /dev/null)"
+                rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database."; fi
+            fi
+        fi
+
+        result="$($cdbm_mysql_con -e "INSERT INTO node (cluster_id, db_type, node_name, port) VALUES ($cluster_id, '$db_type', '$node_name', $port);" 2> /dev/null)"
+        rc=$?; if [[ $rc -ne 0 ]]; then die "Could not insert into database."; fi
+
+        node_id="$($cdbm_mysql_con -e "SELECT node_id FROM node WHERE node_name = '$node_name';" 2> /dev/null)"
+        rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database."; fi
     fi
 
-    result="$($cdbm_mysql_con -e "INSERT INTO log (node_id, start_time, backup_path, status) VALUES ('$result_node_id', '$start_time', '$backup_path', '$status');" 2> /dev/null)"
-    rc=$?
-    if [[ $rc -ne 0 ]]; then error_exit; fi
+    result="$($cdbm_mysql_con -e "INSERT INTO log (node_id, start_time, backup_path, status) VALUES ($node_id, '$start_time', '$backup_path', '$status');" 2> /dev/null)"
+    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not insert into database."; fi
 }
 
 check_for_finished() {
     local bkup_execution_id
     local execution_log
     local execution_state
+    local node_id
     local rc
-    local replset_backup_paths
-    local replset_nodes
     local result_started
+    local status
 
-    result_started="$($cdbm_mysql_con -e "SELECT nodename, port, start_time, backup_path FROM log JOIN node ON log.node_id = node.node_id WHERE status = 'started';" 2> /dev/null)"
-    rc=$?
-    if [[ $rc -ne 0 ]]; then error_exit; fi
+    result_started="$($cdbm_mysql_con -e "SELECT log_id, cluster_id, db_type, node_name, port, start_time, backup_path FROM log JOIN node ON log.node_id = node.node_id WHERE status = 'started';" 2> /dev/null)"
+    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database."; fi
 
-    while read node_name port start_date start_time backup_path; do
-        echo "From DB: $node_name, $port, $start_date, $start_time, $backup_path"
-
+    while read log_id cluster_id db_type node_name port start_date start_time backup_path; do
         # Get execution status.
         bkup_execution_id="$(rundeck_run_job "$rundeck_server_url" "$rundeck_api_token" "$rundeck_job_id" "$node_name" "{\"argString\":\"-command status -backup-path $backup_path\"}")"
 
@@ -118,17 +121,52 @@ check_for_finished() {
 
         # Get log from Rundeck execution.
         execution_log="$(rundeck_get_execution_output_log "$rundeck_server_url" "$rundeck_api_token" "$bkup_execution_id" "$node_name")"
-        echo "execution_log: $execution_log"
+        echo "$execution_log"
 
-        replset_nodes="$(jq '.backup_nodes[].node' <<<"$execution_log" | tr -d '"')"
-        rc=$?; if [[ $rc -ne 0 ]]; then continue; fi
-        echo "replset_nodes: $replset_nodes"
-        replset_backup_paths="$(jq '.backup_nodes[].backup_path' <<<"$execution_log" | tr -d '"')"
-        rc=$?; if [[ $rc -ne 0 ]]; then continue; fi
-        echo "replset_backup_paths: $replset_backup_paths"
-
+        status="$(jq '.status' <<<"$execution_log" | tr -d '"')"
         if [[ $status = "completed" ]]; then
-            echo "status: $status"
+            replset_count="$(jq '.backup_nodes | length' <<<"$execution_log")"
+            rc=$?; if [[ $rc -ne 0 ]]; then die "Could not parse Rundeck results."; fi
+
+            local i
+            local replset_backup_path
+            local replset_node
+            local replset_node_id
+            local replset_node_name
+            local replset_port
+            local replset_start_time
+            local result
+            for ((i=0; i<"$replset_count"; i++)); do
+                replset_node="$(jq ".backup_nodes[$i].node" <<<"$execution_log" | tr -d '"')"
+                rc=$?; if [[ $rc -ne 0 ]]; then continue; fi
+
+                replset_node_name="$(awk -F: '{print $1}' <<<"$replset_node")"
+                replset_port="$(awk -F: '{print $2}' <<<"$replset_node")"
+
+                replset_node_id="$($cdbm_mysql_con -e "SELECT node_id FROM node WHERE node_name = '$replset_node_name';" 2> /dev/null)"
+                rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database."; fi
+
+                if [[ -z $replset_node_id ]]; then
+                    result="$($cdbm_mysql_con -e "INSERT INTO node (cluster_id, db_type, node_name, port) VALUES ($cluster_id, '$db_type', '$replset_node_name', $replset_port);" 2> /dev/null)"
+                    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not insert into database."; fi
+
+                    replset_node_id="$($cdbm_mysql_con -e "SELECT node_id FROM node WHERE node_name = '$replset_node_name';" 2> /dev/null)"
+                    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database."; fi
+                fi
+
+                replset_start_time="$(jq ".backup_nodes[$i].start_time" <<<"$execution_log" | tr -d '"')"
+                rc=$?; if [[ $rc -ne 0 ]]; then continue; fi
+
+                replset_backup_path="$(jq ".backup_nodes[$i].backup_path" <<<"$execution_log" | tr -d '"')"
+                rc=$?; if [[ $rc -ne 0 ]]; then continue; fi
+
+                result="$($cdbm_mysql_con -e "INSERT INTO log (node_id, start_time, backup_path, status) VALUES ($replset_node_id, '$replset_start_time', '$replset_backup_path', '$status');" 2> /dev/null)"
+                rc=$?; if [[ $rc -ne 0 ]]; then die "Could not insert into database."; fi
+            done
+
+            result="$($cdbm_mysql_con -e "UPDATE log SET status = '$status' WHERE log_id = $log_id;")"
+            rc=$?; if [[ $rc -ne 0 ]]; then die "Could not update database."; fi
+
             continue
         else
             echo DEBUG else
@@ -137,12 +175,7 @@ check_for_finished() {
 }
 
 error_exit() {
-    echo
     echo "$@" >&2
-    start_balancer
-    if [[ ! -z $mail_on_error ]]; then
-        mail -s "Error - MongoDB Backup $HOSTNAME" "$mail_on_error" < "$log"
-    fi
     exit 77
 }
 
@@ -160,13 +193,13 @@ rundeck_get_execution_output() {
     rc=$?
     if [[ $rc -ne 0 ]]; then
         echo "$result" >&2
-        error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
+        die "Rundeck API call failed."
     fi
     result_formatted="$(echo "$result" | jq '.')"
     rc=$?
     if [[ $rc -ne 0 ]]; then
         echo "$result" >&2
-        error_exit "ERROR: ${0}(@$LINENO): Could not parse Rundeck results."
+        die "Could not parse Rundeck results."
     fi
     echo "$result_formatted"
 }
@@ -185,13 +218,13 @@ rundeck_get_execution_output_log() {
     rc=$?
     if [[ $rc -ne 0 ]]; then
         echo "$result" >&2
-        error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
+        die "Rundeck API call failed."
     fi
     result_log="$(echo "$result" | jq '.entries[].log' | sed 's/^"//;s/"$//;s/\\"/"/g')"
     rc=$?
     if [[ $rc -ne 0 ]]; then
         echo "$result" >&2
-        error_exit "ERROR: ${0}(@$LINENO): Could not parse Rundeck results."
+        die "Could not parse Rundeck results."
     fi
     echo "$result_log"
 }
@@ -216,17 +249,17 @@ rundeck_run_job() {
     fi
     if [[ $rc != 0 ]]; then
         echo "$rundeck_job" >&2
-        error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
+        die "Rundeck API call failed."
     fi
     echo "$rundeck_job" | jq '.' > /dev/null # Check if this is valid JSON.
     rc=$?
     if [[ $rc != 0 ]]; then
         echo "$rundeck_job" >&2
-        error_exit "ERROR: ${0}(@$LINENO): Could not parse Rundeck results."
+        die "Could not parse Rundeck results."
     fi
     job_status="$(echo "$rundeck_job" | jq '.status' | tr -d '"')"
     if [[ $job_status != "running" ]]; then
-        error_exit "ERROR: ${0}(@$LINENO): Rundeck job could not be executed."
+        die "Rundeck job could not be executed."
     fi
     echo "$rundeck_job" | jq '.id'
 }
@@ -246,13 +279,13 @@ rundeck_wait_for_job_to_complete() {
         rc=$?
         if [[ $rc -ne 0 ]]; then
             echo "$result" >&2
-            error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
+            die "Rundeck API call failed."
         fi
         execution_state="$(echo "$result" | jq '.executionState' | tr -d '"')"
         rc=$?
         if [[ $rc -ne 0 ]]; then
             echo "$result" >&2
-            error_exit "ERROR: ${0}(@$LINENO): Could not parse Rundeck results."
+            die "Could not parse Rundeck results."
         fi
         if [[ $execution_state = "RUNNING" ]]; then
             sleep 5
@@ -261,11 +294,11 @@ rundeck_wait_for_job_to_complete() {
             break
         else
             echo "execution_state: $execution_state" >&2
-            error_exit "ERROR: ${0}(@$LINENO): Rundeck job failed."
+            die "Rundeck job failed."
         fi
     done
     if [[ $execution_state != "SUCCEEDED" ]]; then
-        error_exit "ERROR: ${0}(@$LINENO): Rundeck job is taking too long to complete."
+        die "Rundeck job is taking too long to complete."
     fi
 }
 

@@ -8,7 +8,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="1.0.0"
+version="1.0.1"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -55,10 +55,6 @@ else
     log_err="$script_dir/cdbm.$nodename.err"
 fi
 cdbm_mysql_con="$cdbm_mysql --host=$cdbm_host --port=$cdbm_port --no-auto-rehash --silent --skip-column-names $cdbm_db --user=$cdbm_username --password=$cdbm_password"
-rundeck_status_check_iterations=432
-rundeck_sleep_seconds_between_status_checks=300
-mongodb_is_balancer_running_iterations=720
-mongodb_sleep_seconds_between_is_balancer_running=5
 
 declare -A replset_bkup_execution_id
 declare -A replset_bkup_path
@@ -243,9 +239,10 @@ rundeck_wait_for_job_to_complete() {
     local execution_state
     local i
     local rc
+    local result
 
     for (( i=1; i<=60; i++ )); do
-        local result="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${execution_id}/state?authtoken=${rundeck_api_token}")"
+        result="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${execution_id}/state?authtoken=${rundeck_api_token}")"
         rc=$?
         if [[ $rc -ne 0 ]]; then
             echo "$result" >&2

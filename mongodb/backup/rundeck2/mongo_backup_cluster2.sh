@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.0.21"
+version="2.0.22"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -144,8 +144,9 @@ HERE_DOC
 
     post_backup_process
 
+    end_time="$(date -u +'%FT%TZ')"
     echo "**************************************************"
-    echo "* Time finished: $(date -u +'%FT%TZ')"
+    echo "* Time finished: $end_time"
     echo "**************************************************"
 
     # Send email.
@@ -163,7 +164,7 @@ HERE_DOC
     # Update backup status file.
     if [[ -z $replset_hosts_ports_bkup ]]; then
         cat <<HERE_DOC > "$bkup_status_file"
-{"start_time":"$start_time","backup_path":"$bkup_path","status":"completed"}
+{"start_time":"$start_time","end_time":"$end_time","backup_path":"$bkup_path","status":"completed"}
 HERE_DOC
     else
         backup_nodes_json="\"backup_nodes\":["
@@ -173,7 +174,7 @@ HERE_DOC
         backup_nodes_json="$(sed 's/,$//' <<<"$backup_nodes_json")]"
 
         cat <<HERE_DOC > "$bkup_status_file"
-{"start_time":"$start_time","backup_path":"$bkup_path","status":"completed",$backup_nodes_json}
+{"start_time":"$start_time","end_time":"$end_time","backup_path":"$bkup_path","status":"completed",$backup_nodes_json}
 HERE_DOC
     fi
 }

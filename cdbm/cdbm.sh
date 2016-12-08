@@ -8,7 +8,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="1.0.2"
+version="1.0.3"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -111,8 +111,16 @@ check_for_finished() {
 
     result_started="$($cdbm_mysql_con -e "SELECT log_id, cluster_id, db_type, node_name, port, start_time, backup_path FROM log JOIN node ON log.node_id = node.node_id WHERE status = 'started';" 2> /dev/null)"
     rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database."; fi
+    # If there are no backups in progress, then exit.
+    if [[ -z $result_started ]]; then
+        exit 0
+    fi
 
     while read log_id cluster_id db_type node_name port start_date start_time backup_path; do
+        if [[ -z $log_id || -z $cluster_id || -z $db_type || -z $node_name || -z $port || -z $start_date || -z $start_time || -z $backup_path ]]; then
+            die "Not all the parameters were supplied."
+        fi
+
         # Get execution status.
         bkup_execution_id="$(rundeck_run_job "$rundeck_server_url" "$rundeck_api_token" "$rundeck_job_id" "$node_name" "{\"argString\":\"-command status -backup-path $backup_path\"}")"
 
@@ -130,6 +138,7 @@ check_for_finished() {
 
             local i
             local replset_backup_path
+            local replset_end_time
             local replset_node
             local replset_node_id
             local replset_node_name
@@ -157,20 +166,24 @@ check_for_finished() {
                 replset_start_time="$(jq ".backup_nodes[$i].start_time" <<<"$execution_log" | tr -d '"')"
                 rc=$?; if [[ $rc -ne 0 ]]; then continue; fi
 
+                replset_end_time="$(jq ".backup_nodes[$i].end_time" <<<"$execution_log" | tr -d '"')"
+                rc=$?; if [[ $rc -ne 0 ]]; then continue; fi
+
                 replset_backup_path="$(jq ".backup_nodes[$i].backup_path" <<<"$execution_log" | tr -d '"')"
                 rc=$?; if [[ $rc -ne 0 ]]; then continue; fi
 
-                result="$($cdbm_mysql_con -e "INSERT INTO log (node_id, start_time, backup_path, status) VALUES ($replset_node_id, '$replset_start_time', '$replset_backup_path', '$status');" 2> /dev/null)"
+                result="$($cdbm_mysql_con -e "INSERT INTO log (node_id, start_time, end_time, backup_path, status) VALUES ($replset_node_id, '$replset_start_time', '$replset_end_time', '$replset_backup_path', '$status');" 2> /dev/null)"
                 rc=$?; if [[ $rc -ne 0 ]]; then die "Could not insert into database."; fi
             done
 
-            result="$($cdbm_mysql_con -e "UPDATE log SET status = '$status' WHERE log_id = $log_id;")"
-            rc=$?; if [[ $rc -ne 0 ]]; then die "Could not update database."; fi
+            end_time="$(jq ".end_time" <<<"$execution_log" | tr -d '"')"
+            rc=$?; if [[ $rc -ne 0 ]]; then continue; fi
 
-            continue
-        else
-            echo DEBUG else
+            result="$($cdbm_mysql_con -e "UPDATE log SET status = '$status', end_time = '$end_time' WHERE log_id = $log_id;" 2> /dev/null)"
+            rc=$?; if [[ $rc -ne 0 ]]; then die "Could not update database."; fi
         fi
+
+        # TODO: Need to handle cases with long running backups.
     done <<<"$result_started"
 }
 
@@ -309,12 +322,6 @@ trap "error_exit 'Received signal SIGHUP'" SIGHUP
 trap "error_exit 'Received signal SIGINT'" SIGINT
 trap "error_exit 'Received signal SIGTERM'" SIGTERM
 
-#if [[ $command = "backup_started" ]]; then
-#    exec 1>> "$log" 2>> "$log"
-#    main &
-#fi
-
-#exec 1>> "$log" 2>> "$log"
 case "$command" in
 backup_started)
     backup_started

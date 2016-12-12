@@ -8,9 +8,9 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="1.0.3"
+version="1.0.4"
 
-start_time="$(date -u +'%FT%TZ')"
+script_start_ts="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 config_path="$script_dir/${script_name/.sh/.cfg}"
@@ -75,7 +75,6 @@ backup_started() {
     if [[ -z $node_id ]]; then
         if [[ $db_type == "mongodb" ]]; then
             cluster_name="$(sed "s/cfgdb-[0-9]//" <<<"$node_name")"
-            echo "cluster_name: $cluster_name"
 
             cluster_id="$($cdbm_mysql_con -e "SELECT cluster_id FROM cluster WHERE cluster_name = '$cluster_name';" 2> /dev/null)"
             rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database."; fi
@@ -132,9 +131,11 @@ check_for_finished() {
         echo "$execution_log"
 
         status="$(jq '.status' <<<"$execution_log" | tr -d '"')"
-        if [[ $status = "completed" ]]; then
+        if [[ -z $status ]]; then status="failed"; fi
+
+        if [[ $status = "completed" ]] || [[ $status = "failed" ]]; then
             replset_count="$(jq '.backup_nodes | length' <<<"$execution_log")"
-            rc=$?; if [[ $rc -ne 0 ]]; then die "Could not parse Rundeck results."; fi
+            rc=$?; if [[ $rc -ne 0 ]]; then replset_count=0; fi
 
             local i
             local replset_backup_path
@@ -181,9 +182,17 @@ check_for_finished() {
 
             result="$($cdbm_mysql_con -e "UPDATE log SET status = '$status', end_time = '$end_time' WHERE log_id = $log_id;" 2> /dev/null)"
             rc=$?; if [[ $rc -ne 0 ]]; then die "Could not update database."; fi
+        elif [[ $status = "started" ]] || [[ $status = "running" ]]; then
+            start_epoch_time="$(date -u -d "$start_date $start_time" +"%s")"
+            script_start_epoch_time="$(date -u -d "$script_start_ts" +"%s")"
+            backup_duration=$(( $script_start_epoch_time - $start_epoch_time ))
+            # Backup should be considered failed if it took longer than backup timeout seconds.
+            if [[ $backup_duration -gt $backup_timeout ]]; then
+                status="failed"
+                result="$($cdbm_mysql_con -e "UPDATE log SET status = '$status', end_time = '$script_start_ts' WHERE log_id = $log_id;" 2> /dev/null)"
+                rc=$?; if [[ $rc -ne 0 ]]; then die "Could not update database."; fi
+            fi
         fi
-
-        # TODO: Need to handle cases with long running backups.
     done <<<"$result_started"
 }
 

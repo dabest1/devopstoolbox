@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.0.24"
+version="2.0.25"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -238,7 +238,7 @@ perform_backup() {
         while IFS=':' read host port; do
             echo "host: $host:$port"
             echo "Start backup job on replica set via Rundeck."
-            replset_bkup_execution_id["$host"]="$(rundeck_run_job "$rundeck_job_id")"
+            replset_bkup_execution_id["$host"]="$(rundeck_run_job "$rundeck_job_id" "{\"argString\":\"-command start\"}")"
         done <<<"$replset_hosts_ports_bkup"
         echo
 
@@ -266,7 +266,7 @@ perform_backup() {
             echo
             echo "Wait for replica set backup to complete."
             echo "Sleep for $rundeck_sleep_seconds_between_status_checks seconds between status checks."
-            echo "host: $host:$port"
+            echo "host: $host:$port "
             for (( i=1; i<="$rundeck_status_check_iterations"; i++ )); do
                 # Start get status from replica set via Rundeck.
                 replset_bkup_execution_id["$host"]="$(rundeck_run_job "$rundeck_job_id" "{\"argString\":\"-command status -backup-path ${replset_bkup_path[$host]}\"}")"
@@ -290,7 +290,9 @@ perform_backup() {
                 fi
 
                 sleep "$rundeck_sleep_seconds_between_status_checks"
+                echo -n '.'
             done
+            echo
 
             if [[ $status != "completed" ]]; then
                 echo "status: $status"

@@ -8,7 +8,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="1.0.4"
+version="1.0.5"
 
 script_start_ts="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -74,7 +74,7 @@ backup_started() {
 
     if [[ -z $node_id ]]; then
         if [[ $db_type == "mongodb" ]]; then
-            cluster_name="$(sed "s/cfgdb-[0-9]//" <<<"$node_name")"
+            cluster_name="$(sed -r "$cluster_name_sed" <<<"$node_name")"
 
             cluster_id="$($cdbm_mysql_con -e "SELECT cluster_id FROM cluster WHERE cluster_name = '$cluster_name';" 2> /dev/null)"
             rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database."; fi

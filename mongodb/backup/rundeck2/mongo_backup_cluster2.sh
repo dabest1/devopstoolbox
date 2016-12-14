@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.0.28"
+version="2.0.29"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -273,7 +273,7 @@ perform_backup() {
             echo
             echo "Wait for replica set backup to complete."
             echo "Sleep for $rundeck_sleep_seconds_between_status_checks seconds between status checks."
-            echo "host: $host:$port "
+            echo "host: $host:$port"
             for (( i=1; i<="$rundeck_status_check_iterations"; i++ )); do
                 # Start get status from replica set via Rundeck.
                 replset_bkup_execution_id["$host"]="$(rundeck_run_job "$rundeck_job_id" "{\"argString\":\"-command status -backup-path ${replset_bkup_path[$host]}\"}")"
@@ -287,11 +287,13 @@ perform_backup() {
                 rc=$?; if [[ $rc -ne 0 ]]; then error_exit "ERROR: ${0}(@$LINENO): Could not parse Rundeck results."; fi
 
                 if [[ $status = "completed" ]]; then
+                    echo
                     echo "status: $status"
                     replset_end_time["$host"]="$(jq '.end_time' <<<"$execution_log" | tr -d '"')"
                     rc=$?; if [[ $rc -ne 0 ]]; then error_exit "ERROR: ${0}(@$LINENO): Could not parse Rundeck results."; fi
                     break
                 elif [[ $status = "failed" ]]; then
+                    echo
                     echo "status: $status"
                     error_exit "ERROR: ${0}(@$LINENO): Backup of replica set on $host failed."
                 fi
@@ -299,9 +301,9 @@ perform_backup() {
                 sleep "$rundeck_sleep_seconds_between_status_checks"
                 echo -n '.'
             done
-            echo
 
             if [[ $status != "completed" ]]; then
+                echo
                 echo "status: $status"
                 error_exit "ERROR: ${0}(@$LINENO): Backup of replica set on $host took too long."
             fi
@@ -318,7 +320,7 @@ perform_backup() {
         if [[ $is_master != "false" ]]; then
             error_exit "ERROR: ${0}(@$LINENO): This is not a secondary node."
         fi
-        "$mongodump" --port "$port" $mongo_option -o "$bkup_path" --authenticationDatabase admin --oplog 2> "$bkup_path/mongodump.log"
+        "$mongodump" --port "$port" $mongo_option -o "$bkup_path" --authenticationDatabase admin --oplog &> "$bkup_path/mongodump.log"
         rc=$?
         if [[ $rc -ne 0 ]]; then
             error_exit "ERROR: ${0}(@$LINENO): mongodump failed."

@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.0.26"
+version="2.0.27"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -209,12 +209,12 @@ perform_backup() {
         echo
         echo "Backing up config server."
         date -u +'start: %FT%TZ'
-        "$mongodump" --port "$port" $mongo_option -o "$bkup_path" --authenticationDatabase admin --oplog 2> "$bkup_path/mongodump.log"
+        "$mongodump" --port "$port" $mongo_option -o "$bkup_path" --authenticationDatabase admin --oplog &> "$bkup_path/mongodump.log"
         rc=$?
         if [[ $rc -ne 0 ]]; then
             # Check if dump failed because the config server is not running with --configsvr option.
             if grep -q 'No operations in oplog. Please ensure you are connecting to a master.' "$bkup_path/mongodump.log"; then
-                "$mongodump" --port "$port" $mongo_option -o "$bkup_path" --authenticationDatabase admin 2> "$bkup_path/mongodump.log"
+                "$mongodump" --port "$port" $mongo_option -o "$bkup_path" --authenticationDatabase admin &> "$bkup_path/mongodump.log"
                 rc=$?
             fi
         fi

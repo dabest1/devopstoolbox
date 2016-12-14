@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.0.29"
+version="2.0.30"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -369,13 +369,13 @@ purge_old_backups() {
     echo
 
     echo "Purge old backups..."
-    list_of_bkups="$(find "$bkup_dir/" -name "*.$bkup_type" | sort)"
+    list_of_bkups="$(find "$bkup_dir/" -maxdepth 1 -type d -name "[0-9]*T[0-9]*Z.$bkup_type" | sort)"
     if [[ ! -z "$list_of_bkups" ]]; then
         while [[ "$(echo "$list_of_bkups" | wc -l)" -gt $num_bkups ]]; do
             old_bkup="$(echo "$list_of_bkups" | head -1)"
             echo "Deleting old backup: $old_bkup"
             rm -r "$old_bkup"
-            list_of_bkups="$(find "$bkup_dir/" -name "*.$bkup_type" | sort)"
+            list_of_bkups="$(find "$bkup_dir/" -maxdepth 1 -type d -name "[0-9]*T[0-9]*Z.$bkup_type" | sort)"
         done
     fi
     echo "Done."
@@ -482,11 +482,11 @@ select_backup_type() {
         if [[ $bkup_dow -eq $weekly_bkup_dow ]]; then
             # Check if it is time to run monthly or yearly backup.
             bkup_y="$(date -d "$start_time_wot" +'%Y')"
-            yearly_bkup_exists="$(find "$bkup_dir/" -name "*.yearly" | awk -F'/' '{print $NF}' | grep "^$bkup_y")"
+            yearly_bkup_exists="$(find "$bkup_dir/" -maxdepth 1 -type d -name "[0-9]*T[0-9]*Z.yearly" | awk -F'/' '{print $NF}' | grep "^$bkup_y")"
             bkup_ym="$(date -d "$start_time_wot" +'%Y%m')"
-            monthly_bkup_exists="$(find "$bkup_dir/" -name "*.monthly" | awk -F'/' '{print $NF}' | grep "^$bkup_ym")"
+            monthly_bkup_exists="$(find "$bkup_dir/" -maxdepth 1 -type d -name "[0-9]*T[0-9]*Z.monthly" | awk -F'/' '{print $NF}' | grep "^$bkup_ym")"
             bkup_yw="$(date -d "$start_time_wot" +'%Y%U')"
-            weekly_bkup_exists="$(find "$bkup_dir/" -name "*.weekly" | awk -F'/' '{print $NF}' | awk -FT '{print $1}' | xargs -i date -d "{}" +'%Y%U' | grep "^$bkup_yw")"
+            weekly_bkup_exists="$(find "$bkup_dir/" -maxdepth 1 -type d -name "[0-9]*T[0-9]*Z.weekly" | awk -F'/' '{print $NF}' | awk -FT '{print $1}' | xargs -i date -d "{}" +'%Y%U' | grep "^$bkup_yw")"
             if [[ -z "$yearly_bkup_exists" && $num_yearly_bkups -ne 0 ]]; then
                 bkup_type="yearly"
                 num_bkups=$num_yearly_bkups

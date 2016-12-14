@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.0.27"
+version="2.0.28"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -224,16 +224,22 @@ perform_backup() {
         date -u +'finish: %FT%TZ'
 
         # Get shard servers (replica set members).
-        replset_hosts_ports="$("$mongo" --quiet config --eval 'var myCursor = db.shards.find(); myCursor.forEach(printjson)' | jq '.host' | tr -d '"' | awk -F'/' '{print $2}' | awk -F, '{print $1}')"
-        for replset_host_port in $replset_hosts_ports; do
-            replset_hosts_ports="$("$mongo" "$replset_host_port" --quiet --eval 'JSON.stringify(rs.conf())' | jq '.members[].host' | tr -d '"')"
+        shard_hosts_ports="$("$mongo" --quiet config --eval 'var myCursor = db.shards.find(); myCursor.forEach(printjson)' | jq '.host' | tr -d '"' | awk -F'/' '{print $2}' | awk -F, '{print $1}')"
+        for host_port in $shard_hosts_ports; do
+            replset_hosts_ports="$("$mongo" "$host_port" --quiet --eval 'JSON.stringify(rs.conf())' | jq '.members[].host' | tr -d '"')"
             if [[ -z $replset_hosts_ports_bkup ]]; then
                 replset_hosts_ports_bkup="$(egrep "$bkup_host_port_regex" <<<"$replset_hosts_ports")"
+                replset_hosts_ports_bkup="$(sed 's/[.].*:/:/' <<<"$replset_hosts_ports" | egrep "$bkup_host_port_regex")"
             else
                 replset_hosts_ports_bkup="$replset_hosts_ports_bkup"$'\n'"$(egrep "$bkup_host_port_regex" <<<"$replset_hosts_ports")"
+                replset_hosts_ports_bkup="$replset_hosts_ports_bkup"$'\n'"$(sed 's/[.].*:/:/' <<<"$replset_hosts_ports" | egrep "$bkup_host_port_regex")"
             fi
         done
         echo
+
+        if [[ -z $replset_hosts_ports_bkup ]]; then
+            error_exit "ERROR: ${0}(@$LINENO): Could not get nodes of a replica set."
+        fi
 
         # Run Rundeck jobs to start replica set backups.
         while IFS=':' read host port; do

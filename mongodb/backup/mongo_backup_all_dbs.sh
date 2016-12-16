@@ -12,7 +12,7 @@
 #     mongorestore --oplogReplay --dir "backup_path"
 ################################################################################
 
-version="1.1.14"
+version="1.1.15"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -55,6 +55,9 @@ fi
 port="${port:-27017}"
 
 # Functions.
+
+shopt -s expand_aliases
+alias die='error_exit "ERROR: ${0}(@$LINENO):"'
 
 # Compress backup.
 compress_backup() {
@@ -154,9 +157,6 @@ select_backup_type() {
     echo "Number of backups to retain for this type: $num_bkups"
     echo
 }
-
-shopt -s expand_aliases
-alias die='error_exit "ERROR: ${0}(@$LINENO):"'
 
 # Main.
 

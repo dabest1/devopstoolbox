@@ -14,7 +14,7 @@
 #     mongorestore --oplogReplay --dir "backup_path"
 ################################################################################
 
-version="1.2.10"
+version="1.2.11"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -64,6 +64,9 @@ fi
 port="${port:-27017}"
 
 # Functions.
+
+shopt -s expand_aliases
+alias die='error_exit "ERROR: ${0}(@$LINENO):"'
 
 # Compress backup.
 compress_backup() {
@@ -198,9 +201,6 @@ stop_balancer() {
         die "Balancer is still running."
     fi
 }
-
-shopt -s expand_aliases
-alias die='error_exit "ERROR: ${0}(@$LINENO):"'
 
 # Main.
 

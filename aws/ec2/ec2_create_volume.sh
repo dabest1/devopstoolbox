@@ -6,7 +6,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.7"
+version="1.0.8"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -41,7 +41,9 @@ echo "hostname: $name" | tee -a $log
 echo "volume_size_GiB: $volume_size" | tee -a $log
 echo "volume_type: $volume_type" | tee -a $log
 echo "device: $device" | tee -a $log
-echo "volume_mount: $volume_mount" | tee -a $log
+if [[ ! -z $volume_mount ]]; then
+    echo "volume_mount: $volume_mount" | tee -a $log
+fi
 echo | tee -a $log
 
 instance_id=$(aws --profile "$profile" ec2 describe-instances --filters "Name=tag:Name,Values=$name" "Name=instance-state-name,Values=running" --query 'Reservations[].Instances[].[InstanceId]' --output text)

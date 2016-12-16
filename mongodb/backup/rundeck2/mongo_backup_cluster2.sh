@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.0.30"
+version="2.0.31"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -209,6 +209,12 @@ perform_backup() {
         echo
         echo "Backing up config server."
         date -u +'start: %FT%TZ'
+        if [[ -e /etc/mongod.conf ]]; then
+            cp -p /etc/mongod.conf $bkup_path/
+        fi
+        if [[ -e /etc/mongos.conf ]]; then
+            cp -p /etc/mongos.conf $bkup_path/
+        fi
         "$mongodump" --port "$port" $mongo_option -o "$bkup_path" --authenticationDatabase admin --oplog &> "$bkup_path/mongodump.log"
         rc=$?
         if [[ $rc -ne 0 ]]; then
@@ -316,6 +322,9 @@ perform_backup() {
     else
         echo "Backing up all dbs except local with --oplog option."
         date -u +'start: %FT%TZ'
+        if [[ -e /etc/mongod.conf ]]; then
+            cp -p /etc/mongod.conf $bkup_path/
+        fi
         is_master="$("$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin --eval 'JSON.stringify(db.isMaster())' | jq '.ismaster')"
         if [[ $is_master != "false" ]]; then
             error_exit "ERROR: ${0}(@$LINENO): This is not a secondary node."

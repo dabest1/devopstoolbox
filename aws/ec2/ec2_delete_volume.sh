@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with -h option to get usage.
 
-version="1.0.9"
+version="1.0.10"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -73,8 +73,8 @@ if [[ $yn == y ]]; then
     attach_state=$(echo "$result" | awk -F'"' '/"State":/{print $4}')
     if [[ $attach_state == 'attached' || $attach_state == 'busy' ]]; then
         name=$(aws --profile "$profile" ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0]]' --output text)
-        echo 'Unmount volume...' | tee -a $log
-        ssh "$name" "cmd=\$(cat /etc/mtab | egrep '/dev/sd${device_short}|/dev/xvd${device_short}' | awk '{print \$1}' | xargs echo sudo umount); echo \$cmd; eval \$cmd"
+        echo 'Unmount volume if necessary...' | tee -a $log
+        ssh "$name" "cat /etc/mtab | egrep '/dev/sd${device_short}|/dev/xvd${device_short}' | awk '{print \$1}' | xargs --no-run-if-empty --verbose sudo umount"
         rc=$?
         if [[ $rc -ne 0 ]]; then
             echo 'Error: Could not unmount volume.' | tee -a $log

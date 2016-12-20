@@ -8,7 +8,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="1.0.5"
+version="1.0.6"
 
 script_start_ts="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -69,34 +69,41 @@ backup_started() {
     rc=$?; if [[ $rc -ne 0 ]]; then die "Could not parse Rundeck results."; fi
 
     # TODO: Need to handle "Warning: Using a password on the command line interface can be insecure." warning.
-    node_id="$($cdbm_mysql_con -e "SELECT node_id FROM node WHERE node_name = '$node_name';" 2> /dev/null)"
-    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database."; fi
+    sql="SELECT node_id FROM node WHERE node_name = '$node_name';"
+    node_id="$($cdbm_mysql_con -e "$sql" 2> /dev/null)"
+    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database. $sql"; fi
 
     if [[ -z $node_id ]]; then
         if [[ $db_type == "mongodb" ]]; then
             cluster_name="$(sed -r "$cluster_name_sed" <<<"$node_name")"
 
-            cluster_id="$($cdbm_mysql_con -e "SELECT cluster_id FROM cluster WHERE cluster_name = '$cluster_name';" 2> /dev/null)"
-            rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database."; fi
+            sql="SELECT cluster_id FROM cluster WHERE cluster_name = '$cluster_name';"
+            cluster_id="$($cdbm_mysql_con -e "$sql" 2> /dev/null)"
+            rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database. $sql"; fi
 
             if [[ -z $cluster_id ]]; then
-                result="$($cdbm_mysql_con -e "INSERT INTO cluster (cluster_name) VALUES ('$cluster_name');" 2> /dev/null)"
-                rc=$?; if [[ $rc -ne 0 ]]; then die "Could not insert into database."; fi
+                sql="INSERT INTO cluster (cluster_name) VALUES ('$cluster_name');"
+                result="$($cdbm_mysql_con -e "$sql" 2> /dev/null)"
+                rc=$?; if [[ $rc -ne 0 ]]; then die "Could not insert into database. $sql"; fi
 
-                cluster_id="$($cdbm_mysql_con -e "SELECT cluster_id FROM cluster WHERE cluster_name = '$cluster_name';" 2> /dev/null)"
-                rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database."; fi
+                sql="SELECT cluster_id FROM cluster WHERE cluster_name = '$cluster_name';"
+                cluster_id="$($cdbm_mysql_con -e "$sql" 2> /dev/null)"
+                rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database. $sql"; fi
             fi
         fi
 
-        result="$($cdbm_mysql_con -e "INSERT INTO node (cluster_id, db_type, node_name, port) VALUES ($cluster_id, '$db_type', '$node_name', $port);" 2> /dev/null)"
-        rc=$?; if [[ $rc -ne 0 ]]; then die "Could not insert into database."; fi
+        sql="INSERT INTO node (cluster_id, db_type, node_name, port) VALUES ($cluster_id, '$db_type', '$node_name', $port);"
+        result="$($cdbm_mysql_con -e "$sql" 2> /dev/null)"
+        rc=$?; if [[ $rc -ne 0 ]]; then die "Could not insert into database. $sql"; fi
 
-        node_id="$($cdbm_mysql_con -e "SELECT node_id FROM node WHERE node_name = '$node_name';" 2> /dev/null)"
-        rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database."; fi
+        sql="SELECT node_id FROM node WHERE node_name = '$node_name';"
+        node_id="$($cdbm_mysql_con -e "$sql" 2> /dev/null)"
+        rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database. $sql"; fi
     fi
 
-    result="$($cdbm_mysql_con -e "INSERT INTO log (node_id, start_time, backup_path, status) VALUES ($node_id, '$start_time', '$backup_path', '$status');" 2> /dev/null)"
-    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not insert into database."; fi
+    sql="INSERT INTO log (node_id, start_time, backup_path, status) VALUES ($node_id, '$start_time', '$backup_path', '$status');"
+    result="$($cdbm_mysql_con -e "$sql" 2> /dev/null)"
+    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not insert into database. $sql"; fi
 }
 
 check_for_finished() {
@@ -108,8 +115,9 @@ check_for_finished() {
     local result_started
     local status
 
-    result_started="$($cdbm_mysql_con -e "SELECT log_id, cluster_id, db_type, node_name, port, start_time, backup_path FROM log JOIN node ON log.node_id = node.node_id WHERE status = 'started';" 2> /dev/null)"
-    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database."; fi
+    sql="SELECT log_id, cluster_id, db_type, node_name, port, start_time, backup_path FROM log JOIN node ON log.node_id = node.node_id WHERE status = 'started';"
+    result_started="$($cdbm_mysql_con -e "$sql" 2> /dev/null)"
+    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database. $sql"; fi
     # If there are no backups in progress, then exit.
     if [[ -z $result_started ]]; then
         exit 0
@@ -153,15 +161,18 @@ check_for_finished() {
                 replset_node_name="$(awk -F: '{print $1}' <<<"$replset_node")"
                 replset_port="$(awk -F: '{print $2}' <<<"$replset_node")"
 
-                replset_node_id="$($cdbm_mysql_con -e "SELECT node_id FROM node WHERE node_name = '$replset_node_name';" 2> /dev/null)"
-                rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database."; fi
+                sql="SELECT node_id FROM node WHERE node_name = '$replset_node_name';"
+                replset_node_id="$($cdbm_mysql_con -e "$sql" 2> /dev/null)"
+                rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database. $sql"; fi
 
                 if [[ -z $replset_node_id ]]; then
-                    result="$($cdbm_mysql_con -e "INSERT INTO node (cluster_id, db_type, node_name, port) VALUES ($cluster_id, '$db_type', '$replset_node_name', $replset_port);" 2> /dev/null)"
-                    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not insert into database."; fi
+                    sql="INSERT INTO node (cluster_id, db_type, node_name, port) VALUES ($cluster_id, '$db_type', '$replset_node_name', $replset_port);"
+                    result="$($cdbm_mysql_con -e "$sql" 2> /dev/null)"
+                    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not insert into database. $sql"; fi
 
-                    replset_node_id="$($cdbm_mysql_con -e "SELECT node_id FROM node WHERE node_name = '$replset_node_name';" 2> /dev/null)"
-                    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database."; fi
+                    sql="SELECT node_id FROM node WHERE node_name = '$replset_node_name';"
+                    replset_node_id="$($cdbm_mysql_con -e "$sql" 2> /dev/null)"
+                    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database. $sql"; fi
                 fi
 
                 replset_start_time="$(jq ".backup_nodes[$i].start_time" <<<"$execution_log" | tr -d '"')"
@@ -173,15 +184,17 @@ check_for_finished() {
                 replset_backup_path="$(jq ".backup_nodes[$i].backup_path" <<<"$execution_log" | tr -d '"')"
                 rc=$?; if [[ $rc -ne 0 ]]; then continue; fi
 
-                result="$($cdbm_mysql_con -e "INSERT INTO log (node_id, start_time, end_time, backup_path, status) VALUES ($replset_node_id, '$replset_start_time', '$replset_end_time', '$replset_backup_path', '$status');" 2> /dev/null)"
-                rc=$?; if [[ $rc -ne 0 ]]; then die "Could not insert into database."; fi
+                sql="INSERT INTO log (node_id, start_time, end_time, backup_path, status) VALUES ($replset_node_id, '$replset_start_time', '$replset_end_time', '$replset_backup_path', '$status');"
+                result="$($cdbm_mysql_con -e "$sql" 2> /dev/null)"
+                rc=$?; if [[ $rc -ne 0 ]]; then die "Could not insert into database. $sql"; fi
             done
 
             end_time="$(jq ".end_time" <<<"$execution_log" | tr -d '"')"
             rc=$?; if [[ $rc -ne 0 ]]; then continue; fi
 
-            result="$($cdbm_mysql_con -e "UPDATE log SET status = '$status', end_time = '$end_time' WHERE log_id = $log_id;" 2> /dev/null)"
-            rc=$?; if [[ $rc -ne 0 ]]; then die "Could not update database."; fi
+            sql="UPDATE log SET status = '$status', end_time = '$end_time' WHERE log_id = $log_id;"
+            result="$($cdbm_mysql_con -e "$sql" 2> /dev/null)"
+            rc=$?; if [[ $rc -ne 0 ]]; then die "Could not update database. $sql"; fi
         elif [[ $status = "started" ]] || [[ $status = "running" ]]; then
             start_epoch_time="$(date -u -d "$start_date $start_time" +"%s")"
             script_start_epoch_time="$(date -u -d "$script_start_ts" +"%s")"
@@ -189,8 +202,9 @@ check_for_finished() {
             # Backup should be considered failed if it took longer than backup timeout seconds.
             if [[ $backup_duration -gt $backup_timeout ]]; then
                 status="failed"
-                result="$($cdbm_mysql_con -e "UPDATE log SET status = '$status', end_time = '$script_start_ts' WHERE log_id = $log_id;" 2> /dev/null)"
-                rc=$?; if [[ $rc -ne 0 ]]; then die "Could not update database."; fi
+                sql="UPDATE log SET status = '$status', end_time = '$script_start_ts' WHERE log_id = $log_id;"
+                result="$($cdbm_mysql_con -e "$sql" 2> /dev/null)"
+                rc=$?; if [[ $rc -ne 0 ]]; then die "Could not update database. $sql"; fi
             fi
         fi
     done <<<"$result_started"

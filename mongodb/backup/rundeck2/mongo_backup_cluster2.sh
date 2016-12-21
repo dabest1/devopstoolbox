@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.0.32"
+version="2.0.33"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -83,6 +83,7 @@ rundeck_sleep_seconds_between_status_checks=300
 mongodb_is_balancer_running_iterations=720
 mongodb_sleep_seconds_between_is_balancer_running=5
 need_to_start_balancer="false"
+terminal_width=80
 declare -A replset_bkup_execution_id
 declare -A replset_bkup_path
 declare -A replset_end_time
@@ -277,8 +278,8 @@ perform_backup() {
             echo
             echo "Wait for replica set backup to complete."
             echo "Sleep for $rundeck_sleep_seconds_between_status_checks seconds between status checks."
-            echo "host: $host:$port"
-            for (( i=1; i<="$rundeck_status_check_iterations"; i++ )); do
+            echo -n "host: $host:$port"
+            for (( i=0; i<"$rundeck_status_check_iterations"; i++ )); do
                 # Start get status from replica set via Rundeck.
                 replset_bkup_execution_id["$host"]="$(rundeck_run_job "$rundeck_job_id" "{\"argString\":\"-command status -backup-path ${replset_bkup_path[$host]}\"}")"
 
@@ -303,7 +304,10 @@ perform_backup() {
                 fi
 
                 sleep "$rundeck_sleep_seconds_between_status_checks"
-                echo -n '.'
+                if [[ $(( i % terminal_width )) -eq 0 ]]; then
+                    echo
+                fi
+                echo -n "."
             done
 
             if [[ $status != "completed" ]]; then

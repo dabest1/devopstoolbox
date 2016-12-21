@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.5"
+version="1.0.6"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -16,9 +16,10 @@ function usage {
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
     echo
-    echo "    $script_name [-w] {name | instance_id}"
+    echo "    $script_name [-f] [-w] {name | instance_id}"
     echo
     echo "Description:"
+    echo "    -f, --force   Do not prompt for confirmation."
     echo "    -w, --wait    Wait for 'stopped' state before finishing."
     echo "    -h, --help    Show this help."
     exit 1
@@ -29,8 +30,12 @@ while test -n "$1"; do
     -h|--help)
         usage
         ;;
+    -f|--force)
+        do_not_prompt="yes"
+        shift
+        ;;
     -w|--wait)
-        wait_for_stopped=yes
+        wait_for_stopped="yes"
         shift
         ;;
     *)
@@ -73,13 +78,15 @@ aws --profile "$profile" ec2 describe-volumes --filters "Name=attachment.instanc
 
 volume_ids=$(aws --profile "$profile" ec2 describe-volumes --filters "Name=attachment.instance-id, Values=$instance_id" "Name=attachment.delete-on-termination, Values=false" --query 'Volumes[*].[VolumeId]' --output text)
 
-echo -n 'Are you sure that you want this instance stopped? y/n: '
-read yn
-if [[ $yn != y ]]; then
-    echo 'Aborted!' | tee -a $log
-    exit 1
+if [[ $do_not_prompt != "yes" ]]; then
+    echo -n 'Are you sure that you want this instance stopped? y/n: '
+    read yn
+    if [[ $yn != y ]]; then
+        echo 'Aborted!' | tee -a $log
+        exit 1
+    fi
+    echo
 fi
-echo
 
 echo "Stop instance..." | tee -a $log
 aws --profile "$profile" ec2 stop-instances --instance-ids "$instance_id" --output table | tee -a $log

@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.0.31"
+version="2.0.32"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -234,10 +234,8 @@ perform_backup() {
         for host_port in $shard_hosts_ports; do
             replset_hosts_ports="$("$mongo" "$host_port" --quiet --eval 'JSON.stringify(rs.conf())' | jq '.members[].host' | tr -d '"')"
             if [[ -z $replset_hosts_ports_bkup ]]; then
-                replset_hosts_ports_bkup="$(egrep "$bkup_host_port_regex" <<<"$replset_hosts_ports")"
                 replset_hosts_ports_bkup="$(sed 's/[.].*:/:/' <<<"$replset_hosts_ports" | egrep "$bkup_host_port_regex")"
             else
-                replset_hosts_ports_bkup="$replset_hosts_ports_bkup"$'\n'"$(egrep "$bkup_host_port_regex" <<<"$replset_hosts_ports")"
                 replset_hosts_ports_bkup="$replset_hosts_ports_bkup"$'\n'"$(sed 's/[.].*:/:/' <<<"$replset_hosts_ports" | egrep "$bkup_host_port_regex")"
             fi
         done

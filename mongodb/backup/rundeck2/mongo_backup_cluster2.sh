@@ -281,7 +281,16 @@ perform_backup() {
             echo -n "host: $host:$port"
             for (( i=0; i<"$rundeck_status_check_iterations"; i++ )); do
                 # Start get status from replica set via Rundeck.
-                replset_bkup_execution_id["$host"]="$(rundeck_run_job "$rundeck_job_id" "{\"argString\":\"-command status -backup-path ${replset_bkup_path[$host]}\"}")"
+                replset_bkup_execution_id["$host"]="$(rundeck_run_job_failok "$rundeck_server_url" "$rundeck_api_token" "$host" "$rundeck_job_id" "{\"argString\":\"-command status -backup-path ${replset_bkup_path[$host]}\"}")"
+                rc=$?
+                if [[ $rc -ne 0 ]]; then
+                    sleep "$rundeck_sleep_seconds_between_status_checks"
+                    if [[ $(( i % terminal_width )) -eq 0 ]]; then
+                        echo
+                    fi
+                    echo -n "$rc"
+                    continue
+                fi
 
                 # Wait for Rundeck job to complete.
                 execution_state="$(rundeck_wait_for_job_to_complete "${replset_bkup_execution_id[$host]}")"
@@ -448,6 +457,38 @@ rundeck_run_job() {
         error_exit "ERROR: ${0}(@$LINENO): Rundeck job could not be executed."
     fi
     echo "$rundeck_job" | jq '.id'
+}
+
+# Run Rundeck job. Return Rundeck job id.
+rundeck_run_job_failok() {
+    local rundeck_server_url="$1"
+    local rundeck_api_token="$2"
+    local node_name="$3"
+    local job_id="$4"
+    local data="$5"
+    local job_status
+    local rc
+    local rc_total
+    local rundeck_job
+
+    if [[ -z $data ]]; then
+        rundeck_job="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X POST "${rundeck_server_url}/api/17/job/${job_id}/run?authtoken=${rundeck_api_token}&filter=${node_name}")"
+        rc=$?
+    else
+        rundeck_job="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X POST "${rundeck_server_url}/api/17/job/${job_id}/run?authtoken=${rundeck_api_token}&filter=${node_name}" -d "$data")"
+        rc=$?
+    fi
+    rc_total="$(( rc_total + rc ))"
+    echo "$rundeck_job" | jq '.' > /dev/null # Check if this is valid JSON.
+    rc=$?
+    rc_total="$(( rc_total + rc ))"
+    job_status="$(echo "$rundeck_job" | jq '.status' | tr -d '"')"
+    if [[ $job_status != "running" ]]; then
+        rc=1
+    fi
+    rc_total="$(( rc_total + rc ))"
+    echo "$rundeck_job" | jq '.id'
+    return "$rc_total"
 }
 
 # Wait for Rundeck job to complete.

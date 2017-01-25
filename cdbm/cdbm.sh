@@ -8,7 +8,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="1.0.6"
+version="1.0.7"
 
 script_start_ts="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -136,6 +136,7 @@ check_for_finished() {
 
         # Get log from Rundeck execution.
         execution_log="$(rundeck_get_execution_output_log "$rundeck_server_url" "$rundeck_api_token" "$bkup_execution_id" "$node_name")"
+        echo "node_name: $node_name"
         echo "$execution_log"
 
         status="$(jq '.status' <<<"$execution_log" | tr -d '"')"
@@ -195,13 +196,15 @@ check_for_finished() {
             sql="UPDATE log SET status = '$status', end_time = '$end_time' WHERE log_id = $log_id;"
             result="$($cdbm_mysql_con -e "$sql" 2> /dev/null)"
             rc=$?; if [[ $rc -ne 0 ]]; then die "Could not update database. $sql"; fi
-        elif [[ $status = "started" ]] || [[ $status = "running" ]]; then
+        elif [[ $status = "started" ]] || [[ $status = "running" ]] || [[ $status = "unknown" ]]; then
             start_epoch_time="$(date -u -d "$start_date $start_time" +"%s")"
             script_start_epoch_time="$(date -u -d "$script_start_ts" +"%s")"
             backup_duration=$(( $script_start_epoch_time - $start_epoch_time ))
-            # Backup should be considered failed if it took longer than backup timeout seconds.
+            # Backup should be considered failed if it took longer than backup timeout seconds. If status is uknown, set it as unknown.
             if [[ $backup_duration -gt $backup_timeout ]]; then
-                status="failed"
+                if [[ $status = "started" ]] || [[ $status = "running" ]]; then
+                    status="failed"
+                fi
                 sql="UPDATE log SET status = '$status', end_time = '$script_start_ts' WHERE log_id = $log_id;"
                 result="$($cdbm_mysql_con -e "$sql" 2> /dev/null)"
                 rc=$?; if [[ $rc -ne 0 ]]; then die "Could not update database. $sql"; fi

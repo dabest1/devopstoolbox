@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.0.34"
+version="2.0.35"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -498,6 +498,8 @@ rundeck_wait_for_job_to_complete() {
     local rc
     local execution_state
 
+    # Some possible Rundeck execution states: RUNNING, WAITING, SUCCEEDED.
+
     local i
     for (( i=1; i<=60; i++ )); do
         result="$(curl --silent --show-error -H "Accept:application/json" -H "Content-Type:application/json" -X GET "${rundeck_server_url}/api/17/execution/${execution_id}/state?authtoken=${rundeck_api_token}")"
@@ -512,19 +514,21 @@ rundeck_wait_for_job_to_complete() {
             echo "$result" >&2
             error_exit "ERROR: ${0}(@$LINENO): Could not parse Rundeck results."
         fi
-        if [[ $execution_state = "RUNNING" || $execution_state = "WAITING" ]]; then
-            sleep 5
-        elif [[ $execution_state = "SUCCEEDED" ]]; then
-            echo "$execution_state"
+
+        if [[ $execution_state = "SUCCEEDED" ]]; then
             break
         else
-            echo "execution_state: $execution_state" >&2
-            error_exit "ERROR: ${0}(@$LINENO): Rundeck job failed."
+            sleep 5
         fi
     done
+
     if [[ $execution_state != "SUCCEEDED" ]]; then
+        echo "execution_state: $execution_state" >&2
         error_exit "ERROR: ${0}(@$LINENO): Rundeck job is taking too long to complete."
     fi
+
+    echo "$execution_state"
+    return 0
 }
 
 # Decide on what type of backup to perform.

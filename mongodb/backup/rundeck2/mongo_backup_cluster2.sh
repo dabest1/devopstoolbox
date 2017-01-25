@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.0.33"
+version="2.0.34"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -512,7 +512,7 @@ rundeck_wait_for_job_to_complete() {
             echo "$result" >&2
             error_exit "ERROR: ${0}(@$LINENO): Could not parse Rundeck results."
         fi
-        if [[ $execution_state = "RUNNING" ]]; then
+        if [[ $execution_state = "RUNNING" || $execution_state = "WAITING" ]]; then
             sleep 5
         elif [[ $execution_state = "SUCCEEDED" ]]; then
             echo "$execution_state"

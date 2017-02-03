@@ -7,7 +7,7 @@
 #     Optionally send email upon completion.
 ################################################################################
 
-version="1.0.4"
+version="1.0.5"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -128,7 +128,7 @@ perform_backup() {
     rc=$?
 
     # Temporary workaround for failure after backup almost completes.
-    if grep -q 'innobackupex: Backup created in directory' innobackupex.err; then
+    if grep -q 'innobackupex: Backup created in directory' "$bkup_path/innobackupex.err"; then
         rc=0
     fi
 

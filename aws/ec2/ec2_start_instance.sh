@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.2"
+version="1.0.3"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -18,8 +18,9 @@ function usage {
     echo "    $script_name {name | instance_id}"
     echo
     echo "Description:"
-    echo "    -h, --help    Show this help."
+    echo "    -f, --force   Do not prompt for confirmation."
     echo "    -w, --wait    Wait for 'running' state before finishing."
+    echo "    -h, --help    Display this help."
     exit 1
 }
 
@@ -27,6 +28,10 @@ while test -n "$1"; do
     case "$1" in
     -h|--help)
         usage
+        ;;
+    -f|--force)
+        do_not_prompt="yes"
+        shift
         ;;
     -w|--wait)
         wait_for_running=yes
@@ -66,13 +71,15 @@ aws --profile "$profile" ec2 describe-volumes --filters "Name=attachment.instanc
 
 volume_ids=$(aws --profile "$profile" ec2 describe-volumes --filters "Name=attachment.instance-id, Values=$instance_id" "Name=attachment.delete-on-termination, Values=false" --query 'Volumes[*].[VolumeId]' --output text)
 
-echo -n 'Are you sure that you want this instance started? y/n: '
-read yn
-if [[ $yn != y ]]; then
-    echo 'Aborted!' | tee -a $log
-    exit 1
+if [[ $do_not_prompt != "yes" ]]; then
+    echo -n 'Are you sure that you want this instance started? y/n: '
+    read yn
+    if [[ $yn != y ]]; then
+        echo 'Aborted!' | tee -a $log
+        exit 1
+    fi
+    echo
 fi
-echo
 
 echo "Start instance..." | tee -a $log
 aws --profile "$profile" ec2 start-instances --instance-ids "$instance_id" --output table | tee -a $log

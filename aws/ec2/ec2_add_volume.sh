@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.5"
+version="1.0.6"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -81,7 +81,7 @@ echo
 
 echo "Create mount directory..."
 ssh "$name" sudo bash << HERE_DOCUMENT
-if [[ ! -d /backups ]]; then
+if [[ ! -d $volume_mount ]]; then
     mkdir "$volume_mount"
 fi
 if [[ ! -z "\$(ls -A "$volume_mount")" ]]; then

@@ -1,6 +1,7 @@
 #!/bin/bash
 ################################################################################
 # Purpose:
+#     Central Backup Manager:
 #     Manage backup execution via Rundeck.
 #
 #     This script does not rely on Rundeck to wait for the job to complete. 

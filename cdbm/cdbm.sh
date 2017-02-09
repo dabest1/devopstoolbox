@@ -8,7 +8,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="1.0.8"
+version="1.0.9"
 
 script_start_ts="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -137,14 +137,18 @@ check_for_finished() {
         # Get log from Rundeck execution.
         execution_log="$(rundeck_get_execution_output_log "$rundeck_server_url" "$rundeck_api_token" "$bkup_execution_id" "$node_name")"
         echo "node_name: $node_name"
-        echo "$execution_log"
+        echo "execution_log: $execution_log"
+        echo "execution_state: $execution_state"
 
         status="$(jq '.status' <<<"$execution_log" | tr -d '"')"
         if [[ -z $status ]]; then status="failed"; fi
 
         if [[ $status = "completed" ]] || [[ $status = "failed" ]]; then
             replset_count="$(jq '.backup_nodes | length' <<<"$execution_log")"
-            rc=$?; if [[ $rc -ne 0 ]]; then replset_count=0; fi
+            rc=$?
+            if [[ $rc -ne 0 || -z $execution_log ]]; then
+                replset_count=0
+            fi
 
             local i
             local replset_backup_path
@@ -192,7 +196,6 @@ check_for_finished() {
 
             end_time="$(jq ".end_time" <<<"$execution_log" | tr -d '"')"
             rc=$?; if [[ $rc -ne 0 ]]; then continue; fi
-
             sql="UPDATE log SET status = '$status', end_time = '$end_time' WHERE log_id = $log_id;"
             result="$($cdbm_mysql_con -e "$sql" 2> /dev/null)"
             rc=$?; if [[ $rc -ne 0 ]]; then die "Could not update database. $sql"; fi
@@ -328,7 +331,7 @@ rundeck_wait_for_job_to_complete() {
         fi
         if [[ $execution_state = "RUNNING" || $result = '{"error":"pending"}' ]]; then
             sleep 5
-        elif [[ $execution_state = "SUCCEEDED" ]]; then
+        elif [[ $execution_state = "SUCCEEDED" || $execution_state = "FAILED" ]]; then
             echo "$execution_state"
             break
         else
@@ -336,7 +339,7 @@ rundeck_wait_for_job_to_complete() {
             die "Rundeck job failed."
         fi
     done
-    if [[ $execution_state != "SUCCEEDED" ]]; then
+    if [[ $execution_state != "SUCCEEDED" ]] && [[ $execution_state != "FAILED" ]]; then
         die "Rundeck job is taking too long to complete."
     fi
 }

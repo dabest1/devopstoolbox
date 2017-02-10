@@ -1,6 +1,7 @@
 #!/bin/bash
 ################################################################################
 # Purpose:
+#     MongoDB backup. Backups either replica set or config server.
 #     Backup all MongoDB databases using mongodump (local db is excluded).
 #     --oplog option is used.
 #     Compress backup.
@@ -12,7 +13,7 @@
 #     mongorestore --oplogReplay --dir "backup_path"
 ################################################################################
 
-version="1.1.15"
+version="1.1.16"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -199,6 +200,12 @@ if echo "$HOSTNAME" | grep -q 'cfgdb'; then
     # Config server.
     echo "Backing up config server."
     date -u +'start: %FT%TZ'
+    if [[ -e /etc/mongod.conf ]]; then
+        cp -p /etc/mongod.conf "$bkup_dir/$bkup_date.$bkup_type/"
+    fi
+    if [[ -e /etc/mongos.conf ]]; then
+        cp -p /etc/mongos.conf "$bkup_dir/$bkup_date.$bkup_type/"
+    fi
     echo "Note: Need to identify in which cases --oplog does not work on config server. MongoDB 2.6 supports it. https://docs.mongodb.com/v2.6/tutorial/backup-sharded-cluster-with-database-dumps/#backup-one-config-server"
     "$mongodump" --port "$port" $mongo_option -o "$bkup_dir/$bkup_date.$bkup_type" --authenticationDatabase admin --oplog 1> "$bkup_dir/$bkup_date.$bkup_type/mongodump.log" 2> >(tee -ia "$bkup_dir/$bkup_date.$bkup_type/mongodump.log" > "$bkup_dir/$bkup_date.$bkup_type/mongodump.err")
     rc=$?
@@ -211,6 +218,9 @@ else
     # Replica set member.
     echo "Backing up all dbs except local with --oplog option."
     date -u +'start: %FT%TZ'
+    if [[ -e /etc/mongod.conf ]]; then
+        cp -p /etc/mongod.conf "$bkup_dir/$bkup_date.$bkup_type/"
+    fi
     is_master="$("$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin --eval 'JSON.stringify(db.isMaster())' | jq '.ismaster')"
     if [[ $is_master != "false" ]]; then
         die "This is not a secondary node."

@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.0.36"
+version="2.0.37"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -53,7 +53,7 @@ done
 # Variables.
 
 if [[ -z $bkup_dir || -z $rundeck_server_url || -z $rundeck_api_token || -z $rundeck_job_id ]]; then
-    echo "Error: Not all equired variables were provided in configuration file." >&2
+    echo "Error: Not all required variables were provided in configuration file." >&2
     exit 1
 fi
 start_time_wot="$(tr 'T' ' ' <<<"$start_time")"
@@ -347,6 +347,18 @@ perform_backup() {
             primary_host_port="$(mongo --quiet --eval 'JSON.stringify(rs.isMaster())' | jq '.primary' | tr -d '"')"
             "$mongo" --quiet --host "$primary_host_port" $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.insert( { uuid: \"$uuid\" } )"
             echo
+
+            # Verify that UUID showed up in this replica set.
+            for (( i=1; i<=60; i++ )); do
+                uuid_from_mongo="$(mongo --quiet dba --eval "rs.slaveOk(); JSON.stringify(db.backup_uuid.findOne({uuid:\"$uuid\"}));" | jq '.uuid' | tr -d '"')"
+                if [[ $uuid = $uuid_from_mongo ]]; then
+                    contains_uuid="yes"
+                    break
+                fi
+            done
+            if [[ $contains_uuid != "yes" ]]; then
+                error_exit "ERROR: ${0}(@$LINENO): Inserted UUID was not found on this MongoDB node."
+            fi
         fi
 
         echo "Backing up all dbs except local with --oplog option."

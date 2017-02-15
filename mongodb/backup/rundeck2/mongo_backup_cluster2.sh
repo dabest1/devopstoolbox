@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.0.35"
+version="2.0.36"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -189,17 +189,18 @@ perform_backup() {
     df -h "$bkup_dir/"
     echo
 
-    if [[ $uuid_insert == yes ]]; then
-        echo "Insert UUID into database for restore validation."
-        uuid=$(uuidgen)
-        echo "uuid: $uuid"
-        "$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.insert( { uuid: \"$uuid\" } )"
-        echo
-    fi
-
     # Config server.
     if echo "$HOSTNAME" | grep -q "$config_server_regex"; then
         echo "This is a config server."
+
+        if [[ $uuid_insert == yes ]]; then
+            echo "Insert UUID into database for restore validation."
+            uuid=$(uuidgen)
+            echo "uuid: $uuid"
+            "$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.insert( { uuid: \"$uuid\" } )"
+            echo
+        fi
+
         mongos_host_port="$(mongo localhost:27017/config --quiet --eval 'rs.slaveOk(); var timeOffset = new Date(); timeOffset.setTime(timeOffset.getTime() - 60*60*1000); var cursor = db.mongos.find({ping:{$gte:timeOffset}},{_id:1}).sort({ping:-1}); while(cursor.hasNext()) { print(JSON.stringify(cursor.next())) }' | awk -F'"' '{print $4}' | head -1)"
         if [[ -z $mongos_host_port ]]; then
             error_exit "ERROR: ${0}(@$LINENO): mongos was not found."
@@ -228,6 +229,13 @@ perform_backup() {
         if [[ $rc -ne 0 ]]; then
             error_exit "ERROR: ${0}(@$LINENO): mongodump failed."
         fi
+
+        if [[ $uuid_insert == yes ]]; then
+            echo "Remove UUID."
+            "$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.remove( { uuid: \"$uuid\" } )"
+            echo
+        fi
+
         date -u +'finish: %FT%TZ'
 
         # Get shard servers (replica set members).
@@ -328,9 +336,19 @@ perform_backup() {
 
         echo
         start_balancer
+        echo
 
     # Replica set member.
     else
+        if [[ $uuid_insert == yes ]]; then
+            echo "Insert UUID into database for restore validation."
+            uuid=$(uuidgen)
+            echo "uuid: $uuid"
+            primary_host_port="$(mongo --quiet --eval 'JSON.stringify(rs.isMaster())' | jq '.primary' | tr -d '"')"
+            "$mongo" --quiet --host "$primary_host_port" $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.insert( { uuid: \"$uuid\" } )"
+            echo
+        fi
+
         echo "Backing up all dbs except local with --oplog option."
         date -u +'start: %FT%TZ'
         if [[ -e /etc/mongod.conf ]]; then
@@ -346,13 +364,13 @@ perform_backup() {
             error_exit "ERROR: ${0}(@$LINENO): mongodump failed."
         fi
         date -u +'finish: %FT%TZ'
-    fi
-    echo
-
-    if [[ $uuid_insert == yes ]]; then
-        echo "Remove UUID."
-        "$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.remove( { uuid: \"$uuid\" } )"
         echo
+
+        if [[ $uuid_insert == yes ]]; then
+            echo "Remove UUID."
+            "$mongo" --quiet --host "$primary_host_port" $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.remove( { uuid: \"$uuid\" } )"
+            echo
+        fi
     fi
 
     echo "Backup size in bytes:"

@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.0"
+version="1.0.1"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -27,7 +27,7 @@ if [[ $1 == "--help" ]]; then
 fi
 
 # Header row.
-header_row="account	name	engine	region	class	status"
+header_row="account	name	engine	region	class	status	address	port"
 
 echo "$header_row"
-aws --profile "$profile" rds describe-db-instances --db-instance-identifier "$name" | jq '.DBInstances[] | [.DBInstanceIdentifier, .Engine, .AvailabilityZone, .DBInstanceClass, .DBInstanceStatus] | @tsv' | tr -d '"' | sed 's/\\t/	/g' | awk -v profile="$profile" '{print profile"\t"$0}'
+aws --profile "$profile" rds describe-db-instances --db-instance-identifier "$name" | jq '.DBInstances[] | [.DBInstanceIdentifier, .Engine, .AvailabilityZone, .DBInstanceClass, .DBInstanceStatus, .Endpoint.Address, .Endpoint.Port] | @tsv' | tr -d '"' | sed 's/\\t/	/g' | awk -v profile="$profile" '{print profile"\t"$0}'

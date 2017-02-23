@@ -4,7 +4,7 @@
 #     Restore MongoDB database.
 ################################################################################
 
-version="1.0.10"
+version="1.0.11"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -121,6 +121,9 @@ start() {
     echo "MongoDB version: $("$mongod" --version | head -1)"
     echo
 
+    if [[ ! -d $restore_dir ]]; then
+        mkdir "$restore_dir"
+    fi
     mkdir "$restore_path" || exit 1
 
     # Create restore status and pid file.

@@ -4,7 +4,7 @@
 #     Restore MongoDB database.
 ################################################################################
 
-version="1.0.7"
+version="1.0.8"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -15,38 +15,6 @@ s3_download_script="$script_dir/s3_download.sh"
 restore_dir="/backups/restore"
 mongorestore="$(which mongorestore)"
 mongod="$(which mongod)"
-
-# Process options.
-while [[ -n $1 ]]; do
-    case "$1" in
-    --version)
-        echo "version: $version"
-        exit
-        ;;
-    --backup_to_restore|-b)
-        backup_to_restore="$1"
-        shift
-        ;;
-    --s3_bucket_path|-s)
-        s3_bucket_path="$1"
-        shift
-        ;;
-    --s3_profile|-p)
-        s3_profile="$1"
-        shift
-        ;;
-    start)
-        command="start"
-        shift
-        ;;
-    status)
-        command="status"
-        shift
-        ;;
-    *|--help)
-        usage
-    esac
-done
 
 # Functions.
 
@@ -202,6 +170,51 @@ status() {
         echo "{\"backup_to_restore\":\"$backup_to_restore\",\"status\":\"unknown\"}"
     fi
 }
+
+error_exit() {
+    echo "$@" >&2
+    exit 77
+}
+
+set -E
+set -o pipefail
+set -o errtrace
+trap 'rc=$? && [[ $rc -ne 77 ]] && error_exit "ERROR in $0: line $LINENO: exit code $rc." || exit 77' ERR
+trap 'error_exit "ERROR in $0: Received signal SIGHUP."' SIGHUP
+trap 'error_exit "ERROR in $0: Received signal SIGINT."' SIGINT
+trap 'error_exit "ERROR in $0: Received signal SIGTERM."' SIGTERM
+
+# Process options.
+while [[ -n $1 ]]; do
+    case "$1" in
+    --version)
+        echo "version: $version"
+        exit
+        ;;
+    --backup_to_restore|-b)
+        backup_to_restore="$1"
+        shift
+        ;;
+    --s3_bucket_path|-s)
+        s3_bucket_path="$1"
+        shift
+        ;;
+    --s3_profile|-p)
+        s3_profile="$1"
+        shift
+        ;;
+    start)
+        command="start"
+        shift
+        ;;
+    status)
+        command="status"
+        shift
+        ;;
+    *|--help)
+        usage
+    esac
+done
 
 restore_path="$restore_dir/$backup_to_restore"
 restore_pid_file="$restore_path/restore.pid"

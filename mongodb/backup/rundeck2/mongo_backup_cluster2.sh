@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.0.38"
+version="2.0.39"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -217,7 +217,7 @@ perform_backup() {
         if [[ -e /etc/mongos.conf ]]; then
             cp -p /etc/mongos.conf $bkup_path/
         fi
-        "$mongodump" --port "$port" $mongo_option -o "$bkup_path/data" --authenticationDatabase admin --oplog &> "$bkup_path/mongodump.log"
+        "$mongodump" --port "$port" $mongo_option -o "$bkup_path/backup" --authenticationDatabase admin --oplog &> "$bkup_path/mongodump.log"
         rc=$?
         if [[ $rc -ne 0 ]]; then
             # Check if dump failed because the config server is not running with --configsvr option.
@@ -370,7 +370,7 @@ perform_backup() {
         if [[ $is_master != "false" ]]; then
             error_exit "ERROR: ${0}(@$LINENO): This is not a secondary node."
         fi
-        "$mongodump" --port "$port" $mongo_option -o "$bkup_path/data" --authenticationDatabase admin --oplog &> "$bkup_path/mongodump.log"
+        "$mongodump" --port "$port" $mongo_option -o "$bkup_path/backup" --authenticationDatabase admin --oplog &> "$bkup_path/mongodump.log"
         rc=$?
         if [[ $rc -ne 0 ]]; then
             error_exit "ERROR: ${0}(@$LINENO): mongodump failed."

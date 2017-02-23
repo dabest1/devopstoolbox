@@ -4,7 +4,7 @@
 #     Restore MongoDB database.
 ################################################################################
 
-version="1.0.9"
+version="1.0.10"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -195,14 +195,17 @@ while [[ -n $1 ]]; do
         exit
         ;;
     --backup_to_restore|-b)
+        shift
         backup_to_restore="$1"
         shift
         ;;
     --s3_bucket_path|-s)
+        shift
         s3_bucket_path="$1"
         shift
         ;;
     --s3_profile|-p)
+        shift
         s3_profile="$1"
         shift
         ;;
@@ -228,5 +231,5 @@ if [[ $command = start ]]; then
 elif [[ $command = status ]]; then
     status
 else
-    die "No command was specified, aborting."
+    usage
 fi

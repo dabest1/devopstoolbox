@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.0.39"
+version="2.0.40"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -172,7 +172,7 @@ HERE_DOC
 HERE_DOC
     else
         backup_nodes_json="\"backup_nodes\":["
-        while IFS=':' read host port; do
+        while IFS=':' read -r host port; do
             backup_nodes_json="${backup_nodes_json}{\"node\":\"$host:$port\",\"start_time\":\"${replset_start_time[$host]}\",\"end_time\":\"${replset_end_time[$host]}\",\"backup_path\":\"${replset_bkup_path[$host]}\"},"
         done <<<"$replset_hosts_ports_bkup"
         backup_nodes_json="$(sed 's/,$//' <<<"$backup_nodes_json")]"
@@ -212,10 +212,10 @@ perform_backup() {
         echo "Backing up config server."
         date -u +'start: %FT%TZ'
         if [[ -e /etc/mongod.conf ]]; then
-            cp -p /etc/mongod.conf $bkup_path/
+            cp -p /etc/mongod.conf "$bkup_path/"
         fi
         if [[ -e /etc/mongos.conf ]]; then
-            cp -p /etc/mongos.conf $bkup_path/
+            cp -p /etc/mongos.conf "$bkup_path/"
         fi
         "$mongodump" --port "$port" $mongo_option -o "$bkup_path/backup" --authenticationDatabase admin --oplog &> "$bkup_path/mongodump.log"
         rc=$?
@@ -255,7 +255,7 @@ perform_backup() {
         fi
 
         # Run Rundeck jobs to start replica set backups.
-        while IFS=':' read host port; do
+        while IFS=':' read -r host port; do
             echo "host: $host:$port"
             echo "Start backup job on replica set via Rundeck."
             replset_bkup_execution_id["$host"]="$(rundeck_run_job "$rundeck_job_id" "{\"argString\":\"-command start\"}")"
@@ -263,7 +263,7 @@ perform_backup() {
         echo
 
         # Wait for Rundeck jobs to complete.
-        while IFS=':' read host port; do
+        while IFS=':' read -r host port; do
             echo "host: $host:$port"
             execution_state="$(rundeck_wait_for_job_to_complete "${replset_bkup_execution_id[$host]}")"
             echo "execution_state: $execution_state"
@@ -271,7 +271,7 @@ perform_backup() {
         echo
 
         # Get output of Rundeck jobs.
-        while IFS=':' read host port; do
+        while IFS=':' read -r host port; do
             echo "host: $host:$port"
             execution_log="$(rundeck_get_execution_output_log "$rundeck_server_url" "$rundeck_api_token" "${replset_bkup_execution_id[$host]}" "$host")"
             replset_bkup_path["$host"]="$(jq '.backup_path' <<<"$execution_log" | tr -d '"')"
@@ -282,7 +282,7 @@ perform_backup() {
         done <<<"$replset_hosts_ports_bkup"
 
         # Run Rundeck jobs to get status of replica set backups.
-        while IFS=':' read host port; do
+        while IFS=':' read -r host port; do
             echo
             echo "Wait for replica set backup to complete."
             echo "Sleep for $rundeck_sleep_seconds_between_status_checks seconds between status checks."
@@ -351,7 +351,7 @@ perform_backup() {
             # Verify that UUID showed up in this replica set.
             for (( i=1; i<=60; i++ )); do
                 uuid_from_mongo="$(mongo --quiet dba --eval "rs.slaveOk(); JSON.stringify(db.backup_uuid.findOne({uuid:\"$uuid\"}));" | jq '.uuid' | tr -d '"')"
-                if [[ $uuid = $uuid_from_mongo ]]; then
+                if [[ $uuid = "$uuid_from_mongo" ]]; then
                     contains_uuid="yes"
                     break
                 fi
@@ -364,7 +364,7 @@ perform_backup() {
         echo "Backing up all dbs except local with --oplog option."
         date -u +'start: %FT%TZ'
         if [[ -e /etc/mongod.conf ]]; then
-            cp -p /etc/mongod.conf $bkup_path/
+            cp -p /etc/mongod.conf "$bkup_path/"
         fi
         is_master="$("$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin --eval 'JSON.stringify(db.isMaster())' | jq '.ismaster')"
         if [[ $is_master != "false" ]]; then

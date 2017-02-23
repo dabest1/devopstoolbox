@@ -4,23 +4,59 @@
 #     Restore MongoDB database.
 ################################################################################
 
-version="1.0.0"
+version="1.0.1"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 
 # Variables.
-
-backup_to_restore="20170101T010101Z.daily"
-s3_bucket_path="s3://dba-backup/mongodb/myhost"
-s3_profile="dba-backup"
 s3_download_script="$script_dir/s3_download.sh"
 restore_dir="/backups/restore"
-restore_path="$restore_dir/$backup_to_restore"
 mongorestore="/usr/bin/mongorestore"
 
+# Process options.
+while [[ -n $1 ]]; do
+    case "$1" in
+    --version)
+        echo "version: $version"
+        exit
+        ;;
+    --backup_to_restore|-b)
+        backup_to_restore="$1"
+        shift
+        ;;
+    --s3_bucket_path|-s)
+        s3_bucket_path="$1"
+        shift
+        ;;
+    --s3_profile|-p)
+        s3_profile="$1"
+        shift
+        ;;
+    *|--help)
+        usage
+    esac
+done
+
 # Functions.
+
+# Usage.
+usage() {
+    echo "Usage:"
+    echo "    $script_name -b backup_to_restore -s s3_bucket_path -p s3_profile"
+    echo
+    echo "Example:"
+    echo "    $script_name -b 20170101T010101Z.daily -s s3://dba-backup/mongodb/myhost -p dba-backup"
+    echo
+    echo "Description:"
+    echo "    -b, --backup_to_restore    Dated subdirecotry of a backup to restore."
+    echo "    -s, --s3_bucket_path       AWS S3 bucket path of where the backup is located."
+    echo "    -p, --s3_profile           AWS S3 profile to use."
+    echo "    --version                  Display script version."
+    echo "    --help                     Display this help."
+    exit 1
+}
 
 # Download backup.
 get_backup() {
@@ -75,6 +111,8 @@ verify_uuid() {
     fi
     echo "Done."
 }
+
+restore_path="$restore_dir/$backup_to_restore"
 
 get_backup
 verify_md5

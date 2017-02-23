@@ -4,7 +4,7 @@
 #     Restore MongoDB database.
 ################################################################################
 
-version="1.0.8"
+version="1.0.9"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -17,6 +17,9 @@ mongorestore="$(which mongorestore)"
 mongod="$(which mongod)"
 
 # Functions.
+
+shopt -s expand_aliases
+alias die='error_exit "ERROR in $0: line $LINENO:"'
 
 # Usage.
 usage() {
@@ -224,4 +227,6 @@ if [[ $command = start ]]; then
     start
 elif [[ $command = status ]]; then
     status
+else
+    die "No command was specified, aborting."
 fi

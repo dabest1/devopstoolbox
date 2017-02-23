@@ -4,7 +4,7 @@
 #     Restore MongoDB database.
 ################################################################################
 
-version="1.0.6"
+version="1.0.7"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -84,11 +84,13 @@ get_backup() {
 
 # Verify md5 check sum.
 verify_md5() {
+    local rc
+
     echo "Verifying md5 check sum."
     cd "$restore_path" || exit 1
     find . -type f | grep -v '[.]log$' | grep -v '[.]err$' | grep -v 'md5sum.txt' | grep -v 'md5sum.verify.txt' | sort | xargs md5sum > "$restore_path/md5sum.verify.txt"
     diff "$restore_path/md5sum.txt" "$restore_path/md5sum.verify.txt"
-    rc="$?"
+    rc=$?
     if [[ $rc -ne 0 ]]; then echo "Error: md5 check sum does not match."; exit 1; fi
     echo "Done."
     echo
@@ -109,10 +111,10 @@ restore() {
     echo "Restoring backup."
     if [[ -d $restore_path/backup ]]; then
         "$mongorestore" "$restore_path/backup" &> "$restore_path/mongorestore.log"
-        rc="$?"
+        rc=$?
     else
         "$mongorestore" "$restore_path" &> "$restore_path/mongorestore.log"
-        rc="$?"
+        rc=$?
     fi
     if [[ $rc -ne 0 ]]; then echo "Error: mongorestore failed."; exit 1; fi
     echo "Done."
@@ -137,6 +139,8 @@ verify_uuid() {
 
 # Start restore job.
 start() {
+    local end_time
+
     echo "**************************************************"
     echo "* Restore MongoDB"
     echo "* Time started: $start_time"
@@ -162,6 +166,9 @@ start() {
     echo "**************************************************"
     echo "* Time finished: $end_time"
     echo "**************************************************"
+
+    # Update restore status file.
+    echo "{\"start_time\":\"$start_time\",\"end_time\":\"$end_time\",\"backup_to_restore\":\"$backup_to_restore\",\"status\":\"completed\"}" > "$restore_status_file"
 }
 
 # Get restore job status.

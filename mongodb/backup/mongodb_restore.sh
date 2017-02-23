@@ -4,7 +4,7 @@
 #     Restore MongoDB database.
 ################################################################################
 
-version="1.0.3"
+version="1.0.4"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -91,6 +91,8 @@ uncompress() {
 
 # Restore backup.
 restore() {
+    local rc
+
     echo "Restoring backup."
     if [[ -d $restore_path/backup ]]; then
         "$mongorestore" "$restore_path/backup" &> "$restore_path/mongorestore.log"
@@ -109,11 +111,14 @@ restore() {
 
 # Verify UUID.
 verify_uuid() {
+    local uuid
+    local uuid_from_restore
+
     echo "Verifying UUID."
     uuid="$(grep "uuid:" "$restore_path/backup.log" | awk '{print $2}')"
     echo "uuid: $uuid"
-    uuid_from_mongo="$(mongo --quiet dba --eval "JSON.stringify(db.backup_uuid.findOne({uuid:\"$uuid\"}));" | jq '.uuid' | tr -d '"')"
-    if [[ $uuid != "$uuid_from_mongo" ]]; then
+    uuid_from_restore="$(mongo --quiet dba --eval "JSON.stringify(db.backup_uuid.findOne({uuid:\"$uuid\"}));" | jq '.uuid' | tr -d '"')"
+    if [[ $uuid != "$uuid_from_restore" ]]; then
         echo "Error: UUID could not be verified."
         exit 1
     fi

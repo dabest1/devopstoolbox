@@ -4,7 +4,7 @@
 #     Restore MongoDB database.
 ################################################################################
 
-version="1.0.2"
+version="1.0.3"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -92,8 +92,16 @@ uncompress() {
 # Restore backup.
 restore() {
     echo "Restoring backup."
-    "$mongorestore" "$restore_path/data" &> "$restore_path/mongorestore.log"
-    rc="$?"
+    if [[ -d $restore_path/backup ]]; then
+        "$mongorestore" "$restore_path/backup" &> "$restore_path/mongorestore.log"
+        rc="$?"
+    elif [[ -d $restore_path/data ]]; then
+        "$mongorestore" "$restore_path/data" &> "$restore_path/mongorestore.log"
+        rc="$?"
+    else
+        "$mongorestore" "$restore_path" &> "$restore_path/mongorestore.log"
+        rc="$?"
+    fi
     if [[ $rc -ne 0 ]]; then echo "Error: mongorestore failed."; exit 1; fi
     echo "Done."
     echo

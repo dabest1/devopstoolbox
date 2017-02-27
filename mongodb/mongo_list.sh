@@ -7,7 +7,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.0"
+version="1.0.1"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -15,7 +15,7 @@ script_name="$(basename "$0")"
 
 user_host_port="$1"
 
-function usage {
+usage() {
     echo "Usage:"
     echo "    $script_name mongodb_node[:port]"
     echo
@@ -35,20 +35,27 @@ mongod_host_port_1="${user_host_prefix}1:$user_port"
 mongod_host_port_2="${user_host_prefix}2:$user_port"
 mongod_host_port_3="${user_host_prefix}3:$user_port"
 
-echo "set	node	state_str"
+echo "set  node  state"
 mongod_host="$(echo $mongod_host_port_1 | awk -F: '{print $1}')"
 mongod_port="$(echo $mongod_host_port_1 | awk -F: '{print $2}')"
 
-result="$(mongo --host "$mongod_host" --port "$mongod_port" --quiet --norc --eval 'print(JSON.stringify(rs.status()))')"
-node="$(echo "$result" | jq ".members[] | select(.name == \"$mongod_host_port_1\")")"
-state_str="$(echo "$node" | jq '.stateStr' | tr -d '"')"
-set="$(echo "$result" | jq '.set' | tr -d '"')"
-echo "$set	$mongod_host_port_1	$state_str"
+result="$(mongo --host "$user_host_port" --quiet --norc --eval 'print(JSON.stringify(rs.status()))')"
 
-node="$(echo "$result" | jq ".members[] | select(.name == \"$mongod_host_port_2\")")"
-state_str="$(echo "$node" | jq '.stateStr' | tr -d '"')"
-echo "$set	$mongod_host_port_2	$state_str"
+# Stand alone MongoDB.
+if echo "$result" | grep -q 'ok":0,"errmsg":"not running with --replSet"'; then
+		echo "none  $user_host_port  standalone"
+# Replica set.
+else
+	node="$(echo "$result" | jq ".members[] | select(.name == \"$mongod_host_port_1\")")"
+	state_str="$(echo "$node" | jq '.stateStr' | tr -d '"')"
+	set="$(echo "$result" | jq '.set' | tr -d '"')"
+	echo "$set	$mongod_host_port_1	$state_str"
 
-node="$(echo "$result" | jq ".members[] | select(.name == \"$mongod_host_port_3\")")"
-state_str="$(echo "$node" | jq '.stateStr' | tr -d '"')"
-echo "$set	$mongod_host_port_3	$state_str"
+	node="$(echo "$result" | jq ".members[] | select(.name == \"$mongod_host_port_2\")")"
+	state_str="$(echo "$node" | jq '.stateStr' | tr -d '"')"
+	echo "$set	$mongod_host_port_2	$state_str"
+
+	node="$(echo "$result" | jq ".members[] | select(.name == \"$mongod_host_port_3\")")"
+	state_str="$(echo "$node" | jq '.stateStr' | tr -d '"')"
+	echo "$set	$mongod_host_port_3	$state_str"
+fi

@@ -7,7 +7,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.1.1"
+version="1.2.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -34,10 +34,14 @@ mongod_port="${mongod_port:-27017}"
 
 result="$(mongo --host "$mongod_host:$mongod_port" --quiet --norc --eval 'print(JSON.stringify(rs.status()))')"
 
+header="node state replica_set uptime optime"
+
 # Stand alone MongoDB.
 if echo "$result" | grep -q 'ok":0,"errmsg":"not running with --replSet"'; then
-	echo "node state"
-	echo "$mongod_host:$mongod_port standalone"
+	{
+		echo "$header"
+		echo "$mongod_host:$mongod_port standalone"
+	} | column -t
 # Replica set.
 else
 	{
@@ -48,7 +52,7 @@ else
 		optime_t_arr=( $(echo "$result" | jq '.members[].optime."$timestamp".t' | tr -d '"') )
 		optime_i_arr=( $(echo "$result" | jq '.members[].optime."$timestamp".i' | tr -d '"') )
 
-		echo "node state replica_set uptime optime"
+		echo "$header"
 		for ((i=0; i<${#node_arr[@]}; i++)); do
 			echo "${node_arr[$i]} ${state_arr[$i]} $set ${uptime_arr[$i]} ${optime_t_arr[$i]},${optime_i_arr[$i]}"
 		done

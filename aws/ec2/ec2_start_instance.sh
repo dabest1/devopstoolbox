@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.4"
+version="1.0.5"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -66,7 +66,7 @@ for name in $names; do
         echo "name: $name" | tee -a "$log"
         instance_id=$(aws --profile "$profile" ec2 describe-instances --filters "Name=tag:Name, Values=$name" --query 'Reservations[].Instances[].[InstanceId]' --output text)
         rc=$?
-        if [[ $rc -gt 0 ]]; then
+        if [[ $rc -ne 0 ]]; then
             echo "Error: Failed to query AWS." | tee -a "$log"
             exit 1
         fi
@@ -75,7 +75,7 @@ for name in $names; do
 
     aws --profile "$profile" ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, Placement.AvailabilityZone, InstanceType, State.Name]' --output table
     rc=$?
-    if [[ $rc -gt 0 ]]; then
+    if [[ $rc -ne 0 ]]; then
         echo "Error: Failed to query AWS." | tee -a "$log"
         exit 1
     fi

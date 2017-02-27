@@ -7,7 +7,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.1.0"
+version="1.1.1"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -30,14 +30,14 @@ fi
 
 mongod_host="$(echo "$user_host_port" | awk -F: '{print $1}')"
 mongod_port="$(echo "$user_host_port" | awk -F: '{print $2}')"
-mongod_port="${user_port:-27017}"
+mongod_port="${mongod_port:-27017}"
 
-result="$(mongo --host "$user_host_port" --quiet --norc --eval 'print(JSON.stringify(rs.status()))')"
+result="$(mongo --host "$mongod_host:$mongod_port" --quiet --norc --eval 'print(JSON.stringify(rs.status()))')"
 
 # Stand alone MongoDB.
 if echo "$result" | grep -q 'ok":0,"errmsg":"not running with --replSet"'; then
 	echo "node state"
-	echo "$user_host_port standalone"
+	echo "$mongod_host:$mongod_port standalone"
 # Replica set.
 else
 	{

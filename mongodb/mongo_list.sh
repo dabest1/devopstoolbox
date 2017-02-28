@@ -7,7 +7,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.2.0"
+version="1.3.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -32,19 +32,33 @@ mongod_host="$(echo "$user_host_port" | awk -F: '{print $1}')"
 mongod_port="$(echo "$user_host_port" | awk -F: '{print $2}')"
 mongod_port="${mongod_port:-27017}"
 
-result="$(mongo --host "$mongod_host:$mongod_port" --quiet --norc --eval 'print(JSON.stringify(rs.status()))')"
+header="node role/state replica_set uptime optime"
 
-header="node state replica_set uptime optime"
+# Possible values of cluster_role: configsvr, shardsvr.
+cluster_role="$(mongo --host "$mongod_host:$mongod_port" --quiet --norc --eval 'db.serverCmdLineOpts().parsed.sharding')"
+cluster_role="$(echo "$cluster_role" | jq '.clusterRole' | tr -d '"')"
 
-# Stand alone MongoDB.
-if echo "$result" | grep -q 'ok":0,"errmsg":"not running with --replSet"'; then
+# Config server.
+if [[ $cluster_role = "configsvr" ]]; then
+	uptime="$(mongo --host "$mongod_host:$mongod_port" --quiet --norc --eval 'db.serverStatus().uptime')"
+
 	{
 		echo "$header"
-		echo "$mongod_host:$mongod_port standalone"
+		echo "$mongod_host:$mongod_port configsvr n/a $uptime n/a"
 	} | column -t
-# Replica set.
 else
-	{
+	result="$(mongo --host "$mongod_host:$mongod_port" --quiet --norc --eval 'print(JSON.stringify(rs.status()))')"
+
+	# Stand alone MongoDB.
+	if echo "$result" | grep -q 'ok":0,"errmsg":"not running with --replSet"'; then
+		uptime="$(mongo --host "$mongod_host:$mongod_port" --quiet --norc --eval 'db.serverStatus().uptime')"
+
+		{
+			echo "$header"
+			echo "$mongod_host:$mongod_port standalone n/a $uptime n/a"
+		} | column -t
+	# Replica set.
+	else
 		set="$(echo "$result" | jq '.set' | tr -d '"')"
 		node_arr=( $(echo "$result" | jq '.members[].name' | tr -d '"') )
 		state_arr=( $(echo "$result" | jq '.members[].stateStr' | tr -d '"') )
@@ -52,9 +66,11 @@ else
 		optime_t_arr=( $(echo "$result" | jq '.members[].optime."$timestamp".t' | tr -d '"') )
 		optime_i_arr=( $(echo "$result" | jq '.members[].optime."$timestamp".i' | tr -d '"') )
 
-		echo "$header"
-		for ((i=0; i<${#node_arr[@]}; i++)); do
-			echo "${node_arr[$i]} ${state_arr[$i]} $set ${uptime_arr[$i]} ${optime_t_arr[$i]},${optime_i_arr[$i]}"
-		done
-	} | column -t
+		{
+			echo "$header"
+			for ((i=0; i<${#node_arr[@]}; i++)); do
+				echo "${node_arr[$i]} ${state_arr[$i]} $set ${uptime_arr[$i]} ${optime_t_arr[$i]},${optime_i_arr[$i]}"
+			done
+		} | column -t
+	fi
 fi

@@ -4,7 +4,7 @@
 #     Restore MongoDB database.
 ################################################################################
 
-version="1.0.11"
+version="1.0.12"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -29,7 +29,7 @@ usage() {
     echo "    $script_name status -b backup_to_restore -s s3_bucket_path -p s3_profile"
     echo
     echo "Example:"
-    echo "    $script_name start -b 20170101T010101Z.daily -s s3://dba-backup/mongodb/myhost -p dba-backup"
+    echo "    $script_name start -b 20170101T010101Z.daily -s s3://dba-backup/mongodb/myhost -p aws_restore"
     echo
     echo "Description:"
     echo "    start                      Start a restore job."
@@ -44,11 +44,15 @@ usage() {
 
 # Download backup.
 get_backup() {
+    local rc
+
     echo "Downloading backup."
     if [[ ! -d $restore_path ]]; then
         mkdir -p "$restore_path"
     fi
     "$s3_download_script" "$s3_profile" "$s3_bucket_path/$backup_to_restore" "$restore_path" > "$restore_path/s3_download.log" 2> "$restore_path/s3_download.err"
+    rc=$?
+    if [[ $rc -ne 0 ]]; then die "S3 download failed."; fi
     echo "Done."
     echo
 }
@@ -62,7 +66,7 @@ verify_md5() {
     find . -type f | grep -v '[.]log$' | grep -v '[.]err$' | grep -v 'md5sum.txt' | grep -v 'md5sum.verify.txt' | sort | xargs md5sum > "$restore_path/md5sum.verify.txt"
     diff "$restore_path/md5sum.txt" "$restore_path/md5sum.verify.txt"
     rc=$?
-    if [[ $rc -ne 0 ]]; then echo "Error: md5 check sum does not match."; exit 1; fi
+    if [[ $rc -ne 0 ]]; then die "md5 check sum does not match."; fi
     echo "Done."
     echo
 }
@@ -87,7 +91,7 @@ restore() {
         "$mongorestore" "$restore_path" &> "$restore_path/mongorestore.log"
         rc=$?
     fi
-    if [[ $rc -ne 0 ]]; then echo "Error: mongorestore failed."; exit 1; fi
+    if [[ $rc -ne 0 ]]; then die "mongorestore failed."; fi
     echo "Done."
     echo
 }
@@ -101,11 +105,9 @@ verify_uuid() {
     uuid="$(grep "uuid:" "$restore_path/backup.log" | awk '{print $2}')"
     echo "uuid: $uuid"
     uuid_from_restore="$(mongo --quiet dba --eval "JSON.stringify(db.backup_uuid.findOne({uuid:\"$uuid\"}));" | jq '.uuid' | tr -d '"')"
-    if [[ $uuid != "$uuid_from_restore" ]]; then
-        echo "Error: UUID could not be verified."
-        exit 1
-    fi
+    if [[ $uuid != "$uuid_from_restore" ]]; then die "UUID could not be verified."; fi
     echo "Done."
+    echo
 }
 
 # Start restore job.
@@ -124,7 +126,7 @@ start() {
     if [[ ! -d $restore_dir ]]; then
         mkdir "$restore_dir"
     fi
-    mkdir "$restore_path" || exit 1
+    mkdir "$restore_path"
 
     # Create restore status and pid file.
     echo "$BASHPID" > "$restore_pid_file"
@@ -182,7 +184,6 @@ error_exit() {
     exit 77
 }
 
-set -E
 set -o pipefail
 set -o errtrace
 trap 'rc=$? && [[ $rc -ne 77 ]] && error_exit "ERROR in $0: line $LINENO: exit code $rc." || exit 77' ERR

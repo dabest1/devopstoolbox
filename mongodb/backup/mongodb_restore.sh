@@ -4,7 +4,7 @@
 #     Restore MongoDB database.
 ################################################################################
 
-version="1.0.13"
+version="1.1.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -92,6 +92,7 @@ restore() {
         rc=$?
     fi
     if [[ $rc -ne 0 ]]; then die "mongorestore failed."; fi
+    if grep -q 'skipping...' "$restore_path/mongorestore.log"; then die "mongorestore skipped some files."; fi
     echo "Done."
     echo
 }

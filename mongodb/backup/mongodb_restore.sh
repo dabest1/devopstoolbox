@@ -2,9 +2,11 @@
 ################################################################################
 # Purpose:
 #     Restore MongoDB database.
+# Usage:
+#     Run script with --help option to get usage.
 ################################################################################
 
-version="1.1.0"
+version="1.2.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -32,11 +34,21 @@ usage() {
     echo "    $script_name start -b 20170101T010101Z.daily -s s3://dba-backup/mongodb/myhost -p aws_restore"
     echo
     echo "Description:"
+    echo "    Restore MongoDB database:"
+    echo "    Get backup."
+    echo "    Verify md5 check sum - verifies that there was no data corruption during disk/network transfer."
+    echo "    Uncompress backup."
+    echo "    Restore backup."
+    echo "    Verify UUID - verifies that restore has the UUID which was inserted during backup."
+    echo
+    echo "    Options:"
     echo "    start                      Start a restore job."
     echo "    status                     Return status of a restore job."
     echo "    -b, --backup_to_restore    Dated subdirecotry of a backup to restore."
     echo "    -s, --s3_bucket_path       AWS S3 bucket path of where the backup is located."
     echo "    -p, --s3_profile           AWS S3 profile to use."
+    echo "    --no_verify_md5            Disable MD5 check sum verification."
+    echo "    --no_verify_uuid           Disable UUID verification."
     echo "    --version                  Display script version."
     echo "    --help                     Display this help."
     exit 1
@@ -134,10 +146,10 @@ start() {
     echo "{\"start_time\":\"$start_time\",\"backup_to_restore\":\"$backup_to_restore\",\"status\":\"running\"}" > "$restore_status_file"
 
     get_backup
-    verify_md5
+    if [[ $verify_md5_yn = yes ]]; then verify_md5; fi
     uncompress
     restore
-    verify_uuid
+    if [[ $verify_uuid_yn = yes ]]; then verify_uuid; fi
 
     end_time="$(date -u +'%FT%TZ')"
     echo "**************************************************"
@@ -193,8 +205,18 @@ trap 'error_exit "ERROR in $0: Received signal SIGINT."' SIGINT
 trap 'error_exit "ERROR in $0: Received signal SIGTERM."' SIGTERM
 
 # Process options.
+verify_md5_yn="yes"
+verify_uuid_yn="yes"
 while [[ -n $1 ]]; do
     case "$1" in
+    start)
+        command="start"
+        shift
+        ;;
+    status)
+        command="status"
+        shift
+        ;;
     --version)
         echo "version: $version"
         exit
@@ -214,12 +236,12 @@ while [[ -n $1 ]]; do
         s3_profile="$1"
         shift
         ;;
-    start)
-        command="start"
+    --no_verify_md5)
+        verify_md5_yn="no"
         shift
         ;;
-    status)
-        command="status"
+    --no_verify_uuid)
+        verify_uuid_yn="no"
         shift
         ;;
     *|--help)

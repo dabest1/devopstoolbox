@@ -4,7 +4,7 @@
 #     Restore MongoDB database.
 ################################################################################
 
-version="1.0.12"
+version="1.0.13"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -63,7 +63,7 @@ verify_md5() {
 
     echo "Verifying md5 check sum."
     cd "$restore_path" || exit 1
-    find . -type f | grep -v '[.]log$' | grep -v '[.]err$' | grep -v 'md5sum.txt' | grep -v 'md5sum.verify.txt' | sort | xargs md5sum > "$restore_path/md5sum.verify.txt"
+    find . -type f | grep -v '[.]/.*[.]log$' | grep -v '[.]/.*[.]err$' | grep -v '[.]/md5sum.txt' | grep -v '[.]/md5sum.verify.txt' | grep -v '[.]/restore.pid' | grep -v '[.]/restore.status.json' | sort | xargs md5sum > "$restore_path/md5sum.verify.txt"
     diff "$restore_path/md5sum.txt" "$restore_path/md5sum.verify.txt"
     rc=$?
     if [[ $rc -ne 0 ]]; then die "md5 check sum does not match."; fi

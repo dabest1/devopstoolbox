@@ -1,0 +1,15 @@
+{% extends 'cbm/base.html' %}
+{% block title %}Nodes{% endblock title %}
+{% block nav-style %}cluster-nav{% endblock nav-style %}
+
+{% block content %}
+
+{% if node_list %}
+    {% for node_name in node_list.all %}
+        <li>{{ node_name}}</li>
+    {% endfor %}
+{% else %}
+    <p>No nodes defined.</p>
+{% endif %}
+
+{% endblock content %}

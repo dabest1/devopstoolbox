@@ -1,0 +1,15 @@
+{% extends 'cbm/base.html' %}
+{% block title %}Backups{% endblock title %}
+{% block nav-style %}cluster-nav{% endblock nav-style %}
+
+{% block content %}
+
+{% if backup_list %}
+    {% for backup in backup_list.all %}
+        <li>{{ backup }}</li>
+    {% endfor %}
+{% else %}
+    <p>No existing backups.</p>
+{% endif %}
+
+{% endblock content %}

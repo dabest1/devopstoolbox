@@ -1,0 +1,21 @@
+{% extends 'cbm/base.html' %}
+{% block title %}Home{% endblock title %}
+{% block nav-style %}cluster-nav{% endblock nav-style %}
+
+{% block content %}
+
+{# Hero Section #}
+<div class="bg-primary">
+    <div class="container">
+        <div class="row">
+            <h1 class="col-md-8">CBM - Central Backup Manager</h1>
+        </div>
+        <div class="row">
+            <p class="col-md-8">CBM tracks all your backups in one central location. Never miss another backup. And a backup is not a backup until it has been tested to be restorable. Automate your restores from CBM.</p>
+            <p class="col-md-8">Currently it supports scheduling backups through Rundeck.</p>
+            <p class="col-md-8">For now it only supports backups of MongoDB.</p>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}

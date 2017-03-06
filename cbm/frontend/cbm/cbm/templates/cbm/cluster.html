@@ -1,0 +1,15 @@
+{% extends 'cbm/base.html' %}
+{% block title %}Clusters{% endblock title %}
+{% block nav-style %}cluster-nav{% endblock nav-style %}
+
+{% block content %}
+
+{% if cluster_list %}
+    {% for cluster_name in cluster_list.all %}
+        <li>{{ cluster_name}}</li>
+    {% endfor %}
+{% else %}
+    <p>No clusters defined.</p>
+{% endif %}
+
+{% endblock content %}

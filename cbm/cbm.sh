@@ -9,7 +9,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="1.0.12"
+version="1.0.13"
 
 script_start_ts="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -17,7 +17,9 @@ script_name="$(basename "$0")"
 config_path="$script_dir/${script_name/.sh/.cfg}"
 
 # Load configuration settings.
-source "$config_path"
+if [[ -f "$config_path" ]]; then
+    source "$config_path"
+fi
 
 # Process options.
 while test -n "$1"; do

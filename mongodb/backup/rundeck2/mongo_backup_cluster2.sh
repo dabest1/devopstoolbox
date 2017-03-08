@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.0.40"
+version="2.1.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -598,6 +598,11 @@ start_balancer() {
     local balancer_state
 
     if [[ $need_to_start_balancer = "true" ]]; then
+        balancer_state="$("$mongo" --quiet "$mongos_host_port" --eval "sh.getBalancerState()")"
+        echo "Balancer state: $balancer_state"
+        if [[ $balancer_state = "true" ]]; then
+            echo "Warning: Balancer state was changed during backup."
+        fi
         echo "Start the balancer."
         "$mongo" --quiet "$mongos_host_port" --eval "sh.startBalancer()"
         balancer_state="$("$mongo" --quiet "$mongos_host_port" --eval "sh.getBalancerState()")"

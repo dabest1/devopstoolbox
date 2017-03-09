@@ -6,7 +6,7 @@
 #     Run script with --help option to get usage.
 ################################################################################
 
-version="1.4.0"
+version="1.5.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -96,13 +96,8 @@ restore() {
     local rc
 
     echo "Restoring backup."
-    if [[ -d $restore_path/backup ]]; then
-        "$mongorestore" "$restore_path/backup" &> "$restore_path/mongorestore.log"
-        rc=$?
-    else
-        "$mongorestore" "$restore_path" &> "$restore_path/mongorestore.log"
-        rc=$?
-    fi
+    "$mongorestore" "$restore_path/backup" &> "$restore_path/mongorestore.log"
+    rc=$?
     if [[ $rc -ne 0 ]]; then die "mongorestore failed."; fi
     if grep -q 'skipping...' "$restore_path/mongorestore.log"; then die "mongorestore skipped some files."; fi
     echo "Done."

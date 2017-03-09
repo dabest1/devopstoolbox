@@ -6,7 +6,7 @@
 #     Run script with --help option to get usage.
 ################################################################################
 
-version="1.2.0"
+version="1.3.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -249,7 +249,9 @@ while [[ -n $1 ]]; do
     esac
 done
 
-restore_path="$restore_dir/$backup_to_restore"
+start_time_wot="$(tr 'T' ' ' <<<"$start_time")"
+restore_date="$(date -d "$start_time_wot" +'%Y%m%dT%H%M%SZ')"
+restore_path="$restore_dir/${restore_date}_$backup_to_restore"
 restore_pid_file="$restore_path/restore.pid"
 restore_status_file="$restore_path/restore.status.json"
 

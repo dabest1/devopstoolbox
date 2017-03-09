@@ -9,7 +9,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="1.0.13"
+version="1.1.0"
 
 script_start_ts="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -42,8 +42,12 @@ while test -n "$1"; do
         command="$1"
         shift
         ;;
+    run_random_restore)
+        command="$1"
+        shift
+        ;;
     *)
-        echo "Invalid option." >&2
+        echo "Invalid option: $1" >&2
         exit 1
     esac
 done
@@ -347,6 +351,19 @@ rundeck_wait_for_job_to_complete() {
     fi
 }
 
+# Select a random completed backup and restore it.
+run_random_restore() {
+    local sql
+    local completed_backups
+    local rc
+
+    sql="SELECT backup_id, node_name, start_time, end_time, backup_path, status FROM cbm_backup JOIN cbm_node ON node_name_id = node_id WHERE start_time > DATE_SUB(CURDATE(), INTERVAL 2 DAY) AND start_time < DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND status = 'completed';"
+    completed_backups="$($cbm_mysql_con -e "$sql" 2> /dev/null)"
+    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database. $sql"; fi
+
+    echo ${completed_backups[3]}
+}
+
 set -E
 set -o pipefail
 trap '[ "$?" -ne 77 ] || exit 77' ERR
@@ -360,5 +377,8 @@ backup_started)
     ;;
 check_for_finished)
     check_for_finished
+    ;;
+run_random_restore)
+    run_random_restore
     ;;
 esac

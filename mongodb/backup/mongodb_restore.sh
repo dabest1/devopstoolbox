@@ -6,7 +6,7 @@
 #     Run script with --help option to get usage.
 ################################################################################
 
-version="1.3.0"
+version="1.4.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -134,6 +134,10 @@ start() {
     echo
     echo "Hostname: $HOSTNAME"
     echo "MongoDB version: $("$mongod" --version | head -1)"
+    echo
+    echo "backup_to_restore: $backup_to_restore"
+    echo "s3_bucket_path: $s3_bucket_path"
+    echo "s3_profile: $s3_profile"
     echo
 
     if [[ ! -d $restore_dir ]]; then

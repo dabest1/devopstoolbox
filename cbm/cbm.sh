@@ -9,7 +9,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="1.1.0"
+version="1.2.0"
 
 script_start_ts="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -136,7 +136,7 @@ check_for_finished() {
         fi
 
         # Get execution status.
-        bkup_execution_id="$(rundeck_run_job "$rundeck_server_url" "$rundeck_api_token" "$rundeck_job_id" "$node_name" "{\"argString\":\"-command status -backup-path $backup_path\"}")"
+        bkup_execution_id="$(rundeck_run_job "$rundeck_server_url" "$rundeck_api_token" "$rundeck_job_id_backup" "$node_name" "{\"argString\":\"-command status -backup-path $backup_path\"}")"
 
         # Wait for Rundeck execution to complete.
         execution_state="$(rundeck_wait_for_job_to_complete "$rundeck_server_url" "$rundeck_api_token" "$bkup_execution_id")"
@@ -356,12 +356,29 @@ run_random_restore() {
     local sql
     local completed_backups
     local rc
+    local completed_backups_cnt
+    local random_backup_num
+    local random_backup
 
-    sql="SELECT backup_id, node_name, start_time, end_time, backup_path, status FROM cbm_backup JOIN cbm_node ON node_name_id = node_id WHERE start_time > DATE_SUB(CURDATE(), INTERVAL 2 DAY) AND start_time < DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND status = 'completed';"
+    sql="SELECT node_name, start_time, backup_path FROM cbm_backup JOIN cbm_node ON node_name_id = node_id WHERE start_time > DATE_SUB(CURDATE(), INTERVAL 2 DAY) AND start_time < DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND status = 'completed';"
     completed_backups="$($cbm_mysql_con -e "$sql" 2> /dev/null)"
     rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database. $sql"; fi
 
-    echo ${completed_backups[3]}
+    completed_backups_cnt="$(echo "$completed_backups" | wc -l)"
+    random_backup_num="$(($RANDOM % $completed_backups_cnt + 1))"
+    random_backup="$(echo "$completed_backups" | sed -n "${random_backup_num}p")"
+
+    while read -r node_name start_time_dt start_time_tm backup_path; do
+        db_type="mongodb"
+        backup_to_restore="$(basename "$backup_path")"
+        s3_bucket_path="$s3_bucket/$db_type/$node_name"
+        echo "Start restore job via Rundeck."
+        echo "node_name: $node_name"
+        echo "backup_to_restore: $backup_to_restore"
+        echo "s3_bucket_path: $s3_bucket_path"
+        echo "s3_profile: $s3_profile"
+        restore_execution_id="$(rundeck_run_job "$rundeck_server_url" "$rundeck_api_token" "$rundeck_job_id_restore" "$restore_node" "{\"argString\":\"-command start -backup_to_restore $backup_to_restore -s3_bucket_path $s3_bucket_path -s3_profile $s3_profile\"}")"
+    done <<<"$random_backup"
 }
 
 set -E

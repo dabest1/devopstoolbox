@@ -6,7 +6,7 @@
 #     Run script with --help option to get usage.
 ################################################################################
 
-version="1.5.0"
+version="1.6.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -15,6 +15,7 @@ script_name="$(basename "$0")"
 # Variables.
 s3_download_script="$script_dir/s3_download.sh"
 restore_dir="/backups/restore"
+mongo="$(which mongo)"
 mongorestore="$(which mongorestore)"
 mongod="$(which mongod)"
 
@@ -26,9 +27,7 @@ alias die='error_exit "ERROR in $0: line $LINENO:"'
 # Usage.
 usage() {
     echo "Usage:"
-    echo "    $script_name start -b backup_to_restore -s s3_bucket_path -p s3_profile"
-    echo "    or"
-    echo "    $script_name status -b backup_to_restore -s s3_bucket_path -p s3_profile"
+    echo "    $script_name {start|status} -b backup_to_restore -s s3_bucket_path -p s3_profile"
     echo
     echo "Example:"
     echo "    $script_name start -b 20170101T010101Z.daily -s s3://dba-backup/mongodb/myhost -p aws_restore"
@@ -147,6 +146,7 @@ start() {
     get_backup
     if [[ $verify_md5_yn = yes ]]; then verify_md5; fi
     uncompress
+    drop_dbs
     restore
     if [[ $verify_uuid_yn = yes ]]; then verify_uuid; fi
 
@@ -189,6 +189,18 @@ status() {
         # Show status.
         echo "{\"backup_to_restore\":\"$backup_to_restore\",\"status\":\"unknown\"}"
     fi
+}
+
+# Drop current databases if any.
+drop_dbs() {
+    echo "Dropping databases:"
+    "$mongo" --quiet --eval 'db.adminCommand( { listDatabases: 1 } ).databases.forEach(printjson);'
+    "$mongo" --quiet --eval '
+        var dbNames = db.getMongo().getDBNames();
+        dbNames.forEach( function (name) { db = db.getSiblingDB(name); db.runCommand( { dropDatabase: 1 } ); } );
+    '
+    echo "Done."
+    echo
 }
 
 error_exit() {

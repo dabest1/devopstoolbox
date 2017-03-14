@@ -9,7 +9,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="1.3.0"
+version="1.4.0"
 
 script_start_ts="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -123,6 +123,7 @@ backup_started() {
     rc=$?; if [[ $rc -ne 0 ]]; then die "Could not insert into database. $sql"; fi
 }
 
+# Check for finished backups.
 check_for_finished() {
     local bkup_execution_id
     local execution_log
@@ -406,6 +407,8 @@ restore_started() {
     rc=$?; if [[ $rc -ne 0 ]]; then die "Could not parse Rundeck results."; fi
     status="$(jq '.status' <<<"$rundeck_log" | tr -d '"')"
     rc=$?; if [[ $rc -ne 0 ]]; then die "Could not parse Rundeck results."; fi
+    restore_path="$(jq '.restore_path' <<<"$rundeck_log" | tr -d '"')"
+    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not parse Rundeck results."; fi
 
     # TODO: Need to handle "Warning: Using a password on the command line interface can be insecure." warning.
     sql="SELECT backup_id FROM cbm_backup WHERE node_name_id = (SELECT node_id FROM cbm_node WHERE node_name = '$backup_node_name') AND start_time = '$backup_start_time';"
@@ -416,7 +419,7 @@ restore_started() {
     running_on_node_id="$($cbm_mysql_con -e "$sql" 2> /dev/null)"
     rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database. $sql"; fi
 
-    sql="INSERT INTO cbm_restore (running_on_node, backup_id, start_time, status) VALUES ('$running_on_node_name', $backup_id, '$start_time', '$status');"
+    sql="INSERT INTO cbm_restore (running_on_node, backup_id, start_time, restore_path, status) VALUES ('$running_on_node_name', $backup_id, '$start_time', '$restore_path', '$status');"
     result="$($cbm_mysql_con -e "$sql" 2> /dev/null)"
     rc=$?; if [[ $rc -ne 0 ]]; then die "Could not insert into database. $sql"; fi
 }

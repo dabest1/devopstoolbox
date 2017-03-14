@@ -6,7 +6,7 @@
 #     Run script with --help option to get usage.
 ################################################################################
 
-version="2.0.0"
+version="2.1.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -149,7 +149,7 @@ start() {
 
     # Create restore status and pid file.
     echo "$BASHPID" > "$restore_pid_file"
-    echo "{\"start_time\":\"$start_time\",\"node_name\":\"$node_name\",\"backup_start_time\":\"$backup_start_time\",\"status\":\"running\"}" > "$restore_status_file"
+    echo "{\"start_time\":\"$start_time\",\"node_name\":\"$node_name\",\"backup_start_time\":\"$backup_start_time\",\"restore_path\":\"$restore_path\",\"status\":\"running\"}" > "$restore_status_file"
 
     get_backup
     if [[ $verify_md5_yn = yes ]]; then verify_md5; fi
@@ -164,7 +164,7 @@ start() {
     echo "**************************************************"
 
     # Update restore status file.
-    echo "{\"start_time\":\"$start_time\",\"end_time\":\"$end_time\",\"node_name\":\"$node_name\",\"backup_start_time\":\"$backup_start_time\",\"status\":\"completed\"}" > "$restore_status_file"
+    echo "{\"start_time\":\"$start_time\",\"end_time\":\"$end_time\",\"node_name\":\"$node_name\",\"backup_start_time\":\"$backup_start_time\",\"restore_path\":\"$restore_path\",\"status\":\"completed\"}" > "$restore_status_file"
 }
 
 # Get restore job status.
@@ -189,13 +189,13 @@ status() {
                 exit 0
             else
                 # Show status.
-                echo "{\"start_time\":\"$start_time\",\"node_name\":\"$node_name\",\"backup_start_time\":\"$backup_start_time\",\"status\":\"failed\"}"
+                echo "{\"start_time\":\"$start_time\",\"node_name\":\"$node_name\",\"backup_start_time\":\"$backup_start_time\",\"restore_path\":\"$restore_path\",\"status\":\"failed\"}"
                 exit 0
             fi
         fi
     else
         # Show status.
-        echo "{\"start_time\":\"$start_time\",\"node_name\":\"$node_name\",\"backup_start_time\":\"$backup_start_time\",\"status\":\"unknown\"}"
+        echo "{\"start_time\":\"$start_time\",\"node_name\":\"$node_name\",\"backup_start_time\":\"$backup_start_time\",\"restore_path\":\"$restore_path\",\"status\":\"unknown\"}"
     fi
 }
 
@@ -269,18 +269,18 @@ while [[ -n $1 ]]; do
 done
 
 start_time_wot="$(tr 'T' ' ' <<<"$start_time")"
+node_name="$(basename "$s3_bucket_path")"
 restore_date="$(date -d "$start_time_wot" +'%Y%m%dT%H%M%SZ')"
-restore_path="$restore_dir/${restore_date}_$backup_to_restore"
+restore_path="$restore_dir/${restore_date}_$node_name"
 restore_pid_file="$restore_path/restore.pid"
 restore_status_file="$restore_path/restore.status.json"
-node_name="$(basename "$s3_bucket_path")"
 backup_start_time="${backup_to_restore:0:4}-${backup_to_restore:4:2}-${backup_to_restore:6:5}:${backup_to_restore:11:2}:${backup_to_restore:13:3}"
 
 if [[ $command = start ]]; then
     # Start restore in daemon mode.
 
     # Output status in JSON.
-    echo "{\"start_time\":\"$start_time\",\"node_name\":\"$node_name\",\"backup_start_time\":\"$backup_start_time\",\"status\":\"running\"}"
+    echo "{\"start_time\":\"$start_time\",\"node_name\":\"$node_name\",\"backup_start_time\":\"$backup_start_time\",\"restore_path\":\"$restore_path\",\"status\":\"running\"}"
 
     exec 1> "$log" 2> "$log" 2> "$log_err"
     start &

@@ -6,7 +6,7 @@
 #     Run script with --help option to get usage.
 ################################################################################
 
-version="2.1.0"
+version="2.2.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -29,10 +29,13 @@ alias die='error_exit "ERROR in $0: line $LINENO:"'
 # Usage.
 usage() {
     echo "Usage:"
-    echo "    $script_name {start|status} -b backup_to_restore -s s3_bucket_path -p s3_profile"
+    echo "    $script_name start -b backup_to_restore -s s3_bucket_path -p s3_profile [--no_verify_md5] [--no_verify_uuid]"
+    echo "    or"
+    echo "    $script_name status -r restore_path"
     echo
     echo "Example:"
     echo "    $script_name start -b 20170101T010101Z.daily -s s3://dba-backup/mongodb/myhost -p aws_restore"
+    echo "    $script_name status -r /backups/restore/20170102T205021Z_myhost"
     echo
     echo "Description:"
     echo "    Restore MongoDB database:"
@@ -48,6 +51,7 @@ usage() {
     echo "    -b, --backup_to_restore    Dated subdirecotry of a backup to restore."
     echo "    -s, --s3_bucket_path       AWS S3 bucket path of where the backup is located."
     echo "    -p, --s3_profile           AWS S3 profile to use."
+    echo "    -r, --restore_path         Restore path of existing restore job."
     echo "    --no_verify_md5            Disable MD5 check sum verification."
     echo "    --no_verify_uuid           Disable UUID verification."
     echo "    --version                  Display script version."
@@ -189,13 +193,13 @@ status() {
                 exit 0
             else
                 # Show status.
-                echo "{\"start_time\":\"$start_time\",\"node_name\":\"$node_name\",\"backup_start_time\":\"$backup_start_time\",\"restore_path\":\"$restore_path\",\"status\":\"failed\"}"
+                echo "{\"restore_path\":\"$restore_path\",\"status\":\"failed\"}"
                 exit 0
             fi
         fi
     else
         # Show status.
-        echo "{\"start_time\":\"$start_time\",\"node_name\":\"$node_name\",\"backup_start_time\":\"$backup_start_time\",\"restore_path\":\"$restore_path\",\"status\":\"unknown\"}"
+        echo "{\"restore_path\":\"$restore_path\",\"status\":\"unknown\"}"
     fi
 }
 
@@ -255,6 +259,11 @@ while [[ -n $1 ]]; do
         s3_profile="$1"
         shift
         ;;
+    --restore_path|-r)
+        shift
+        restore_path="$1"
+        shift
+        ;;
     --no_verify_md5)
         verify_md5_yn="no"
         shift
@@ -264,20 +273,23 @@ while [[ -n $1 ]]; do
         shift
         ;;
     *|--help)
+        if [[ $1 != '--help' ]]; then
+            echo "Invalid option provided: $1"
+        fi
         usage
     esac
 done
 
-start_time_wot="$(tr 'T' ' ' <<<"$start_time")"
-node_name="$(basename "$s3_bucket_path")"
-restore_date="$(date -d "$start_time_wot" +'%Y%m%dT%H%M%SZ')"
-restore_path="$restore_dir/${restore_date}_$node_name"
-restore_pid_file="$restore_path/restore.pid"
-restore_status_file="$restore_path/restore.status.json"
-backup_start_time="${backup_to_restore:0:4}-${backup_to_restore:4:2}-${backup_to_restore:6:5}:${backup_to_restore:11:2}:${backup_to_restore:13:3}"
-
 if [[ $command = start ]]; then
     # Start restore in daemon mode.
+
+    start_time_wot="$(tr 'T' ' ' <<<"$start_time")"
+    node_name="$(basename "$s3_bucket_path")"
+    restore_date="$(date -d "$start_time_wot" +'%Y%m%dT%H%M%SZ')"
+    restore_path="$restore_dir/${restore_date}_$node_name"
+    restore_pid_file="$restore_path/restore.pid"
+    restore_status_file="$restore_path/restore.status.json"
+    backup_start_time="${backup_to_restore:0:4}-${backup_to_restore:4:2}-${backup_to_restore:6:5}:${backup_to_restore:11:2}:${backup_to_restore:13:3}"
 
     # Output status in JSON.
     echo "{\"start_time\":\"$start_time\",\"node_name\":\"$node_name\",\"backup_start_time\":\"$backup_start_time\",\"restore_path\":\"$restore_path\",\"status\":\"running\"}"
@@ -286,6 +298,10 @@ if [[ $command = start ]]; then
     start &
 elif [[ $command = status ]]; then
     # Get restore status.
+
+    restore_pid_file="$restore_path/restore.pid"
+    restore_status_file="$restore_path/restore.status.json"
+
     status
 else
     # Get usage.

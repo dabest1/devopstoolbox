@@ -9,7 +9,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="1.2.0"
+version="1.3.0"
 
 script_start_ts="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -34,6 +34,16 @@ while test -n "$1"; do
         db_type=$1
         shift
         node_name=$1
+        shift
+        execid=$1
+        shift
+        ;;
+    restore_started)
+        command="$1"
+        shift
+        db_type=$1
+        shift
+        running_on_node_name=$1
         shift
         execid=$1
         shift
@@ -381,6 +391,36 @@ run_random_restore() {
     done <<<"$random_backup"
 }
 
+restore_started() {
+    # TODO: Need to pass port number to this script.
+    if [[ $db_type == "mongodb" ]]; then
+        port="27017"
+    fi
+
+    rundeck_log="$(rundeck_get_execution_output_log "$rundeck_server_url" "$rundeck_api_token" "$execid" "$running_on_node_name")"
+    start_time="$(jq '.start_time' <<<"$rundeck_log" | tr -d '"')"
+    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not parse Rundeck results."; fi
+    backup_node_name="$(jq '.node_name' <<<"$rundeck_log" | tr -d '"')"
+    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not parse Rundeck results."; fi
+    backup_start_time="$(jq '.backup_start_time' <<<"$rundeck_log" | tr -d '"')"
+    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not parse Rundeck results."; fi
+    status="$(jq '.status' <<<"$rundeck_log" | tr -d '"')"
+    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not parse Rundeck results."; fi
+
+    # TODO: Need to handle "Warning: Using a password on the command line interface can be insecure." warning.
+    sql="SELECT backup_id FROM cbm_backup WHERE node_name_id = (SELECT node_id FROM cbm_node WHERE node_name = '$backup_node_name') AND start_time = '$backup_start_time';"
+    backup_id="$($cbm_mysql_con -e "$sql" 2> /dev/null)"
+    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database. $sql"; fi
+
+    sql="SELECT node_id FROM cbm_node WHERE node_name = '$running_on_node_name';"
+    running_on_node_id="$($cbm_mysql_con -e "$sql" 2> /dev/null)"
+    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database. $sql"; fi
+
+    sql="INSERT INTO cbm_restore (running_on_node, backup_id, start_time, status) VALUES ('$running_on_node_name', $backup_id, '$start_time', '$status');"
+    result="$($cbm_mysql_con -e "$sql" 2> /dev/null)"
+    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not insert into database. $sql"; fi
+}
+
 set -E
 set -o pipefail
 trap '[ "$?" -ne 77 ] || exit 77' ERR
@@ -391,6 +431,9 @@ trap "error_exit 'Received signal SIGTERM'" SIGTERM
 case "$command" in
 backup_started)
     backup_started
+    ;;
+restore_started)
+    restore_started
     ;;
 check_for_finished)
     check_for_finished

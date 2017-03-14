@@ -1,12 +1,12 @@
 #!/bin/bash
 ################################################################################
 # Purpose:
-#     Restore MongoDB database.
+#     Restore MongoDB database with the use of Rundeck.
 # Usage:
 #     Run script with --help option to get usage.
 ################################################################################
 
-version="1.6.0"
+version="2.0.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -18,6 +18,8 @@ restore_dir="/backups/restore"
 mongo="$(which mongo)"
 mongorestore="$(which mongorestore)"
 mongod="$(which mongod)"
+log="$restore_dir/restore.log"
+log_err="$restore_dir/restore.err"
 
 # Functions.
 
@@ -139,9 +141,15 @@ start() {
     fi
     mkdir "$restore_path"
 
+    # Move logs.
+    mv "$log" "$restore_path/"
+    mv "$log_err" "$restore_path/"
+    log="$restore_path/$(basename "$log")"
+    log_err="$restore_path/$(basename "$log_err")"
+
     # Create restore status and pid file.
     echo "$BASHPID" > "$restore_pid_file"
-    echo "{\"start_time\":\"$start_time\",\"backup_to_restore\":\"$backup_to_restore\",\"status\":\"running\"}" > "$restore_status_file"
+    echo "{\"start_time\":\"$start_time\",\"node_name\":\"$node_name\",\"backup_start_time\":\"$backup_start_time\",\"status\":\"running\"}" > "$restore_status_file"
 
     get_backup
     if [[ $verify_md5_yn = yes ]]; then verify_md5; fi
@@ -156,7 +164,7 @@ start() {
     echo "**************************************************"
 
     # Update restore status file.
-    echo "{\"start_time\":\"$start_time\",\"end_time\":\"$end_time\",\"backup_to_restore\":\"$backup_to_restore\",\"status\":\"completed\"}" > "$restore_status_file"
+    echo "{\"start_time\":\"$start_time\",\"end_time\":\"$end_time\",\"node_name\":\"$node_name\",\"backup_start_time\":\"$backup_start_time\",\"status\":\"completed\"}" > "$restore_status_file"
 }
 
 # Get restore job status.
@@ -181,13 +189,13 @@ status() {
                 exit 0
             else
                 # Show status.
-                echo "{\"backup_to_restore\":\"$backup_to_restore\",\"status\":\"failed\"}"
+                echo "{\"start_time\":\"$start_time\",\"node_name\":\"$node_name\",\"backup_start_time\":\"$backup_start_time\",\"status\":\"failed\"}"
                 exit 0
             fi
         fi
     else
         # Show status.
-        echo "{\"backup_to_restore\":\"$backup_to_restore\",\"status\":\"unknown\"}"
+        echo "{\"start_time\":\"$start_time\",\"node_name\":\"$node_name\",\"backup_start_time\":\"$backup_start_time\",\"status\":\"unknown\"}"
     fi
 }
 
@@ -265,11 +273,21 @@ restore_date="$(date -d "$start_time_wot" +'%Y%m%dT%H%M%SZ')"
 restore_path="$restore_dir/${restore_date}_$backup_to_restore"
 restore_pid_file="$restore_path/restore.pid"
 restore_status_file="$restore_path/restore.status.json"
+node_name="$(basename "$s3_bucket_path")"
+backup_start_time="${backup_to_restore:0:4}-${backup_to_restore:4:2}-${backup_to_restore:6:5}:${backup_to_restore:11:2}:${backup_to_restore:13:3}"
 
 if [[ $command = start ]]; then
-    start
+    # Start restore in daemon mode.
+
+    # Output status in JSON.
+    echo "{\"start_time\":\"$start_time\",\"node_name\":\"$node_name\",\"backup_start_time\":\"$backup_start_time\",\"status\":\"running\"}"
+
+    exec 1> "$log" 2> "$log" 2> "$log_err"
+    start &
 elif [[ $command = status ]]; then
+    # Get restore status.
     status
 else
+    # Get usage.
     usage
 fi

@@ -9,7 +9,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="1.4.0"
+version="1.5.0"
 
 script_start_ts="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -49,6 +49,10 @@ while test -n "$1"; do
         shift
         ;;
     check_for_finished)
+        command="$1"
+        shift
+        ;;
+    check_for_finished_restore)
         command="$1"
         shift
         ;;
@@ -123,7 +127,7 @@ backup_started() {
     rc=$?; if [[ $rc -ne 0 ]]; then die "Could not insert into database. $sql"; fi
 }
 
-# Check for finished backups.
+# Check for finished backup.
 check_for_finished() {
     local bkup_execution_id
     local execution_log
@@ -232,6 +236,65 @@ check_for_finished() {
             fi
         fi
     done <<<"$result_started"
+}
+
+# Check for finished restore.
+check_for_finished_restore() {
+    local rc
+    local result_running
+    local sql
+
+    sql="SELECT restore_id, running_on_node, start_time, restore_path FROM cbm_restore;"
+    result_running="$($cbm_mysql_con -e "$sql" 2> /dev/null)"
+    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database. $sql"; fi
+
+    # If there are no restores in progress, then exit.
+    if [[ -z $result_running ]]; then
+        exit 0
+    fi
+
+    while read -r restore_id running_on_node start_date start_time restore_path; do
+        if [[ -z $restore_id || -z $running_on_node || -z $start_date || -z $start_time || -z $restore_path ]]; then
+            die "Not all the parameters were supplied."
+        fi
+
+        # Get execution status.
+        restore_execution_id="$(rundeck_run_job "$rundeck_server_url" "$rundeck_api_token" "$rundeck_job_id_restore_status" "$running_on_node" "{\"argString\":\"-command status -restore-path $restore_path\"}")"
+
+        # Wait for Rundeck execution to complete.
+        execution_state="$(rundeck_wait_for_job_to_complete "$rundeck_server_url" "$rundeck_api_token" "$restore_execution_id")"
+
+        # Get log from Rundeck execution.
+        execution_log="$(rundeck_get_execution_output_log "$rundeck_server_url" "$rundeck_api_token" "$restore_execution_id" "$running_on_node")"
+        echo "running_on_node: $running_on_node"
+        echo "execution_log: $execution_log"
+        echo "execution_state: $execution_state"
+
+        status="$(jq '.status' <<<"$execution_log" | tr -d '"')"
+        if [[ -z $status ]]; then status="failed"; fi
+
+        if [[ $status = "completed" ]] || [[ $status = "failed" ]]; then
+            end_time="$(jq ".end_time" <<<"$execution_log" | tr -d '"')"
+            rc=$?; if [[ $rc -ne 0 ]]; then continue; fi
+
+            sql="UPDATE cbm_restore SET status = '$status', end_time = '$end_time' WHERE restore_id = $restore_id;"
+            result="$($cbm_mysql_con -e "$sql" 2> /dev/null)"
+            rc=$?; if [[ $rc -ne 0 ]]; then die "Could not update database. $sql"; fi
+        elif [[ $status = "running" ]] || [[ $status = "unknown" ]]; then
+            start_epoch_time="$(date -u -d "$start_date $start_time" +"%s")"
+            script_start_epoch_time="$(date -u -d "$script_start_ts" +"%s")"
+            restore_duration=$(( $script_start_epoch_time - $start_epoch_time ))
+            # Restore should be considered failed if it took longer than timeout seconds. If status is uknown, set it as unknown.
+            if [[ $restore_duration -gt $restore_timeout ]]; then
+                if [[ $status = "started" ]] || [[ $status = "running" ]]; then
+                    status="failed"
+                fi
+                sql="UPDATE cbm_restore SET status = '$status', end_time = '$script_start_ts' WHERE restore_id = $restore_id;"
+                result="$($cbm_mysql_con -e "$sql" 2> /dev/null)"
+                rc=$?; if [[ $rc -ne 0 ]]; then die "Could not update database. $sql"; fi
+            fi
+        fi
+    done <<<"$result_running"
 }
 
 error_exit() {
@@ -440,6 +503,9 @@ restore_started)
     ;;
 check_for_finished)
     check_for_finished
+    ;;
+check_for_finished_restore)
+    check_for_finished_restore
     ;;
 run_random_restore)
     run_random_restore

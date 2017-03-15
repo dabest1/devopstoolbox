@@ -6,7 +6,7 @@
 #     Run script with --help option to get usage.
 ################################################################################
 
-version="2.2.0"
+version="2.2.1"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -79,11 +79,11 @@ verify_md5() {
     local rc
 
     echo "Verifying md5 check sum."
-    cd "$restore_path" || exit 1
+    cd "$restore_path" || die "Could not change directory."
     find . -type f | grep -v '[.]/.*[.]log$' | grep -v '[.]/.*[.]err$' | grep -v '[.]/md5sum.txt' | grep -v '[.]/md5sum.verify.txt' | grep -v '[.]/restore.pid' | grep -v '[.]/restore.status.json' | sort | xargs md5sum > "$restore_path/md5sum.verify.txt"
     diff "$restore_path/md5sum.txt" "$restore_path/md5sum.verify.txt"
     rc=$?
-    if [[ $rc -ne 0 ]]; then die "md5 check sum does not match."; fi
+    if [[ $rc -ne 0 ]]; then die "Md5 check sum does not match."; fi
     echo "Done."
     echo
 }
@@ -221,7 +221,7 @@ error_exit() {
 }
 
 set -o pipefail
-set -o errtrace
+#set -o errtrace
 trap 'rc=$? && [[ $rc -ne 77 ]] && error_exit "ERROR in $0: line $LINENO: exit code $rc." || exit 77' ERR
 trap 'error_exit "ERROR in $0: Received signal SIGHUP."' SIGHUP
 trap 'error_exit "ERROR in $0: Received signal SIGINT."' SIGINT

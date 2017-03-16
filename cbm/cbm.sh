@@ -9,7 +9,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="1.5.0"
+version="1.6.0"
 
 script_start_ts="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -433,6 +433,16 @@ run_random_restore() {
     local completed_backups_cnt
     local random_backup_num
     local random_backup
+    local running_restores
+
+    sql="SELECT running_on_node FROM cbm_restore WHERE status = 'running';"
+    running_restores="$($cbm_mysql_con -e "$sql" 2> /dev/null)"
+    rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database. $sql"; fi
+
+    # Exit if there is already a restore running.
+    if [[ ! -z $running_restores ]]; then
+        exit 0
+    fi
 
     sql="SELECT node_name, start_time, backup_path FROM cbm_backup JOIN cbm_node ON node_name_id = node_id WHERE start_time > DATE_SUB(CURDATE(), INTERVAL 2 DAY) AND start_time < DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND status = 'completed';"
     completed_backups="$($cbm_mysql_con -e "$sql" 2> /dev/null)"

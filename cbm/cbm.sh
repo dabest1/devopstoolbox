@@ -9,7 +9,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="1.6.0"
+version="1.7.0"
 
 script_start_ts="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -441,6 +441,8 @@ run_random_restore() {
 
     # Exit if there is already a restore running.
     if [[ ! -z $running_restores ]]; then
+        echo "Restore job is already running on:"
+        echo "$running_restores"
         exit 0
     fi
 

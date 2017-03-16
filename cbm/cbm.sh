@@ -9,7 +9,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="1.7.0"
+version="1.8.0"
 
 script_start_ts="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -137,7 +137,7 @@ check_for_finished() {
     local result_started
     local status
 
-    sql="SELECT backup_id, cluster_name_id, db_type, node_name, port, start_time, backup_path FROM cbm_backup JOIN cbm_node ON cbm_backup.node_name_id = cbm_node.node_id WHERE status = 'started';"
+    sql="SELECT backup_id, cluster_name_id, db_type, node_name, port, start_time, backup_path FROM cbm_backup JOIN cbm_node ON cbm_backup.node_name_id = cbm_node.node_id WHERE status = 'started' OR status = 'running';"
     result_started="$($cbm_mysql_con -e "$sql" 2> /dev/null)"
     rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database. $sql"; fi
     # If there are no backups in progress, then exit.
@@ -244,7 +244,7 @@ check_for_finished_restore() {
     local result_running
     local sql
 
-    sql="SELECT restore_id, running_on_node, start_time, restore_path FROM cbm_restore;"
+    sql="SELECT restore_id, running_on_node, start_time, restore_path FROM cbm_restore WHERE status = 'running';"
     result_running="$($cbm_mysql_con -e "$sql" 2> /dev/null)"
     rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database. $sql"; fi
 

@@ -6,7 +6,7 @@
 #     Run script with --help option to get usage.
 ################################################################################
 
-version="2.2.1"
+version="2.3.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -205,12 +205,18 @@ status() {
 
 # Drop current databases if any.
 drop_dbs() {
+    local rc
+
     echo "Dropping databases:"
     "$mongo" --quiet --eval 'db.adminCommand( { listDatabases: 1 } ).databases.forEach(printjson);'
+    rc=$?
+    if [[ $rc -ne 0 ]]; then die "Querying MongoDB failed."; fi
     "$mongo" --quiet --eval '
         var dbNames = db.getMongo().getDBNames();
         dbNames.forEach( function (name) { db = db.getSiblingDB(name); db.runCommand( { dropDatabase: 1 } ); } );
     '
+    rc=$?
+    if [[ $rc -ne 0 ]]; then die "Dropping databases failed."; fi
     echo "Done."
     echo
 }

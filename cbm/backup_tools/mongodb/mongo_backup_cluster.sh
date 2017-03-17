@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.1.2"
+version="2.1.3"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -346,13 +346,13 @@ perform_backup() {
             echo "Insert UUID into database for restore validation."
             uuid=$(uuidgen)
             echo "uuid: $uuid"
-            primary_host_port="$("$mongo" --quiet --eval 'JSON.stringify(rs.isMaster())' | jq '.primary' | tr -d '"')"
+            primary_host_port="$("$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin dba --eval 'JSON.stringify(rs.isMaster())' | jq '.primary' | tr -d '"')"
             "$mongo" --quiet --host "$primary_host_port" $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.insert( { uuid: \"$uuid\" } )"
             echo
 
             # Verify that UUID showed up in this replica set.
             for (( i=1; i<=60; i++ )); do
-                uuid_from_mongo="$("$mongo" --quiet dba --eval "rs.slaveOk(); JSON.stringify(db.backup_uuid.findOne({uuid:\"$uuid\"}));" | jq '.uuid' | tr -d '"')"
+                uuid_from_mongo="$("$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin dba --eval "rs.slaveOk(); JSON.stringify(db.backup_uuid.findOne({uuid:\"$uuid\"}));" | jq '.uuid' | tr -d '"')"
                 if [[ $uuid = "$uuid_from_mongo" ]]; then
                     contains_uuid="yes"
                     break

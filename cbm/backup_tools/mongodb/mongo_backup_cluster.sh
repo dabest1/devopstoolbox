@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.1.3"
+version="2.2.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -342,6 +342,11 @@ perform_backup() {
 
     # Replica set member.
     else
+        is_master="$("$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin --eval 'JSON.stringify(db.isMaster())' | jq '.ismaster')"
+        if [[ $is_master != "false" ]]; then
+            error_exit "ERROR: ${0}(@$LINENO): This is not a secondary node."
+        fi
+
         if [[ $uuid_insert == yes ]]; then
             echo "Insert UUID into database for restore validation."
             uuid=$(uuidgen)
@@ -367,10 +372,6 @@ perform_backup() {
         date -u +'start: %FT%TZ'
         if [[ -e /etc/mongod.conf ]]; then
             cp -p /etc/mongod.conf "$bkup_path/"
-        fi
-        is_master="$("$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin --eval 'JSON.stringify(db.isMaster())' | jq '.ismaster')"
-        if [[ $is_master != "false" ]]; then
-            error_exit "ERROR: ${0}(@$LINENO): This is not a secondary node."
         fi
         "$mongodump" --port "$port" $mongo_option -o "$bkup_path/backup" --authenticationDatabase admin --oplog &> "$bkup_path/mongodump.log"
         rc=$?

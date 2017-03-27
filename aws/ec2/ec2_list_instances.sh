@@ -7,7 +7,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.8"
+version="1.1.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -44,26 +44,29 @@ while test -n "$1"; do
 done
 
 # Header row.
-header_row="account	name	instance_id	private_ip	region	type	state"
-echo "$header_row"
+header_row="account name instance_id private_ip region type state"
 
-# If tag is not supplied, then search by name, else search by tag.
-if [[ -z $tag_value ]]; then
-    # If name is not supplied, then we want all instances.
-    if [[ -z $name ]]; then
-        name='*'
-    fi
+{
+    echo "$header_row"
 
-    if echo "$name" | grep -q '^i-'; then
-        instance_ids="$name"
+    # If tag is not supplied, then search by name, else search by tag.
+    if [[ -z $tag_value ]]; then
+        # If name is not supplied, then we want all instances.
+        if [[ -z $name ]]; then
+            name='*'
+        fi
+
+        if echo "$name" | grep -q '^i-'; then
+            instance_ids="$name"
+        else
+            instance_ids=$(aws --profile "$profile" ec2 describe-instances --filters "Name=tag:Name, Values=$name" --query 'Reservations[].Instances[].[InstanceId]' --output text)
+        fi
+        if [[ -z $instance_ids ]]; then
+            exit 1
+        fi
+
+        aws --profile "$profile" ec2 describe-instances --instance-ids $instance_ids --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, PrivateIpAddress, Placement.AvailabilityZone, InstanceType, State.Name]' --output text | sort | awk -v profile="$profile" '{print profile"\t"$0}'
     else
-        instance_ids=$(aws --profile "$profile" ec2 describe-instances --filters "Name=tag:Name, Values=$name" --query 'Reservations[].Instances[].[InstanceId]' --output text)
+        aws --profile "$profile" ec2 describe-instances --filter "Name=tag-value,Values=$tag_value" --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, PrivateIpAddress, Placement.AvailabilityZone, InstanceType, State.Name]' --output text | sort | awk -v profile="$profile" '{print profile"\t"$0}'
     fi
-    if [[ -z $instance_ids ]]; then
-        exit 1
-    fi
-
-    aws --profile "$profile" ec2 describe-instances --instance-ids $instance_ids --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, PrivateIpAddress, Placement.AvailabilityZone, InstanceType, State.Name]' --output text | sort | awk -v profile="$profile" '{print profile"\t"$0}'
-else
-    aws --profile "$profile" ec2 describe-instances --filter "Name=tag-value,Values=$tag_value" --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, PrivateIpAddress, Placement.AvailabilityZone, InstanceType, State.Name]' --output text | sort | awk -v profile="$profile" '{print profile"\t"$0}'
-fi
+} | column -t

@@ -6,7 +6,7 @@
 #     Run script with --help option to get usage.
 ################################################################################
 
-version="2.4.0"
+version="2.5.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -15,6 +15,7 @@ script_name="$(basename "$0")"
 # Variables.
 s3_download_script="$script_dir/s3_download.sh"
 restore_dir="/backups/restore"
+mongodb_data_dir="/data"
 mongo="$(which mongo)"
 mongorestore="$(which mongorestore)"
 mongod="$(which mongod)"
@@ -52,6 +53,8 @@ usage() {
     echo "    -s, --s3_bucket_path       AWS S3 bucket path of where the backup is located."
     echo "    -p, --s3_profile           AWS S3 profile to use."
     echo "    -r, --restore_path         Restore path of existing restore job."
+    echo "    --drop_dbs                 Drop databases prior to restore."
+    echo "    --wipe_and_restart         Wipe data directory and restart MongoDB."
     echo "    --no_verify_md5            Disable MD5 check sum verification."
     echo "    --no_verify_uuid           Disable UUID verification."
     echo "    --version                  Display script version."
@@ -101,7 +104,7 @@ restore() {
     local rc
 
     echo "Restoring backup."
-    "$mongorestore" --drop "$restore_path/backup" &> "$restore_path/mongorestore.log"
+    "$mongorestore" "$restore_path/backup" &> "$restore_path/mongorestore.log"
     rc=$?
     if [[ $rc -ne 0 ]]; then die "mongorestore failed."; fi
     if grep -q 'skipping...' "$restore_path/mongorestore.log"; then die "mongorestore skipped some files."; fi
@@ -158,7 +161,8 @@ start() {
     get_backup
     if [[ $verify_md5_yn = yes ]]; then verify_md5; fi
     uncompress
-    drop_dbs
+    if [[ $wipe_and_restart_yn = yes ]]; then wipe_and_restart; fi
+    if [[ $drop_dbs_yn = yes ]]; then drop_dbs; fi
     restore
     if [[ $verify_uuid_yn = yes ]]; then verify_uuid; fi
 
@@ -203,6 +207,15 @@ status() {
     fi
 }
 
+# Wipe and restart.
+wipe_and_restart() {
+    echo "Stop MongoDB, wipe data directory, start MongoDB:"
+    service mongod stop
+    rm -rf "$mongodb_data_dir/*"
+    service mongod start
+    echo
+}
+
 # Drop current databases if any.
 drop_dbs() {
     local rc
@@ -234,6 +247,8 @@ trap 'error_exit "ERROR in $0: Received signal SIGINT."' SIGINT
 trap 'error_exit "ERROR in $0: Received signal SIGTERM."' SIGTERM
 
 # Process options.
+wipe_and_restart_yn="no"
+drop_dbs_yn="no"
 verify_md5_yn="yes"
 verify_uuid_yn="yes"
 while [[ -n $1 ]]; do
@@ -268,6 +283,14 @@ while [[ -n $1 ]]; do
     --restore_path|-r)
         shift
         restore_path="$1"
+        shift
+        ;;
+    --wipe_and_restart)
+        wipe_and_restart_yn="yes"
+        shift
+        ;;
+    --drop_dbs)
+        drop_dbs_yn="yes"
         shift
         ;;
     --no_verify_md5)

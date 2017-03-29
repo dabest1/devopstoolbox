@@ -9,7 +9,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="1.9.0"
+version="1.9.1"
 
 script_start_ts="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -267,7 +267,6 @@ check_for_finished_restore() {
         execution_log="$(rundeck_get_execution_output_log "$rundeck_server_url" "$rundeck_api_token" "$restore_execution_id" "$running_on_node")"
         echo "running_on_node: $running_on_node"
         echo "execution_log: $execution_log"
-        echo "execution_state: $execution_state"
 
         status="$(jq '.status' <<<"$execution_log" | tr -d '"')"
         if [[ -z $status ]]; then status="failed"; fi

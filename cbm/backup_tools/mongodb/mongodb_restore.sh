@@ -6,7 +6,7 @@
 #     Run script with --help option to get usage.
 ################################################################################
 
-version="2.7.0"
+version="2.7.1"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -213,7 +213,8 @@ status() {
 wipe_and_restart() {
     echo "Stop MongoDB, wipe data directory, start MongoDB:"
     service mongod stop
-    rm -rf "$mongodb_data_dir/*"
+    echo "Deleting: $mongodb_data_dir/*"
+    rm -vrf "$mongodb_data_dir"/*
     service mongod start
     echo
 }
@@ -227,7 +228,8 @@ restore_dir_cleanup() {
         if [[ -z $old_restore_to_delete ]]; then
             break
         fi
-        rm -vrf "$restore_dir/$old_restore_to_delete"
+        echo "Deleting: $restore_dir/$old_restore_to_delete"
+        rm -rf "$restore_dir/$old_restore_to_delete"
         restore_disk_usage_pct="$(df -h "$restore_dir" | tail -1 | awk '{print $5}' | tr -d '%')"
     done
     echo

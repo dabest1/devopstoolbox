@@ -6,7 +6,7 @@
 #     Run script with --help option to get usage.
 ################################################################################
 
-version="2.5.0"
+version="2.6.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -57,6 +57,7 @@ usage() {
     echo "    --wipe_and_restart         Wipe data directory and restart MongoDB."
     echo "    --no_verify_md5            Disable MD5 check sum verification."
     echo "    --no_verify_uuid           Disable UUID verification."
+    echo "    --no_restore_cleanup       Disable clean up of restore directory."
     echo "    --version                  Display script version."
     echo "    --help                     Display this help."
     exit 1
@@ -158,6 +159,7 @@ start() {
     echo "$BASHPID" > "$restore_pid_file"
     echo "{\"start_time\":\"$start_time\",\"node_name\":\"$node_name\",\"backup_start_time\":\"$backup_start_time\",\"restore_path\":\"$restore_path\",\"status\":\"running\"}" > "$restore_status_file"
 
+    if [[ $restore_cleanup_yn = yes ]]; then restore_dir_cleanup; fi
     get_backup
     if [[ $verify_md5_yn = yes ]]; then verify_md5; fi
     uncompress
@@ -216,6 +218,21 @@ wipe_and_restart() {
     echo
 }
 
+# Clean up restore directory.
+restore_dir_cleanup() {
+    echo "Clean up restore direcotry if 50% or more disk space is used."
+    restore_disk_usage_pct="$(df -h "$restore_dir" | tail -1 | awk '{print $5}' | tr -d '%')"
+    while [[ $restore_disk_usage_pct -ge 50 ]]; do
+        old_restore_to_delete="$(ls "$restore_dir" | grep '^[0-9]\{8\}T[0-9]\{6\}Z_' | sort | tail -1)"
+        if [[ -z $old_restore_to_delete ]]; then
+            break
+        fi
+        rm -vrf "$restore_dir/$old_restore_to_delete"
+        restore_disk_usage_pct="$(df -h "$restore_dir" | tail -1 | awk '{print $5}' | tr -d '%')"
+    done
+    echo
+}
+
 # Drop current databases if any.
 drop_dbs() {
     local rc
@@ -251,6 +268,7 @@ wipe_and_restart_yn="no"
 drop_dbs_yn="no"
 verify_md5_yn="yes"
 verify_uuid_yn="yes"
+restore_cleanup_yn="yes"
 while [[ -n $1 ]]; do
     case "$1" in
     start)
@@ -299,6 +317,10 @@ while [[ -n $1 ]]; do
         ;;
     --no_verify_uuid)
         verify_uuid_yn="no"
+        shift
+        ;;
+    --no_restore_cleanup)
+        restore_cleanup_yn="no"
         shift
         ;;
     *|--help)

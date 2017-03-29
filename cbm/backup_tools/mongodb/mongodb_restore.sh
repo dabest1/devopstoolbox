@@ -6,7 +6,7 @@
 #     Run script with --help option to get usage.
 ################################################################################
 
-version="2.6.0"
+version="2.6.1"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -223,7 +223,7 @@ restore_dir_cleanup() {
     echo "Clean up restore direcotry if 50% or more disk space is used."
     restore_disk_usage_pct="$(df -h "$restore_dir" | tail -1 | awk '{print $5}' | tr -d '%')"
     while [[ $restore_disk_usage_pct -ge 50 ]]; do
-        old_restore_to_delete="$(ls "$restore_dir" | grep '^[0-9]\{8\}T[0-9]\{6\}Z_' | sort | tail -1)"
+        old_restore_to_delete="$(ls "$restore_dir" | grep '^[0-9]\{8\}T[0-9]\{6\}Z_' | sort | head -1)"
         if [[ -z $old_restore_to_delete ]]; then
             break
         fi

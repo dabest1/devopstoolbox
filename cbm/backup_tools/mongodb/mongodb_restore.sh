@@ -6,7 +6,7 @@
 #     Run script with --help option to get usage.
 ################################################################################
 
-version="2.6.1"
+version="2.7.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -160,10 +160,10 @@ start() {
     echo "{\"start_time\":\"$start_time\",\"node_name\":\"$node_name\",\"backup_start_time\":\"$backup_start_time\",\"restore_path\":\"$restore_path\",\"status\":\"running\"}" > "$restore_status_file"
 
     if [[ $restore_cleanup_yn = yes ]]; then restore_dir_cleanup; fi
+    if [[ $wipe_and_restart_yn = yes ]]; then wipe_and_restart; fi
     get_backup
     if [[ $verify_md5_yn = yes ]]; then verify_md5; fi
     uncompress
-    if [[ $wipe_and_restart_yn = yes ]]; then wipe_and_restart; fi
     if [[ $drop_dbs_yn = yes ]]; then drop_dbs; fi
     restore
     if [[ $verify_uuid_yn = yes ]]; then verify_uuid; fi

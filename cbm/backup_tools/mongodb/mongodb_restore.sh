@@ -6,7 +6,7 @@
 #     Run script with --help option to get usage.
 ################################################################################
 
-version="2.7.2"
+version="2.7.3"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -211,8 +211,14 @@ status() {
 
 # Wipe and restart.
 wipe_and_restart() {
+    local rc
+
     echo "Stop MongoDB, wipe data directory, start MongoDB:"
     service mongod stop
+    rc=$?
+    if [[ $rc -ne 0 ]]; then
+        ps -ef | grep "$mongod" | grep -v grep | awk '{print $2}' | xargs --verbose kill
+    fi
     echo "Deleting: $mongodb_data_dir/*"
     rm -rf "$mongodb_data_dir"/*
     service mongod start

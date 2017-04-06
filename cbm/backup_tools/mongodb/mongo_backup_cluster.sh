@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.2.1"
+version="2.3.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -658,7 +658,7 @@ if [[ $command = "start" ]]; then
     bkup_status_file="$bkup_path/backup.status.json"
     # Output status in JSON.
     cat <<HERE_DOC
-{"start_time":"$start_time","backup_path":"$bkup_path","status":"started"}
+{"start_time":"$start_time","backup_path":"$bkup_path","status":"running"}
 HERE_DOC
     exec 1> "$log" 2> "$log" 2> "$log_err"
     main &

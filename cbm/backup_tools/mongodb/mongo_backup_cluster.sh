@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.3.0"
+version="2.4.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -101,7 +101,8 @@ compress_backup() {
     date -u +'finish: %FT%TZ'
     echo
     echo "Compressed backup size in bytes:"
-    du -sb "$bkup_path"
+    compressed_size_in_bytes="$(du -sb "$bkup_path" | awk '{print $1}')"
+    echo "$compressed_size_in_bytes"
     echo "Disk space after compression:"
     df -h "$bkup_dir/"
     echo
@@ -124,7 +125,8 @@ main() {
     echo "**************************************************"
     echo
     echo "Hostname: $HOSTNAME"
-    echo "MongoDB version: $("$mongod" --version | head -1)"
+    mongodb_version="$("$mongod" --version | head -1 | sed 's/db version //; s/v//')"
+    echo "MongoDB version: $mongodb_version"
     echo "Backup type: $bkup_type"
     echo "Number of backups to retain for this type: $num_bkups"
     echo "Backup will be created in: $bkup_path"
@@ -144,8 +146,10 @@ HERE_DOC
 
     purge_old_backups
 
+    backup_size_in_bytes=""
     perform_backup
 
+    compressed_size_in_bytes=""
     compress_backup
 
     post_backup_process
@@ -170,7 +174,7 @@ HERE_DOC
     # Update backup status file.
     if [[ -z $replset_hosts_ports_bkup ]]; then
         cat <<HERE_DOC > "$bkup_status_file"
-{"start_time":"$start_time","end_time":"$end_time","backup_path":"$bkup_path","status":"completed"}
+{"start_time":"$start_time","end_time":"$end_time","backup_path":"$bkup_path","db_version":"$mongodb_version","backup_size_in_bytes":"$backup_size_in_bytes","compressed_size_in_bytes":"$compressed_size_in_bytes","status":"completed"}
 HERE_DOC
     else
         backup_nodes_json="\"backup_nodes\":["
@@ -389,7 +393,8 @@ perform_backup() {
     fi
 
     echo "Backup size in bytes:"
-    du -sb "$bkup_path"
+    backup_size_in_bytes="$(du -sb "$bkup_path" | awk '{print $1}')"
+    echo "$backup_size_in_bytes"
     echo "Disk space after backup:"
     df -h "$bkup_dir/"
     echo

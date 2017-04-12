@@ -18,7 +18,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.4.0"
+version="2.4.1"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -174,7 +174,7 @@ HERE_DOC
     # Update backup status file.
     if [[ -z $replset_hosts_ports_bkup ]]; then
         cat <<HERE_DOC > "$bkup_status_file"
-{"start_time":"$start_time","end_time":"$end_time","backup_path":"$bkup_path","db_version":"$mongodb_version","backup_size_in_bytes":"$backup_size_in_bytes","compressed_size_in_bytes":"$compressed_size_in_bytes","status":"completed"}
+{"start_time":"$start_time","end_time":"$end_time","backup_path":"$bkup_path","db_version":"$mongodb_version","backup_size_in_bytes":$backup_size_in_bytes,"compressed_size_in_bytes":$compressed_size_in_bytes,"status":"completed"}
 HERE_DOC
     else
         backup_nodes_json="\"backup_nodes\":["

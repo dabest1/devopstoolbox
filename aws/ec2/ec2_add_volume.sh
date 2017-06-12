@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.6"
+version="1.0.7"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -70,7 +70,7 @@ echo "Done."
 echo
 
 echo "Format new volume..."
-ssh "$name" "sudo mkfs.ext4 $device_aws"
+ssh -t "$name" "sudo mkfs.ext4 $device_aws"
 rc=$?
 if [[ $rc -ne 0 ]]; then
     echo "Error: Could not format volume."
@@ -80,7 +80,7 @@ echo "Done."
 echo
 
 echo "Create mount directory..."
-ssh "$name" sudo bash << HERE_DOCUMENT
+ssh -t "$name" sudo bash << HERE_DOCUMENT
 if [[ ! -d $volume_mount ]]; then
     mkdir "$volume_mount"
 fi
@@ -97,7 +97,7 @@ echo "Done."
 echo
 
 echo "Mount new volume..."
-ssh "$name" "echo '$device_aws $volume_mount auto defaults,auto,noatime 0 0' | sudo tee -a /etc/fstab > /dev/null; sudo mount $volume_mount"
+ssh -t "$name" "echo '$device_aws $volume_mount auto defaults,auto,noatime 0 0' | sudo tee -a /etc/fstab > /dev/null; sudo mount $volume_mount"
 rc=$?
 if [[ $rc -ne 0 ]]; then
     echo "Error: Could not mount volume."
@@ -107,7 +107,7 @@ echo "Done."
 echo
 
 echo "Set permissions and ownership..."
-ssh "$name" "sudo chown '$mount_owner':'$mount_group' '$volume_mount'; sudo chmod '$mount_privs' '$volume_mount'"
+ssh -t "$name" "sudo chown '$mount_owner':'$mount_group' '$volume_mount'; sudo chmod '$mount_privs' '$volume_mount'"
 rc=$?
 if [[ $rc -ne 0 ]]; then
     echo "Error: Could not set permissions or ownership."

@@ -5,15 +5,16 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.5"
+version="1.0.6"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 config_path="$script_dir/${script_name/.sh/.cfg}"
 
-function usage {
-    echo 'Usage:'
+usage() {
+    echo "Usage:"
+    echo "    Set options in $config_path config file."
     echo "    $script_name"
     exit 1
 }

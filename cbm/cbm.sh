@@ -9,7 +9,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="1.9.1"
+version="1.10.0"
 
 script_start_ts="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -449,6 +449,10 @@ run_random_restore() {
     rc=$?; if [[ $rc -ne 0 ]]; then die "Could not query database. $sql"; fi
 
     completed_backups_cnt="$(echo "$completed_backups" | wc -l)"
+    completed_backups_is_empty="$(echo $completed_backups | tr -d "\n")"
+    if [[ $completed_backups_is_empty = "" ]]; then
+        die "No recent backups found!"
+    fi
     random_backup_num="$(($RANDOM % $completed_backups_cnt + 1))"
     random_backup="$(echo "$completed_backups" | sed -n "${random_backup_num}p")"
 

@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.6"
+version="1.1.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -40,10 +40,21 @@ echo "script: $script_dir/$script_name"
 echo "dynamodump: $dynamodump"
 echo "readCapacity: $readCapacity"
 echo "region: $region"
-echo "tables: $tables"
+echo "tables_include: $tables_include"
+echo "tables_exclude: $tables_exclude"
 echo
 
-for table in $tables; do
+echo "All tables in the region:"
+tables_all="$(aws --profile "$aws_profile" dynamodb list-tables --output text | awk '{print $2}')"
+echo "$tables_all"
+echo
+
+echo "Tables selected for backup:"
+tables_backup="$(echo "$tables_all" | egrep "$tables_include" | egrep -v "$tables_exclude")"
+echo "$tables_backup"
+echo
+
+for table in $tables_backup; do
     date -u +'TS: %Y%m%dT%H%M%SZ'
     echo "Table: $table"
     $dynamodump -r "$region" --accessKey "$accessKey" --secretKey "$secretKey" -m backup --readCapacity "$readCapacity" -s "$table"

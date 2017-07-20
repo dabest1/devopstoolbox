@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.1.1"
+version="1.2.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -63,8 +63,8 @@ done
 
 date -u +'TS: %Y%m%dT%H%M%SZ'
 mv -v dump "$bkup_ts"
-echo "Size of backup (KB):"
-du -s "$bkup_ts/"*
+echo "Size of backup:"
+du -sb "$bkup_ts/"*
 echo
 
 echo "**************************************************"

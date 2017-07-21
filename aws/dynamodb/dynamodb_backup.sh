@@ -5,13 +5,19 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.2.0"
+version="1.3.0"
 
-set -o pipefail
+start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 config_path="$script_dir/${script_name/.sh/.cfg}"
 
+# Functions.
+
+shopt -s expand_aliases
+alias die='error_exit "ERROR in $0: line $LINENO:"'
+
+# Usage.
 usage() {
     echo "Usage:"
     echo "    Set options in $config_path config file."
@@ -19,15 +25,51 @@ usage() {
     exit 1
 }
 
-# Load configuration settings.
-source "$config_path"
+# Compress backup.
+compress_backup() {
+    echo "Compress backup."
+    date -u +'start: %FT%TZ'
+    find "$bkup_dir/$bkup_date.$bkup_type" -type f -exec gzip '{}' \;
+    date -u +'finish: %FT%TZ'
+    echo
+    echo "Compressed backup size in bytes:"
+    du -sb "$bkup_dir/$bkup_date.$bkup_type"
+    echo "Disk space after compression:"
+    df -h "$bkup_dir"
+    echo
+}
 
+error_exit() {
+    echo "$@" >&2
+    exit 77
+}
+
+set -E
+set -o pipefail
+trap '[ "$?" -ne 77 ] || exit 77' ERR
+trap "error_exit 'Received signal SIGHUP'" SIGHUP
+trap "error_exit 'Received signal SIGINT'" SIGINT
+trap "error_exit 'Received signal SIGTERM'" SIGTERM
+
+# Process options.
 if [[ $1 == '--help' ]]; then
     usage
 fi
 
-start_time="$(date -u +'%F %T %Z')"
-bkup_ts="$(date -d "$start_time" +'%Y%m%dT%H%M%SZ')"
+# Load configuration settings.
+source "$config_path"
+
+if [[ -z $bkup_dir ]]; then
+    die "Some variables were not provided in configuration file."
+fi
+
+# Redirect stderr into error log, stdout and stderr into log and terminal.
+log="dynamodb_backup.log"
+log_err="dynamodb_backup.err"
+rm "$log" "$log_err" 2> /dev/null
+exec 1> >(tee -ia "$log") 2> >(tee -ia "$log" >&2) 2> >(tee -ia "$log_err" >&2)
+
+bkup_date="$(date -d "$start_time" +'%Y%m%dT%H%M%SZ')"
 
 echo "**************************************************"
 echo "* Backup AWS DynamoDB Tables"
@@ -35,7 +77,7 @@ echo "* Time started: $start_time"
 echo "**************************************************"
 echo
 echo "Hostname: $HOSTNAME"
-echo "bkup_ts: $bkup_ts"
+echo "bkup_date: $bkup_date"
 echo "script: $script_dir/$script_name"
 echo "dynamodump: $dynamodump"
 echo "readCapacity: $readCapacity"
@@ -43,6 +85,18 @@ echo "region: $region"
 echo "tables_include: $tables_include"
 echo "tables_exclude: $tables_exclude"
 echo
+
+bkup_type="daily"
+
+echo "Backup will be created in: $bkup_dir/$bkup_date.$bkup_type"
+echo
+mkdir "$bkup_dir/$bkup_date.$bkup_type"
+# Move logs into dated backup directory.
+mv "$log" "$bkup_dir/$bkup_date.$bkup_type/"
+mv "$log_err" "$bkup_dir/$bkup_date.$bkup_type/"
+log="$bkup_dir/$bkup_date.$bkup_type/$(basename "$log")"
+log_err="$bkup_dir/$bkup_date.$bkup_type/$(basename "$log_err")"
+cd "$bkup_dir/$bkup_date.$bkup_type" || die "Cannot change directory."
 
 echo "All tables in the region:"
 tables_all="$(aws --profile "$aws_profile" dynamodb list-tables --output text | awk '{print $2}')"
@@ -54,17 +108,29 @@ tables_backup="$(echo "$tables_all" | egrep "$tables_include" | egrep -v "$table
 echo "$tables_backup"
 echo
 
+# Perform backup.
+echo "Disk space before backup:"
+df -h "$bkup_dir"
+echo
+
 for table in $tables_backup; do
     date -u +'TS: %Y%m%dT%H%M%SZ'
     echo "Table: $table"
-    $dynamodump -r "$region" --accessKey "$accessKey" --secretKey "$secretKey" -m backup --readCapacity "$readCapacity" -s "$table"
+    $dynamodump -r "$region" --accessKey "$accessKey" --secretKey "$secretKey" -m backup --readCapacity "$readCapacity" -s "$table" 2>&1
+    rc=$?
+    if [[ $rc -ne 0 ]]; then
+        die "dynamodump failed."
+    fi
     echo
 done
 
+cd dump || die "Cannot change directory."
+
 date -u +'TS: %Y%m%dT%H%M%SZ'
-mv -v dump "$bkup_ts"
-echo "Size of backup:"
-du -sb "$bkup_ts/"*
+echo "Backup size in bytes:"
+du -sb *
+echo "Disk space after backup:"
+df -h "$bkup_dir"
 echo
 
 echo "**************************************************"

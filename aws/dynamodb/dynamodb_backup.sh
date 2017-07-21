@@ -5,12 +5,14 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.3.0"
+version="1.4.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 config_path="$script_dir/${script_name/.sh/.cfg}"
+log="$script_dir/${script_name/.sh/.log}"
+log_err="$script_dir/${script_name/.sh/.err}"
 
 # Functions.
 
@@ -22,6 +24,8 @@ usage() {
     echo "Usage:"
     echo "    Set options in $config_path config file."
     echo "    $script_name"
+    echo "Note:"
+    echo "    dynamodump stalls when current read capacity matches the temporary backup read capacity. So try to set a unique value for read capacity during backup."
     exit 1
 }
 
@@ -64,8 +68,6 @@ if [[ -z $bkup_dir ]]; then
 fi
 
 # Redirect stderr into error log, stdout and stderr into log and terminal.
-log="dynamodb_backup.log"
-log_err="dynamodb_backup.err"
 rm "$log" "$log_err" 2> /dev/null
 exec 1> >(tee -ia "$log") 2> >(tee -ia "$log" >&2) 2> >(tee -ia "$log_err" >&2)
 
@@ -90,7 +92,7 @@ bkup_type="daily"
 
 echo "Backup will be created in: $bkup_dir/$bkup_date.$bkup_type"
 echo
-mkdir "$bkup_dir/$bkup_date.$bkup_type"
+mkdir "$bkup_dir/$bkup_date.$bkup_type" || die "Cannot create directory."
 # Move logs into dated backup directory.
 mv "$log" "$bkup_dir/$bkup_date.$bkup_type/"
 mv "$log_err" "$bkup_dir/$bkup_date.$bkup_type/"
@@ -116,7 +118,7 @@ echo
 for table in $tables_backup; do
     date -u +'TS: %Y%m%dT%H%M%SZ'
     echo "Table: $table"
-    $dynamodump -r "$region" --accessKey "$accessKey" --secretKey "$secretKey" -m backup --readCapacity "$readCapacity" -s "$table" 2>&1
+    $dynamodump --region "$region" --profile "$aws_profile" --mode backup --readCapacity "$readCapacity" --srcTable "$table" 2>&1
     rc=$?
     if [[ $rc -ne 0 ]]; then
         die "dynamodump failed."

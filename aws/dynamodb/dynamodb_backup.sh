@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.4.0"
+version="1.5.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -33,11 +33,11 @@ usage() {
 compress_backup() {
     echo "Compress backup."
     date -u +'start: %FT%TZ'
-    find "$bkup_dir/$bkup_date.$bkup_type" -type f -exec gzip '{}' \;
+    find ./ -type f -exec gzip '{}' \;
     date -u +'finish: %FT%TZ'
     echo
     echo "Compressed backup size in bytes:"
-    du -sb "$bkup_dir/$bkup_date.$bkup_type"
+    du -sb *
     echo "Disk space after compression:"
     df -h "$bkup_dir"
     echo
@@ -116,7 +116,7 @@ df -h "$bkup_dir"
 echo
 
 for table in $tables_backup; do
-    date -u +'TS: %Y%m%dT%H%M%SZ'
+    date -u +'start: %FT%TZ'
     echo "Table: $table"
     $dynamodump --region "$region" --profile "$aws_profile" --mode backup --readCapacity "$readCapacity" --srcTable "$table" 2>&1
     rc=$?
@@ -125,16 +125,19 @@ for table in $tables_backup; do
     fi
     echo
 done
+date -u +'backup finish: %FT%TZ'
+echo
 
 cd dump || die "Cannot change directory."
 
-date -u +'TS: %Y%m%dT%H%M%SZ'
 echo "Backup size in bytes:"
 du -sb *
 echo "Disk space after backup:"
 df -h "$bkup_dir"
 echo
 
+compress_backup
+
 echo "**************************************************"
-echo "* Time finished: $(date -u +'%F %T %Z')"
+echo "* Time finished: $(date -u +'%FT%TZ')"
 echo "**************************************************"

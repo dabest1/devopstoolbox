@@ -1,11 +1,12 @@
 #!/bin/bash
-
+################################################################################
 # Purpose:
 #     Backup AWS DynamoDB tables. Wrapper script for dynamodump.py (https://github.com/bchew/dynamodump).
 # Usage:
 #     Run script with --help option to get usage.
+################################################################################
 
-version="1.5.0"
+version="1.6.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -48,6 +49,59 @@ error_exit() {
     exit 77
 }
 
+# Post backup process.
+post_backup_process() {
+    if [[ ! -z $post_backup ]]; then
+        cd "$script_dir"
+        echo "Post backup process."
+        date -u +'start: %FT%TZ'
+        echo "Command:"
+        eval echo "$post_backup"
+        eval "$post_backup"
+        rc=$?
+        if [[ $rc -gt 0 ]]; then
+            die "Post backup process failed."
+        fi
+        date -u +'finish: %FT%TZ'
+        echo
+    fi
+}
+
+# Decide on what type of backup to perform.
+select_backup_type() {
+    if [[ -z "$bkup_type" ]]; then
+        # Check if daily or weekly backup should be run.
+        if [[ $bkup_dow -eq $weekly_bkup_dow ]]; then
+            # Check if it is time to run monthly or yearly backup.
+            bkup_y="$(date -d "$start_time" +'%Y')"
+            yearly_bkup_exists="$(find "$bkup_dir/" -name "*.yearly" | awk -F'/' '{print $NF}' | grep "^$bkup_y")"
+            bkup_ym="$(date -d "$start_time" +'%Y%m')"
+            monthly_bkup_exists="$(find "$bkup_dir/" -name "*.monthly" | awk -F'/' '{print $NF}' | grep "^$bkup_ym")"
+            bkup_yw="$(date -d "$start_time" +'%Y%U')"
+            weekly_bkup_exists="$(find "$bkup_dir/" -name "*.weekly" | awk -F'/' '{print $NF}' | awk -FT '{print $1}' | xargs -i date -d "{}" +'%Y%U' | grep "^$bkup_yw")"
+            if [[ -z "$yearly_bkup_exists" && $num_yearly_bkups -ne 0 ]]; then
+                bkup_type="yearly"
+                num_bkups=$num_yearly_bkups
+            elif [[ -z "$monthly_bkup_exists" && $num_monthly_bkups -ne 0 ]]; then
+                bkup_type="monthly"
+                num_bkups=$num_monthly_bkups
+            elif [[ -z "$weekly_bkup_exists" && $num_weekly_bkups -ne 0 ]]; then
+                bkup_type="weekly"
+                num_bkups=$num_weekly_bkups
+            else
+                bkup_type="daily"
+                num_bkups=$num_daily_bkups
+            fi
+        else
+            bkup_type="daily"
+            num_bkups=$num_daily_bkups
+        fi
+    fi
+    echo "Backup type: $bkup_type"
+    echo "Number of backups to retain for this type: $num_bkups"
+    echo
+}
+
 set -E
 set -o pipefail
 trap '[ "$?" -ne 77 ] || exit 77' ERR
@@ -88,7 +142,7 @@ echo "tables_include: $tables_include"
 echo "tables_exclude: $tables_exclude"
 echo
 
-bkup_type="daily"
+select_backup_type
 
 echo "Backup will be created in: $bkup_dir/$bkup_date.$bkup_type"
 echo
@@ -137,6 +191,8 @@ df -h "$bkup_dir"
 echo
 
 compress_backup
+
+post_backup_process
 
 echo "**************************************************"
 echo "* Time finished: $(date -u +'%FT%TZ')"

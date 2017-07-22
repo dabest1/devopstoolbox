@@ -6,7 +6,7 @@
 #     Run script with --help option to get usage.
 ################################################################################
 
-version="1.6.0"
+version="1.7.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -65,6 +65,26 @@ post_backup_process() {
         date -u +'finish: %FT%TZ'
         echo
     fi
+}
+
+# Purge old backups.
+purge_old_backups() {
+    echo "Disk space before purge:"
+    df -h "$bkup_dir"
+    echo
+
+    echo "Purge old backups..."
+    list_of_bkups="$(find "$bkup_dir/" -name "*.$bkup_type" | sort)"
+    if [[ ! -z "$list_of_bkups" ]]; then
+        while [[ "$(echo "$list_of_bkups" | wc -l)" -gt $num_bkups ]]; do
+            old_bkup="$(echo "$list_of_bkups" | head -1)"
+            echo "Deleting old backup: $old_bkup"
+            rm -r "$old_bkup"
+            list_of_bkups="$(find "$bkup_dir/" -name "*.$bkup_type" | sort)"
+        done
+    fi
+    echo "Done."
+    echo
 }
 
 # Decide on what type of backup to perform.
@@ -153,6 +173,8 @@ mv "$log_err" "$bkup_dir/$bkup_date.$bkup_type/"
 log="$bkup_dir/$bkup_date.$bkup_type/$(basename "$log")"
 log_err="$bkup_dir/$bkup_date.$bkup_type/$(basename "$log_err")"
 cd "$bkup_dir/$bkup_date.$bkup_type" || die "Cannot change directory."
+
+purge_old_backups
 
 echo "All tables in the region:"
 tables_all="$(aws --profile "$aws_profile" dynamodb list-tables --output text | awk '{print $2}')"

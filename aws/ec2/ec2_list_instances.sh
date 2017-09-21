@@ -7,7 +7,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.2.0"
+version="1.3.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -19,9 +19,10 @@ function usage {
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
     echo
-    echo "    $script_name [name | 'partial_name*' | -v tag-value]"
+    echo "    $script_name [--profile profile] [name | 'partial_name*' | -v tag-value]"
     echo
     echo "Description:"
+    echo "    --profile          Use a specified profile from your AWS credential file, otherwise get it from AWS_PROFILE variable."
     echo "    -v, --tag-value    List instances which have the provided tag value in any of the tag keys."
     echo "    -h, --help         Display this help."
     exit 1
@@ -31,6 +32,11 @@ while test -n "$1"; do
     case "$1" in
     -h|--help)
         usage
+        ;;
+    --profile)
+        shift
+        profile="$1"
+        shift
         ;;
     -v|--tag-value)
         shift

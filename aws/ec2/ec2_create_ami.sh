@@ -4,10 +4,8 @@
 #     Creates Amazon EBS-backed AMI (Amazon Machine Image).
 # Usage:
 #     Run script with --help option to get usage.
-# Todo:
-#     Add tagging of AMI and/or snapshot based on source.
 
-version="1.1.0"
+version="1.2.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -19,12 +17,13 @@ usage() {
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
     echo
-    echo "    $script_name [--profile profile] [--region region] [-t] {name | instance_id} image_name [description]"
+    echo "    $script_name [--profile profile] [--region region] [-t] [-w] {name | instance_id} image_name [description]"
     echo
     echo "Description:"
     echo "    --profile          Use a specified profile from your AWS credential file, otherwise get it from AWS_PROFILE variable."
     echo "    --region           Use a specified region instead of region from configuration or environment setting."
     echo "    -t                 Tag the AMI based on EC2 instance tags."
+    echo "    -w, --wait         Wait for AMI to become available."
     echo "    -h, --help         Display this help."
     exit 1
 }
@@ -117,7 +116,23 @@ get_image_status() {
     echo "$image_status"
 }
 
-tag_based_on_instance="false"
+get_snapshots() {
+    local image_id
+    local snapshot_ids
+    local rc
+
+    image_id="$1"
+
+    snapshot_ids="$(aws --profile "$profile" $region_opt ec2 describe-images --image-id "$image_id" --query 'Images[].BlockDeviceMappings[].Ebs.SnapshotId' --output text)"
+    rc=$?
+    if [[ $rc -ne 0 ]]; then
+        echo "Error: Failure getting AMI snapshots." 1>&2
+        exit 1
+    fi
+
+    echo "$snapshot_ids"
+}
+
 while test -n "$1"; do
     case "$1" in
     -h|--help)
@@ -135,7 +150,11 @@ while test -n "$1"; do
         shift
         ;;
     -t)
-        tag_based_on_instance="true"
+        tag_based_on_instance="yes"
+        shift
+        ;;
+    -w|--wait)
+        wait_for_available_status="yes"
         shift
         ;;
     *)
@@ -164,14 +183,35 @@ image_id="$(create_image)"
 echo "image_id: $image_id"
 echo
 
-if [[ $tag_based_on_instance = "true" ]]; then
-    echo "Tagging AMI."
+if [[ $tag_based_on_instance = "yes" ]]; then
+    echo "Getting tags:"
     tags="$(get_instance_tags "$instance_id")"
-    echo "Tags:"
     echo "$tags"
+    echo
+
+    echo "Tagging AMI."
     create_tags "$image_id" "$tags"
+    echo
+
+    echo "Getting snapshot IDs:"
+    snapshot_ids="$(get_snapshots "$image_id")"
+    echo "$snapshot_ids"
+    echo
+
+    echo "Tagging snapshots."
+    for snapshot_id in $snapshot_ids; do
+        create_tags "$snapshot_id" "$tags"
+    done
     echo
 fi
 
-echo "Checking AMI status."
-get_image_status "$image_id"
+if [[ $wait_for_available_status = "yes" ]]; then
+    echo "Waiting for AMI status to become available..."
+    image_status=""
+    while [[ $image_status != "available" ]]; do
+        image_status="$(get_image_status "$image_id")"
+        echo -n "."
+        sleep 1
+    done
+    echo "Done."
+fi

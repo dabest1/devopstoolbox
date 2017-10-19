@@ -7,7 +7,7 @@
 # Todo:
 #     Add tagging of AMI and/or snapshot based on source.
 
-version="1.0.0"
+version="1.1.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -19,11 +19,12 @@ usage() {
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
     echo
-    echo "    $script_name [--profile profile] [--region region] {name | instance_id} image_name [description]"
+    echo "    $script_name [--profile profile] [--region region] [-t] {name | instance_id} image_name [description]"
     echo
     echo "Description:"
     echo "    --profile          Use a specified profile from your AWS credential file, otherwise get it from AWS_PROFILE variable."
     echo "    --region           Use a specified region instead of region from configuration or environment setting."
+    echo "    -t                 Tag the AMI based on EC2 instance tags."
     echo "    -h, --help         Display this help."
     exit 1
 }
@@ -31,8 +32,9 @@ usage() {
 get_instance_id() {
     local name
     local instance_id
+    local rc
 
-    name=$1
+    name="$1"
 
     if echo "$name" | grep -q '^i-'; then
         instance_id="$name"
@@ -51,6 +53,71 @@ get_instance_id() {
     echo "$instance_id"
 }
 
+get_instance_tags() {
+    local instance_id
+    local tags
+    local rc
+
+    instance_id="$1"
+
+    tags="$(aws --profile "$profile" ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[].Instances[].Tags[]' --output json)"
+    rc=$?
+    if [[ $rc -ne 0 ]]; then
+        echo "Error: Failed to query AWS." 1>&2
+        exit 1
+    fi
+
+    echo "$tags"
+}
+
+create_image() {
+    local image_id
+    local rc
+
+    image_id="$(aws --profile "$profile" $region_opt ec2 create-image --instance-id "$instance_id" --name "$image_name" --description "$description" --output text)"
+    rc=$?
+    if [[ $rc -ne 0 ]]; then
+        echo "Error: Failure during image creation." 1>&2
+        exit 1
+    fi
+
+    echo "$image_id"
+}
+
+create_tags() {
+    local resource
+    local tags
+    local rc
+
+    resource="$1"
+    tags="$2"
+
+    aws --profile "$profile" $region_opt ec2 create-tags --resources "$resource" --tags "$tags"
+    rc=$?
+    if [[ $rc -ne 0 ]]; then
+        echo "Error: Failure during image tagging." 1>&2
+        exit 1
+    fi
+}
+
+get_image_status() {
+    local image_id
+    local image_status
+    local rc
+
+    image_id="$1"
+
+    image_status="$(aws --profile "$profile" $region_opt ec2 describe-images --image-ids "$image_id" --query 'Images[].State' --output text)"
+    rc=$?
+    if [[ $rc -ne 0 ]]; then
+        echo "Error: Failure getting image status." 1>&2
+        exit 1
+    fi
+
+    echo "$image_status"
+}
+
+tag_based_on_instance="false"
 while test -n "$1"; do
     case "$1" in
     -h|--help)
@@ -65,6 +132,10 @@ while test -n "$1"; do
         shift
         region="$1"
         region_opt="--region=$region"
+        shift
+        ;;
+    -t)
+        tag_based_on_instance="true"
         shift
         ;;
     *)
@@ -88,4 +159,19 @@ echo
 
 instance_id="$(get_instance_id "$name")"
 
-aws --profile "$profile" $region_opt ec2 create-image --instance-id "$instance_id" --name "$image_name" --description "$description"
+echo "Creating AMI."
+image_id="$(create_image)"
+echo "image_id: $image_id"
+echo
+
+if [[ $tag_based_on_instance = "true" ]]; then
+    echo "Tagging AMI."
+    tags="$(get_instance_tags "$instance_id")"
+    echo "Tags:"
+    echo "$tags"
+    create_tags "$image_id" "$tags"
+    echo
+fi
+
+echo "Checking AMI status."
+get_image_status "$image_id"

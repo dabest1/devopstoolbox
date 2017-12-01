@@ -5,15 +5,17 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.11"
+version="1.1.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 log="$script_dir/${script_name/.sh/.log}"
+log_old="$script_dir/${script_name/.sh/.log.old}"
 config_path="$script_dir/${script_name/.sh/.cfg}"
 data_path="$script_dir/${script_name/.sh/.dat}"
 data_tmp_path="$script_dir/${script_name/.sh/.dat.tmp}"
+data_old_path="$script_dir/${script_name/.sh/.dat.old}"
 
 # Load configuration settings.
 source "$config_path"
@@ -27,7 +29,7 @@ function usage {
     echo
     echo "Description:"
     echo "    -r, --refresh    Refreshes the list of EC2 instances and their state."
-    echo "    -l, --list       Displays cached list of EC2 instances and runs refresh afterwards. If no options are supplied, then this option is chosen by default."
+    echo "    -l, --list       Displays cached list of EC2 instances. If no options are supplied, then this option is chosen by default."
     echo "    -g, --grep       Limits output to the regex provided."
     echo "    -h, --help       Display this help."
     exit 1
@@ -36,6 +38,7 @@ function usage {
 refresh() {
     script_count="$(ps | grep "$script_name" | grep -v grep | wc -l)"
     if [[ "$script_count" -le 3 ]]; then
+        mv "$log" "$log_old"
         refresh_subtask &> "$log" &
     else
         echo "Warning: Refresh already in progress." 1>&2
@@ -64,6 +67,7 @@ refresh_subtask() {
     done
 
     if [[ $failures -eq 0 ]]; then
+        mv "$data_path" "$data_old_path"
         mv "$data_tmp_path" "$data_path"
         echo "Done."
     else
@@ -108,8 +112,8 @@ done
 # Remove leading space.
 tasks="$(echo "${tasks}" | sed -e 's/^[[:space:]]*//')"
 
-if [[ $tasks == "list" || -z $tasks ]]; then
-    tasks="list refresh"
+if [[ -z $tasks ]]; then
+    tasks="list"
 fi
 
 for task in $tasks; do

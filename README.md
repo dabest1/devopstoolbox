@@ -1,2 +1,2 @@
-# dbatools
-Collection of DBA and DevOps tools.
+# devopstoolbox
+Collection of DevOps tools.

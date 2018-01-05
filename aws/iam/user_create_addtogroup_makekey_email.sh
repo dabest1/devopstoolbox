@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Purpose:
-#     Create IAM users, add users to group, create access keys, send an emails with access key.
+#     Create IAM users, add users to group, create access keys, send emails with access key.
 # Usage:
 #     Set variables within the script, then run script.
 
-version="1.0.0"
+version="1.0.1"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

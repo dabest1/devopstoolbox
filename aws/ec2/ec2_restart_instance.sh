@@ -4,6 +4,8 @@
 #     Restart EC2 instance.
 # Usage:
 #     Run script with --help option to get usage.
+# Todo:
+#     Add prompt for confirmation before restart.
 
 version="1.0.0"
 

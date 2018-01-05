@@ -4,6 +4,9 @@
 #     Upload data to AWS S3.
 ################################################################################
 
+# TODO:
+# Add ability to use relative paths for source directory.
+
 version="1.0.0"
 
 start_time="$(date -u +'%FT%TZ')"

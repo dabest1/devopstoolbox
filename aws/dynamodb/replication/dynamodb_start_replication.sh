@@ -3,7 +3,7 @@
 # Purpose:
 #     Start DynamoDB replication tasks which have been pre-configured.
 
-version="1.0.0"
+version="1.0.1"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -12,6 +12,7 @@ script_name="$(basename "$0")"
 region_source="us-east-1"
 replication_jar="/data/dynamodb/replication/dynamodb-cross-region-replication-1.1.0.jar"
 
+cd "$script_dir" || { echo "Error."; exit 1; }
 for task_name in $(ls -d _-Table-_*); do
     table=$(echo "$task_name" | awk -F'_-Table-_|_-To-_' '{print $2}')
     region_destination=$(echo "$task_name" | awk -F'_-Table-_|_-To-_' '{print $3}')

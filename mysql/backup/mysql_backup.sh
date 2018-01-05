@@ -7,9 +7,9 @@
 #     Optionally send email upon completion.
 ################################################################################
 
-version="1.0.5"
+version="1.0.6"
 
-start_time="$(date -u +'%FT%TZ')"
+start_time="$(date -u +'%F %TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 config_path="$script_dir/${script_name/.sh/.cfg}"
@@ -33,11 +33,11 @@ done
 # Variables.
 
 if [[ -z $bkup_dir ]]; then
-    echo "Error: Not all equired variables were provided in configuration file." >&2
+    echo "Error: Not all required variables were provided in configuration file." >&2
     exit 1
 fi
-bkup_date="$(date -d "$start_time" +'%Y%m%dT%H%M%SZ')"
-bkup_dow="$(date -d "$start_time" +'%w')"
+bkup_date="$(date -u -d "$start_time" +'%Y%m%dT%H%M%SZ')"
+bkup_dow="$(date -u -d "$start_time" +'%w')"
 weekly_bkup_dow="${weekly_bkup_dow:-1}"
 num_daily_bkups="${num_daily_bkups:-5}"
 num_weekly_bkups="${num_weekly_bkups:-5}"
@@ -70,7 +70,7 @@ error_exit() {
 main() {
     echo "**************************************************"
     echo "* Backup MySQL"
-    echo "* Time started: $start_time"
+    echo "* Time started: $bkup_date"
     echo "**************************************************"
     echo
     echo "Hostname: $HOSTNAME"
@@ -194,12 +194,12 @@ select_backup_type() {
         # Check if daily or weekly backup should be run.
         if [[ $bkup_dow -eq $weekly_bkup_dow ]]; then
             # Check if it is time to run monthly or yearly backup.
-            bkup_y="$(date -d "$start_time" +'%Y')"
+            bkup_y="$(date -u -d "$start_time" +'%Y')"
             yearly_bkup_exists="$(find "$bkup_dir/" -name "*.yearly" | awk -F'/' '{print $NF}' | grep "^$bkup_y")"
-            bkup_ym="$(date -d "$start_time" +'%Y%m')"
+            bkup_ym="$(date -u -d "$start_time" +'%Y%m')"
             monthly_bkup_exists="$(find "$bkup_dir/" -name "*.monthly" | awk -F'/' '{print $NF}' | grep "^$bkup_ym")"
-            bkup_yw="$(date -d "$start_time" +'%Y%U')"
-            weekly_bkup_exists="$(find "$bkup_dir/" -name "*.weekly" | awk -F'/' '{print $NF}' | awk -FT '{print $1}' | xargs -i date -d "{}" +'%Y%U' | grep "^$bkup_yw")"
+            bkup_yw="$(date -u -d "$start_time" +'%Y%U')"
+            weekly_bkup_exists="$(find "$bkup_dir/" -name "*.weekly" | awk -F'/' '{print $NF}' | awk -FT '{print $1}' | xargs -i date -u -d "{}" +'%Y%U' | grep "^$bkup_yw")"
             if [[ -z "$yearly_bkup_exists" && $num_yearly_bkups -ne 0 ]]; then
                 bkup_type="yearly"
                 num_bkups=$num_yearly_bkups

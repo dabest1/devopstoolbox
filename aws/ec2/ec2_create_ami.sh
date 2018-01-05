@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.2.0"
+version="1.3.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -15,14 +15,13 @@ profile="${AWS_PROFILE:-default}"
 
 usage() {
     echo "Usage:"
-    echo "    export AWS_PROFILE=profile"
-    echo
-    echo "    $script_name [--profile profile] [--region region] [-t] [-w] {name | instance_id} image_name [description]"
+    echo "    $script_name [--profile profile] [--region region] [-t] [-s] [-w] {name | instance_id} image_name [description]"
     echo
     echo "Description:"
-    echo "    --profile          Use a specified profile from your AWS credential file, otherwise get it from AWS_PROFILE variable."
+    echo "    --profile          Use a specified profile from your AWS credential file. Otherwise run `export AWS_PROFILE=profile` before this sript."
     echo "    --region           Use a specified region instead of region from configuration or environment setting."
     echo "    -t                 Tag the AMI based on EC2 instance tags."
+    echo "    -s                 Tag the snapshots based on EC2 instance tags. Turns on -w option."
     echo "    -w, --wait         Wait for AMI to become available."
     echo "    -h, --help         Display this help."
     exit 1
@@ -150,7 +149,12 @@ while test -n "$1"; do
         shift
         ;;
     -t)
-        tag_based_on_instance="yes"
+        tag_ami="yes"
+        shift
+        ;;
+    -s)
+        tag_snapshot="yes"
+        wait_for_available_status="yes"
         shift
         ;;
     -w|--wait)
@@ -183,7 +187,7 @@ image_id="$(create_image)"
 echo "image_id: $image_id"
 echo
 
-if [[ $tag_based_on_instance = "yes" ]]; then
+if [[ $tag_ami = "yes" ]]; then
     echo "Getting tags:"
     tags="$(get_instance_tags "$instance_id")"
     echo "$tags"
@@ -191,17 +195,6 @@ if [[ $tag_based_on_instance = "yes" ]]; then
 
     echo "Tagging AMI."
     create_tags "$image_id" "$tags"
-    echo
-
-    echo "Getting snapshot IDs:"
-    snapshot_ids="$(get_snapshots "$image_id")"
-    echo "$snapshot_ids"
-    echo
-
-    echo "Tagging snapshots."
-    for snapshot_id in $snapshot_ids; do
-        create_tags "$snapshot_id" "$tags"
-    done
     echo
 fi
 
@@ -214,4 +207,18 @@ if [[ $wait_for_available_status = "yes" ]]; then
         sleep 1
     done
     echo "Done."
+    echo
+fi
+
+if [[ $tag_snapshot = "yes" ]]; then
+    echo "Getting snapshot IDs:"
+    snapshot_ids="$(get_snapshots "$image_id")"
+    echo "$snapshot_ids"
+    echo
+
+    echo "Tagging snapshots."
+    for snapshot_id in $snapshot_ids; do
+        create_tags "$snapshot_id" "$tags"
+    done
+    echo
 fi

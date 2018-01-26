@@ -6,14 +6,12 @@
 #     Run script with --help option to get usage.
 ################################################################################
 
-version="1.0.0"
+version="1.0.1"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 config_path="$script_dir/${script_name/.sh/.cfg}"
-log="$script_dir/${script_name/.sh/.log}"
-log_err="$script_dir/${script_name/.sh/.err}"
 
 # Functions.
 
@@ -58,7 +56,6 @@ backup() {
 purge_old_backups() {
     echo "Purge old backups..."
     for table in $tables_backup; do
-        echo
         list_of_bkups="$(aws --profile "$aws_profile" --region "$region" dynamodb list-backups --table-name "$table" | jq "[ .BackupSummaries[] | select(.BackupStatus | contains(\"AVAILABLE\")) | select(.BackupName | contains(\"$bkup_type\")) ]" | jq 'sort_by(.BackupCreationDateTime)')"
         if [[ ! -z "$list_of_bkups" ]]; then
             while [[ "$(echo "$list_of_bkups" | jq 'length')" -gt $num_bkups ]]; do
@@ -74,7 +71,6 @@ echo $old_bkup_arn
             done
         fi
     done
-    echo
     echo "Done."
     echo
 }
@@ -108,11 +104,10 @@ echo "* Backup AWS DynamoDB Tables"
 echo "* Time started: $start_time"
 echo "**************************************************"
 echo
-echo "Hostname: $HOSTNAME"
+echo "hostname: $HOSTNAME"
 echo "bkup_date: $bkup_date"
 echo "script: $script_dir/$script_name"
-echo "dynamodump: $dynamodump"
-echo "readCapacity: $readCapacity"
+echo "aws_profile: $aws_profile"
 echo "region: $region"
 echo "tables_include: $tables_include"
 echo "tables_exclude: $tables_exclude"

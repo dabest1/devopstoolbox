@@ -6,7 +6,7 @@
 #     Run script with --help option to get usage.
 ################################################################################
 
-version="1.0.1"
+version="1.0.2"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -62,7 +62,6 @@ purge_old_backups() {
                 old_bkup="$(echo "$list_of_bkups" | jq -r '.[0].BackupName')"
                 old_bkup_arn="$(echo "$list_of_bkups" | jq -r '.[0].BackupArn')"
                 echo "Deleting old backup: $old_bkup"
-echo $old_bkup_arn
                 aws --profile "$aws_profile" --region "$region" dynamodb delete-backup --backup-arn "$old_bkup_arn"
                 if [[ $? -ne 0 ]]; then die "Backup deletion failed."; fi
                 # Need to rate limit to 10 delete-backup calls per second.

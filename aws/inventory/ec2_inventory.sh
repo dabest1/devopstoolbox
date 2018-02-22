@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.1.0"
+version="1.2.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -81,8 +81,10 @@ list() {
     if [[ -z $regex ]]; then
         cat "$data_path"
     else
-        echo "$header_row"
-        cat "$data_path" | sed '1d' | grep -E "$regex"
+        (
+            echo "$header_row"
+            cat "$data_path" | sed '1d' | egrep "$regex"
+        ) | column -t | egrep --context=1000000 --colour=always "$regex"
     fi
 }
 

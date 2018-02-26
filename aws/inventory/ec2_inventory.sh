@@ -1,11 +1,12 @@
 #!/bin/bash
-
+################################################################################
 # Purpose:
 #     Maintain a local inventory of AWS EC2 instances.
 # Usage:
 #     Run script with --help option to get usage.
+################################################################################
 
-version="1.2.1"
+version="1.2.2"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -37,7 +38,7 @@ function usage {
 
 refresh() {
     script_count="$(ps | grep "$script_name" | grep -v grep | wc -l)"
-    if [[ "$script_count" -le 3 ]]; then
+    if [[ "$script_count" -le 2 ]]; then
         mv "$log" "$log_old"
         refresh_subtask &> "$log" &
     else

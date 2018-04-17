@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Purpose:
-#     Add volume to ec2 instance (create and mount volume).
+#     Add volume to ec2 instance (create, format, and mount volume).
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.8"
+version="1.0.9"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

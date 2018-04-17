@@ -6,7 +6,7 @@
 #     Run script with --help option to get usage.
 ################################################################################
 
-version="1.2.2"
+version="1.3.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -22,7 +22,7 @@ data_old_path="$script_dir/${script_name/.sh/.dat.old}"
 source "$config_path"
 
 # Header row.
-header_row="account	name	instance_id	private_ip	region	type	state"
+header_row="account	name	instance_id	private_ip	public_ip	region	type	state"
 
 function usage {
     echo "Usage:"
@@ -60,7 +60,7 @@ refresh_subtask() {
             exit 1
         fi
 
-        aws --profile "$profile" ec2 describe-instances --instance-ids $instance_ids --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, PrivateIpAddress, Placement.AvailabilityZone, InstanceType, State.Name]' --output text | sort | awk -v profile="$profile" '{print profile"\t"$0}' >> "$data_tmp_path"
+        aws --profile "$profile" ec2 describe-instances --instance-ids $instance_ids --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, PrivateIpAddress, PublicIpAddress, Placement.AvailabilityZone, InstanceType, State.Name]' --output text | sort | awk -v profile="$profile" '{print profile"\t"$0}' >> "$data_tmp_path"
         rc="$?"
         if [[ $rc -gt 0 ]]; then
             failures=$((failures + 1))

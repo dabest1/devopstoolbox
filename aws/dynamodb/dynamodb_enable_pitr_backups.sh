@@ -6,7 +6,7 @@
 #     Run script with --help option to get usage.
 ################################################################################
 
-version="1.0.0"
+version="1.1.0"
 
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
@@ -43,13 +43,17 @@ while [[ -n $1 ]]; do
         exit
         ;;
     *)
-        table_name=$1
+        table_name="$1"
         shift
         ;;
     --help)
         usage
     esac
 done
+
+if [[ -z $table_name ]]; then
+    usage
+fi
 
 echo "profile: $profile"
 echo

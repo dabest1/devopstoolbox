@@ -20,7 +20,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="3.2.1"
+version="3.2.2"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -516,8 +516,9 @@ purge_old_backups() {
             echo "Snapshots for volume_id: $volume_id"
             snapshots="$(aws --profile "$profile" --region "$region" ec2 describe-snapshots --filters "Name=status,Values=completed" "Name=volume-id,Values=$volume_id" --query 'Snapshots[*].{Description:Description,SnapshotId:SnapshotId}' --output json)"
             echo "$snapshots"
+            bkup_num_to_del="$num_bkups"
             while :; do
-                snapshot_to_delete="$(echo $snapshots | jq -r "[ sort_by(.Description) | .[] | select(.Description | contains(\".$bkup_type\")) ] | .[$num_bkups].SnapshotId")"
+                snapshot_to_delete="$(echo $snapshots | jq -r "[ sort_by(.Description) | reverse | .[] | select(.Description | contains(\".$bkup_type\")) ] | .[$bkup_num_to_del].SnapshotId")"
                 if [[ $snapshot_to_delete = "null" || ! $snapshot_to_delete ]]; then
                     break
                 else
@@ -525,6 +526,7 @@ purge_old_backups() {
                     delete="$(aws --profile "$profile" --region "$region" ec2 delete-snapshot --snapshot-id "$snapshot_to_delete")"
                     rc=$?; if [[ $rc -ne 0 ]]; then error_exit "ERROR: ${0}(@$LINENO): $delete."; fi
                     echo "$delete"
+                    bkup_num_to_del=$((bkup_num_to_del + 1))
                 fi
             done
             echo

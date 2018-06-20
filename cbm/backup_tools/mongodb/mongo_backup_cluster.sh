@@ -20,7 +20,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="3.3.0"
+version="3.3.1"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -525,7 +525,6 @@ purge_old_backups() {
                     echo "Deleting snapshot: $snapshot_to_delete"
                     delete="$(aws --profile "$profile" --region "$region" ec2 delete-snapshot --snapshot-id "$snapshot_to_delete")"
                     rc=$?; if [[ $rc -ne 0 ]]; then error_exit "ERROR: ${0}(@$LINENO): $delete."; fi
-                    echo "$delete"
                     bkup_num_to_del=$((bkup_num_to_del + 1))
                 fi
             done

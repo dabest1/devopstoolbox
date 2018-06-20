@@ -164,6 +164,9 @@ HERE_DOC
         compressed_size_in_bytes=""
         compress_backup
     fi
+    if [[ $bkup_mode = "awssnapshot" ]]; then
+        compressed_size_in_bytes="n/a"
+    fi
 
     post_backup_process
 
@@ -187,7 +190,7 @@ HERE_DOC
     # Update backup status file.
     if [[ -z $replset_hosts_ports_bkup ]]; then
         cat <<HERE_DOC > "$bkup_status_file"
-{"start_time":"$start_time","end_time":"$end_time","backup_path":"$bkup_path","db_version":"$mongodb_version","backup_size_in_bytes":$backup_size_in_bytes,"compressed_size_in_bytes":$compressed_size_in_bytes,"status":"completed","backup_mode":"$bkup_mode"}
+{"start_time":"$start_time","end_time":"$end_time","backup_path":"$bkup_path","db_version":"$mongodb_version","backup_size_in_bytes":"$backup_size_in_bytes","compressed_size_in_bytes":"$compressed_size_in_bytes","status":"completed","backup_mode":"$bkup_mode"}
 HERE_DOC
     else
         backup_nodes_json="\"backup_nodes\":["

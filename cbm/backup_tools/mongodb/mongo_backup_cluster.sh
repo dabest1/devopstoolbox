@@ -69,7 +69,8 @@ num_daily_bkups="${num_daily_bkups:-5}"
 num_weekly_bkups="${num_weekly_bkups:-5}"
 num_monthly_bkups="${num_monthly_bkups:-2}"
 num_yearly_bkups="${num_yearly_bkups:-0}"
-port="${port:-27019}"
+config_port="${config_port:-27019}"
+shard_port="${shard_port:-27018}"
 mongos_host="${mongos_host:-localhost}"
 mongos_port="${mongos_port:-27017}"
 profile="${profile:-default}"
@@ -191,7 +192,7 @@ HERE_DOC
     else
         backup_nodes_json="\"backup_nodes\":["
         while IFS=':' read -r host port; do
-            backup_nodes_json="${backup_nodes_json}{\"node\":\"$host:$port\",\"start_time\":\"${replset_start_time[$host]}\",\"end_time\":\"${replset_end_time[$host]}\",\"backup_path\":\"${replset_bkup_path[$host]}\"},"
+            backup_nodes_json="${backup_nodes_json}{\"node\":\"$host:$shard_port\",\"start_time\":\"${replset_start_time[$host]}\",\"end_time\":\"${replset_end_time[$host]}\",\"backup_path\":\"${replset_bkup_path[$host]}\"},"
         done <<<"$replset_hosts_ports_bkup"
         backup_nodes_json="$(sed 's/,$//' <<<"$backup_nodes_json")]"
 
@@ -238,12 +239,12 @@ perform_backup() {
             if [[ -e /etc/mongos.conf ]]; then
                 cp -p /etc/mongos.conf "$bkup_path/"
             fi
-            "$mongodump" --port "$port" $mongo_option -o "$bkup_path/backup" --authenticationDatabase admin --oplog &> "$bkup_path/mongodump.log"
+            "$mongodump" --port "$config_port" $mongo_option -o "$bkup_path/backup" --authenticationDatabase admin --oplog &> "$bkup_path/mongodump.log"
             rc=$?
             if [[ $rc -ne 0 ]]; then
                 # Check if dump failed because the config server is not running with --configsvr option.
                 if grep -q 'No operations in oplog. Please ensure you are connecting to a master.' "$bkup_path/mongodump.log"; then
-                    "$mongodump" --port "$port" $mongo_option -o "$bkup_path/backup" --authenticationDatabase admin &> "$bkup_path/mongodump.log"
+                    "$mongodump" --port "$config_port" $mongo_option -o "$bkup_path/backup" --authenticationDatabase admin &> "$bkup_path/mongodump.log"
                     rc=$?
                 fi
             fi
@@ -282,7 +283,7 @@ $create_snapshot"
         date -u +'finish: %FT%TZ'
 
         # Get shard servers (replica set members).
-        shard_hosts_ports="$("$mongo" --quiet config --eval 'var myCursor = db.shards.find(); myCursor.forEach(printjson)' | jq -r '.host' | awk -F'/' '{print $2}' | awk -F, '{print $1}')"
+        shard_hosts_ports="$("$mongo" --quiet "$mongos_host:$mongos_port/config" --eval 'var myCursor = db.shards.find(); myCursor.forEach(printjson)' | jq -r '.host' | awk -F'/' '{print $2}' | awk -F, '{print $1}')"
         for host_port in $shard_hosts_ports; do
             # Find shard replica set members, which are not PRIMARY.
             replset_hosts_ports="$("$mongo" "$host_port" --quiet --eval 'JSON.stringify(rs.status())' | jq -r '.members[] | ((.name)+":"+.stateStr)' | grep -v :PRIMARY | awk -F: '{print $1":"$2}')"
@@ -396,7 +397,7 @@ $create_snapshot"
 
     # Replica set member.
     else
-        is_master="$("$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin --eval 'JSON.stringify(db.isMaster())' | jq '.ismaster')"
+        is_master="$("$mongo" --quiet --port "$shard_port" $mongo_option --authenticationDatabase admin --eval 'JSON.stringify(db.isMaster())' | jq '.ismaster')"
         if [[ $is_master != "false" ]]; then
             error_exit "ERROR: ${0}(@$LINENO): This is not a secondary node."
         fi
@@ -405,13 +406,13 @@ $create_snapshot"
             echo "Insert UUID into database for restore validation."
             uuid=$(uuidgen)
             echo "uuid: $uuid"
-            primary_host_port="$("$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin dba --eval 'JSON.stringify(rs.isMaster())' | jq -r '.primary')"
+            primary_host_port="$("$mongo" --quiet --port "$shard_port" $mongo_option --authenticationDatabase admin dba --eval 'JSON.stringify(rs.isMaster())' | jq -r '.primary')"
             "$mongo" --quiet --host "$primary_host_port" $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.insert( { uuid: \"$uuid\" } )"
             echo
 
             # Verify that UUID showed up in this replica set.
             for (( i=1; i<=60; i++ )); do
-                uuid_from_mongo="$("$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin dba --eval "rs.slaveOk(); JSON.stringify(db.backup_uuid.findOne({uuid:\"$uuid\"}));" | jq -r '.uuid')"
+                uuid_from_mongo="$("$mongo" --quiet --port "$shard_port" $mongo_option --authenticationDatabase admin dba --eval "rs.slaveOk(); JSON.stringify(db.backup_uuid.findOne({uuid:\"$uuid\"}));" | jq -r '.uuid')"
                 if [[ $uuid = "$uuid_from_mongo" ]]; then
                     contains_uuid="yes"
                     break
@@ -429,7 +430,7 @@ $create_snapshot"
             if [[ -e /etc/mongod.conf ]]; then
                 cp -p /etc/mongod.conf "$bkup_path/"
             fi
-            "$mongodump" --port "$port" $mongo_option -o "$bkup_path/backup" --authenticationDatabase admin --oplog &> "$bkup_path/mongodump.log"
+            "$mongodump" --port "$shard_port" $mongo_option -o "$bkup_path/backup" --authenticationDatabase admin --oplog &> "$bkup_path/mongodump.log"
             rc=$?
             if [[ $rc -ne 0 ]]; then
                 error_exit "ERROR: ${0}(@$LINENO): mongodump failed."

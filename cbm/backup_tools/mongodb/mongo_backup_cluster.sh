@@ -20,7 +20,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="3.1.0"
+version="3.2.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -126,6 +126,21 @@ error_exit() {
     exit 77
 }
 
+get_volume_ids() {
+    instance_id="$(curl -s http://169.254.169.254/latest/meta-data/instance-id)"
+    [[ -n $instance_id ]] || error_exit "ERROR: ${0}(@$LINENO): Failed to obtain AWS instance id."
+    availability_zone="$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)"
+    [[ -n $availability_zone ]] || error_exit "ERROR: ${0}(@$LINENO): Failed to obtain AWS availability zone."
+    region="$(echo "$availability_zone" | sed 's/[a-z]$//')"
+    hostname="$(hostname | awk -F. '{print $1}')"
+    [[ -n $hostname ]] || error_exit "ERROR: ${0}(@$LINENO): Failed to obtain hostname."
+    echo "Describe volumes:"
+    describe_volumes="$(aws --profile "$profile" --region "$region" ec2 describe-volumes --filters "Name=attachment.instance-id, Values=$instance_id" --query 'Volumes[*].{VolumeId:VolumeId,InstanceId:Attachments[0].InstanceId,State:Attachments[0].State,Device:Attachments[0].Device,Size:Size}' --output json)"
+    echo "$describe_volumes"
+    echo
+    volume_ids="$(echo "$describe_volumes" | jq -r '.[].VolumeId')"
+}
+
 main() {
     echo "**************************************************"
     echo "* Backup MongoDB"
@@ -153,9 +168,7 @@ main() {
 {"start_time":"$start_time","backup_path":"$bkup_path","status":"running","backup_mode":"$bkup_mode"}
 HERE_DOC
 
-    if [[ $bkup_mode = "mongodump" ]]; then
-        purge_old_backups
-    fi
+    purge_old_backups
 
     backup_size_in_bytes=""
     perform_backup
@@ -163,8 +176,7 @@ HERE_DOC
     if [[ $bkup_mode = "mongodump" ]]; then
         compressed_size_in_bytes=""
         compress_backup
-    fi
-    if [[ $bkup_mode = "awssnapshot" ]]; then
+    elif [[ $bkup_mode = "awssnapshot" ]]; then
         compressed_size_in_bytes="n/a"
     fi
 
@@ -254,20 +266,8 @@ perform_backup() {
             if [[ $rc -ne 0 ]]; then
                 error_exit "ERROR: ${0}(@$LINENO): mongodump failed."
             fi
-        fi
-        if [[ $bkup_mode = "awssnapshot" ]]; then
-            instance_id="$(curl -s http://169.254.169.254/latest/meta-data/instance-id)"
-            [[ -n $instance_id ]] || error_exit "ERROR: ${0}(@$LINENO): Failed to obtain AWS instance id."
-            availability_zone="$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)"
-            [[ -n $availability_zone ]] || error_exit "ERROR: ${0}(@$LINENO): Failed to obtain AWS availability zone."
-            region="$(echo "$availability_zone" | sed 's/[a-z]$//')"
-            hostname="$(hostname | awk -F. '{print $1}')"
-            [[ -n $hostname ]] || error_exit "ERROR: ${0}(@$LINENO): Failed to obtain hostname."
-            echo "Describe volumes:"
-            describe_volumes="$(aws --profile "$profile" --region "$region" ec2 describe-volumes --filters "Name=attachment.instance-id, Values=$instance_id" --query 'Volumes[*].{VolumeId:VolumeId,InstanceId:Attachments[0].InstanceId,State:Attachments[0].State,Device:Attachments[0].Device,Size:Size}' --output json)"
-            echo "$describe_volumes"
-            echo
-            volume_ids="$(echo "$describe_volumes" | jq -r '.[].VolumeId')"
+        elif [[ $bkup_mode = "awssnapshot" ]]; then
+            get_volume_ids
             for volume_id in $volume_ids; do
                 echo "volume_id: $volume_id"
                 create_snapshot="$(aws --profile "$profile" --region "$region" ec2 create-snapshot --volume-id "$volume_id" --description "$bkup_date.$hostname.$bkup_type")"
@@ -440,20 +440,8 @@ $create_snapshot"
             fi
             date -u +'finish: %FT%TZ'
             echo
-        fi
-        if [[ $bkup_mode = "awssnapshot" ]]; then
-            instance_id="$(curl -s http://169.254.169.254/latest/meta-data/instance-id)"
-            [[ -n $instance_id ]] || error_exit "ERROR: ${0}(@$LINENO): Failed to obtain AWS instance id."
-            availability_zone="$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)"
-            [[ -n $availability_zone ]] || error_exit "ERROR: ${0}(@$LINENO): Failed to obtain AWS availability zone."
-            region="$(echo "$availability_zone" | sed 's/[a-z]$//')"
-            hostname="$(hostname | awk -F. '{print $1}')"
-            [[ -n $hostname ]] || error_exit "ERROR: ${0}(@$LINENO): Failed to obtain hostname."
-            echo "Describe volumes:"
-            describe_volumes="$(aws --profile "$profile" --region "$region" ec2 describe-volumes --filters "Name=attachment.instance-id, Values=$instance_id" --query 'Volumes[*].{VolumeId:VolumeId,InstanceId:Attachments[0].InstanceId,State:Attachments[0].State,Device:Attachments[0].Device,Size:Size}' --output json)"
-            echo "$describe_volumes"
-            echo
-            volume_ids="$(echo "$describe_volumes" | jq -r '.[].VolumeId')"
+        elif [[ $bkup_mode = "awssnapshot" ]]; then
+            get_volume_ids
             for volume_id in $volume_ids; do
                 echo "volume_id: $volume_id"
                 create_snapshot="$(aws --profile "$profile" --region "$region" ec2 create-snapshot --volume-id "$volume_id" --description "$bkup_date.$hostname.$bkup_type")"
@@ -477,8 +465,7 @@ $create_snapshot"
       echo "Disk space after backup:"
       df -h
       echo
-    fi
-    if [[ $bkup_mode = "awssnapshot" ]]; then
+    elif [[ $bkup_mode = "awssnapshot" ]]; then
         backup_size_in_bytes="n/a"
     fi
 }
@@ -509,7 +496,7 @@ purge_old_backups() {
     df -h
     echo
 
-    echo "Purge old backups..."
+    echo "Purge old backup directories..."
     list_of_bkups="$(find "$bkup_dir/" -maxdepth 1 -type d -name "[0-9]*T[0-9]*Z.$bkup_type" | sort)"
     if [[ ! -z "$list_of_bkups" ]]; then
         while [[ "$(echo "$list_of_bkups" | wc -l)" -gt $num_bkups ]]; do
@@ -521,6 +508,30 @@ purge_old_backups() {
     fi
     echo "Done."
     echo
+
+    if [[ $bkup_mode = "awssnapshot" ]]; then
+        echo "Purge old snapshots..."
+        get_volume_ids
+        for volume_id in $volume_ids; do
+            echo "Snapshots for volume_id: $volume_id"
+            snapshots="$(aws --profile "$profile" --region "$region" ec2 describe-snapshots --filters "Name=status,Values=completed" "Name=volume-id,Values=$volume_id" --query 'Snapshots[*].{Description:Description,SnapshotId:SnapshotId}' --output json)"
+            echo "$snapshots"
+            while :; do
+                snapshot_to_delete="$(echo $snapshots | jq 'sort_by(.Description)' | jq -r ".[$num_bkups].SnapshotId")"
+                if [[ $snapshot_to_delete = "null" || ! $snapshot_to_delete ]]; then
+                    break
+                else
+                    delete="$(aws --profile "$profile" --region "$region" ec2 delete-snapshot --snapshot-id "$snapshot_to_delete")"
+                    rc=$?; if [[ $rc -ne 0 ]]; then error_exit "ERROR: ${0}(@$LINENO): $delete."; fi
+                    echo "$delete"
+                fi
+            done
+            echo
+        done
+
+        echo "Done."
+        echo
+    fi
 }
 
 # Get output from Rundeck execution, return just the log portion.

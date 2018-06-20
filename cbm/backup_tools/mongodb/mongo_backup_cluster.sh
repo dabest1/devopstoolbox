@@ -20,7 +20,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="3.0.0"
+version="3.1.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -477,6 +477,9 @@ $create_snapshot"
       echo "Disk space after backup:"
       df -h
       echo
+    fi
+    if [[ $bkup_mode = "awssnapshot" ]]; then
+        backup_size_in_bytes="n/a"
     fi
 }
 

@@ -20,7 +20,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="3.2.0"
+version="3.2.1"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -517,10 +517,11 @@ purge_old_backups() {
             snapshots="$(aws --profile "$profile" --region "$region" ec2 describe-snapshots --filters "Name=status,Values=completed" "Name=volume-id,Values=$volume_id" --query 'Snapshots[*].{Description:Description,SnapshotId:SnapshotId}' --output json)"
             echo "$snapshots"
             while :; do
-                snapshot_to_delete="$(echo $snapshots | jq 'sort_by(.Description)' | jq -r ".[$num_bkups].SnapshotId")"
+                snapshot_to_delete="$(echo $snapshots | jq -r "[ sort_by(.Description) | .[] | select(.Description | contains(\".$bkup_type\")) ] | .[$num_bkups].SnapshotId")"
                 if [[ $snapshot_to_delete = "null" || ! $snapshot_to_delete ]]; then
                     break
                 else
+                    echo "Deleting snapshot: $snapshot_to_delete"
                     delete="$(aws --profile "$profile" --region "$region" ec2 delete-snapshot --snapshot-id "$snapshot_to_delete")"
                     rc=$?; if [[ $rc -ne 0 ]]; then error_exit "ERROR: ${0}(@$LINENO): $delete."; fi
                     echo "$delete"

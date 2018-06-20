@@ -20,7 +20,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="3.2.2"
+version="3.3.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -515,7 +515,7 @@ purge_old_backups() {
         for volume_id in $volume_ids; do
             echo "Snapshots for volume_id: $volume_id"
             snapshots="$(aws --profile "$profile" --region "$region" ec2 describe-snapshots --filters "Name=status,Values=completed" "Name=volume-id,Values=$volume_id" --query 'Snapshots[*].{Description:Description,SnapshotId:SnapshotId}' --output json)"
-            echo "$snapshots"
+            echo "$snapshots" | jq "sort_by(.Description) | reverse"
             bkup_num_to_del="$num_bkups"
             while :; do
                 snapshot_to_delete="$(echo $snapshots | jq -r "[ sort_by(.Description) | reverse | .[] | select(.Description | contains(\".$bkup_type\")) ] | .[$bkup_num_to_del].SnapshotId")"

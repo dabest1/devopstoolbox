@@ -267,7 +267,7 @@ perform_backup() {
             volume_ids="$(echo "$describe_volumes" | jq -r '.[].VolumeId')"
             for volume_id in $volume_ids; do
                 echo "volume_id: $volume_id"
-                create_snapshot="$(aws --dry-run --profile "$profile" --region "$region" ec2 create-snapshot --volume-id "$volume_id" --description "$bkup_date.$hostname.$bkup_type")"
+                create_snapshot="$(aws --profile "$profile" --region "$region" ec2 create-snapshot --volume-id "$volume_id" --description "$bkup_date.$hostname.$bkup_type")"
                 echo "create_snapshot:
 $create_snapshot"
                 echo
@@ -453,7 +453,7 @@ $create_snapshot"
             volume_ids="$(echo "$describe_volumes" | jq -r '.[].VolumeId')"
             for volume_id in $volume_ids; do
                 echo "volume_id: $volume_id"
-                create_snapshot="$(aws --dry-run --profile "$profile" --region "$region" ec2 create-snapshot --volume-id "$volume_id" --description "$bkup_date.$hostname.$bkup_type")"
+                create_snapshot="$(aws --profile "$profile" --region "$region" ec2 create-snapshot --volume-id "$volume_id" --description "$bkup_date.$hostname.$bkup_type")"
                 echo "create_snapshot:
 $create_snapshot"
                 echo

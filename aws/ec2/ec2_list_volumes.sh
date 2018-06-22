@@ -6,26 +6,48 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.1.0"
+version="1.2.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 
+profile="${AWS_PROFILE:-default}"
+
 function usage {
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
     echo
-    echo "    $script_name [instance_name | 'partial_name*' | instance_id]"
+    echo "    $script_name [--profile profile] [--region region] [instance_name | 'partial_name*' | instance_id]"
+    echo
+    echo "Description:"
+    echo "    --profile          Use a specified profile from your AWS credential file, otherwise get it from AWS_PROFILE variable."
+    echo "    --region           Use a specified region instead of region from configuration or environment setting."
+    echo "    -h, --help         Display this help."
     exit 1
 }
 
-name="$1"
-profile="${AWS_PROFILE:-default}"
-
-if [[ $1 == "--help" || $1 == "-h" ]]; then
-    usage
-fi
+while test -n "$1"; do
+    case "$1" in
+    -h|--help)
+        usage
+        ;;
+    --profile)
+        shift
+        profile="$1"
+        shift
+        ;;
+    --region)
+        shift
+        region="$1"
+        region_opt="--region=$region"
+        shift
+        ;;
+    *)
+        name="$1"
+        shift
+    esac
+done
 
 # If name is not supplied, then we want all instances.
 if [[ -z $name ]]; then

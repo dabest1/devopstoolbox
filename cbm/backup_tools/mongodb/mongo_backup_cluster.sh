@@ -20,7 +20,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="3.3.1"
+version="3.3.2"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -298,8 +298,10 @@ $create_snapshot"
             replset_hosts_ports="$(tail -1 <<<"$replset_hosts_ports")"
 
             # Hostname translation between AWS and Rundeck.
-            if [[ ! -z $host_aws_rundeck_sed ]]; then
-                replset_hosts_ports="$(sed "$host_aws_rundeck_sed" <<<"$replset_hosts_ports")"
+            if [[ ! -z "$host_aws_rundeck_sed" ]]; then
+                host_part="$(awk -F: '{print $1}' <<<"$replset_hosts_ports")"
+                port_part="$(awk -F: '{print $2}' <<<"$replset_hosts_ports")"
+                replset_hosts_ports="$(sed "$host_aws_rundeck_sed" <<<"$host_part"):$port_part"
             fi
 
             if [[ -z $replset_hosts_ports_bkup ]]; then

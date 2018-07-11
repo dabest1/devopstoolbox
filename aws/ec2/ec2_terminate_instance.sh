@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.7"
+version="1.1.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -17,11 +17,11 @@ usage() {
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
     echo
-    echo "    $script_name [-f] {name | instance_id}..."
+    echo "    $script_name [-n] {name | instance_id}..."
     echo
     echo "Description:"
-    echo "    -f, --force   Do not prompt for confirmation."
-    echo "    -h, --help    Display this help."
+    echo "    -n, --no-prompt    No confirmation prompt."
+    echo "    -h, --help         Display this help."
     exit 1
 }
 
@@ -30,7 +30,7 @@ while test -n "$1"; do
     -h|--help)
         usage
         ;;
-    -f|--force)
+    -n|--no-prompt)
         do_not_prompt="yes"
         shift
         ;;
@@ -74,7 +74,7 @@ for name in $names; do
 
     volume_ids=$(aws --profile "$profile" ec2 describe-volumes --filters "Name=attachment.instance-id, Values=$instance_id" "Name=attachment.delete-on-termination, Values=false" --query 'Volumes[*].[VolumeId]' --output text)
 
-    if [[ $do_not_prompt != "yes" ]]; then
+    if [[ ! $do_not_prompt ]]; then
         echo -n "Are you sure that you want this instance terminated? y/n: "
         read -r yn
         if [[ $yn != y ]]; then
@@ -90,7 +90,7 @@ for name in $names; do
         echo "volume_ids:" $volume_ids | tee -a "$log"
 
         delete_volumes_yn="y"
-        if [[ $do_not_prompt != "yes" ]]; then
+        if [[ ! $do_not_prompt ]]; then
             echo -n "Are you sure that you want these volumes deleted? y/n: "
             read -r delete_volumes_yn
             if [[ $delete_volumes_yn != y ]]; then

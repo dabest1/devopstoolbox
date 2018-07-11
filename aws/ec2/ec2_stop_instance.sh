@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.1.0"
+version="1.1.1"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -16,7 +16,7 @@ usage() {
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
     echo
-    echo "    $script_name [-f] [-w] {name | instance_id}..."
+    echo "    $script_name [-f] [-n] [-w] {name | instance_id}..."
     echo
     echo "Description:"
     echo "    -f, --force        Force stop instance."

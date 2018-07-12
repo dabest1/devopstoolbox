@@ -20,7 +20,7 @@
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="3.3.2"
+version="3.4.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -87,6 +87,7 @@ mongod="${mongod:-$(which mongod)}"
 mongodump="${mongodump:-$(which mongodump)}"
 bkup_host_port_regex="${bkup_host_port_regex:-.*-2:[0-9]*}"
 config_server_regex="${config_server_regex:-cfgdb}"
+run_backup_on_master="${run_backup_on_master:-false}"
 
 rundeck_status_check_iterations=432
 rundeck_sleep_seconds_between_status_checks=300
@@ -288,8 +289,13 @@ $create_snapshot"
         # Get shard servers (replica set members).
         shard_hosts_ports="$("$mongo" --quiet "$mongos_host:$mongos_port/config" --eval 'var myCursor = db.shards.find(); myCursor.forEach(printjson)' | jq -r '.host' | awk -F'/' '{print $2}' | awk -F, '{print $1}')"
         for host_port in $shard_hosts_ports; do
-            # Find shard replica set members, which are not PRIMARY.
-            replset_hosts_ports="$("$mongo" "$host_port" --quiet --eval 'JSON.stringify(rs.status())' | jq -r '.members[] | ((.name)+":"+.stateStr)' | grep -v :PRIMARY | awk -F: '{print $1":"$2}')"
+            if [[ $run_backup_on_master != "true" ]]; then
+                # Find shard replica set members, which are not PRIMARY.
+                replset_hosts_ports="$("$mongo" "$host_port" --quiet --eval 'JSON.stringify(rs.status())' | jq -r '.members[] | ((.name)+":"+.stateStr)' | grep -v :PRIMARY | awk -F: '{print $1":"$2}')"
+            else
+                # Find shard replica set member, which is PRIMARY.
+                replset_hosts_ports="$("$mongo" "$host_port" --quiet --eval 'JSON.stringify(rs.status())' | jq -r '.members[] | ((.name)+":"+.stateStr)' | grep :PRIMARY | awk -F: '{print $1":"$2}')"
+            fi
 
             # Remove FQDN, to leave just the short name and filter nodes which are allowed to run backup.
             replset_hosts_ports="$(sed 's/[.].*:/:/' <<<"$replset_hosts_ports" | egrep "$bkup_host_port_regex")"
@@ -402,9 +408,16 @@ $create_snapshot"
 
     # Replica set member.
     else
-        is_master="$("$mongo" --quiet --port "$shard_port" $mongo_option --authenticationDatabase admin --eval 'JSON.stringify(db.isMaster())' | jq '.ismaster')"
-        if [[ $is_master != "false" ]]; then
-            error_exit "ERROR: ${0}(@$LINENO): This is not a secondary node."
+        if [[ $run_backup_on_master != "true" ]]; then
+            is_master="$("$mongo" --quiet --port "$shard_port" $mongo_option --authenticationDatabase admin --eval 'JSON.stringify(db.isMaster())' | jq '.ismaster')"
+            if [[ $is_master != "false" ]]; then
+                error_exit "ERROR: ${0}(@$LINENO): This is not a secondary node."
+            fi
+        else
+          is_master="$("$mongo" --quiet --port "$shard_port" $mongo_option --authenticationDatabase admin --eval 'JSON.stringify(db.isMaster())' | jq '.ismaster')"
+          if [[ $is_master = "false" ]]; then
+              error_exit "ERROR: ${0}(@$LINENO): This is not a primary node."
+          fi
         fi
 
         if [[ $uuid_insert == yes ]]; then
@@ -428,8 +441,7 @@ $create_snapshot"
             fi
         fi
 
-        # TODO: Add locking of secondary node.
-        echo "Backing up secondary node."
+        echo "Backing up replica set node."
         date -u +'start: %FT%TZ'
         if [[ $bkup_mode = "mongodump" ]]; then
             if [[ -e /etc/mongod.conf ]]; then

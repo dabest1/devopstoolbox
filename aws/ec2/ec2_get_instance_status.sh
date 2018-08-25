@@ -2,12 +2,12 @@
 
 # Purpose:
 #     Provides AWS status of one or more instances.
-#     Multiple instances can be displayed if partial name with wildcard is 
+#     Multiple instances can be displayed if partial name with wildcard is
 #     supplied.
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.0"
+version="1.0.1"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -71,8 +71,8 @@ header_row="account name instance_id private_ip public_ip region type state syst
             exit 1
         fi
 
-        join -1 3 -2 1 -o 1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,2.2,2.3 <(aws --profile "$profile" ec2 describe-instances --instance-ids $instance_ids --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, PrivateIpAddress, PublicIpAddress, Placement.AvailabilityZone, InstanceType, State.Name]' --output text | sort | awk -v profile="$profile" '{print profile"\t"$0}') <(aws --profile "$profile" ec2 describe-instance-status --instance-ids $instance_ids --query 'InstanceStatuses[].[InstanceId, SystemStatus.Status, InstanceStatus.Status]' --output text)
+        join -1 3 -2 1 -o 1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,2.2,2.3 <(aws --profile "$profile" ec2 describe-instances --instance-ids $instance_ids --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, PrivateIpAddress, PublicIpAddress, Placement.AvailabilityZone, InstanceType, State.Name]' --output text | sort | awk -v profile="$profile" '{print profile"\t"$0}') <(aws --profile "$profile" ec2 describe-instance-status --instance-ids $instance_ids --query 'InstanceStatuses[].[InstanceId, SystemStatus.Status, InstanceStatus.Status]' --output text | sort)
     else
-        join -1 3 -2 1 -o 1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,2.2,2.3 <(aws --profile "$profile" ec2 describe-instances --filter "Name=tag-value,Values=$tag_value" --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, PrivateIpAddress, PublicIpAddress, Placement.AvailabilityZone, InstanceType, State.Name]' --output text | sort | awk -v profile="$profile" '{print profile"\t"$0}') <(aws --profile "$profile" ec2 describe-instance-status --instance-ids $instance_ids --query 'InstanceStatuses[].[InstanceId, SystemStatus.Status, InstanceStatus.Status]' --output text)
+        join -1 3 -2 1 -o 1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,2.2,2.3 <(aws --profile "$profile" ec2 describe-instances --filter "Name=tag-value,Values=$tag_value" --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, PrivateIpAddress, PublicIpAddress, Placement.AvailabilityZone, InstanceType, State.Name]' --output text | sort | awk -v profile="$profile" '{print profile"\t"$0}') <(aws --profile "$profile" ec2 describe-instance-status --instance-ids $instance_ids --query 'InstanceStatuses[].[InstanceId, SystemStatus.Status, InstanceStatus.Status]' --output text | sort)
     fi
 } | column -t

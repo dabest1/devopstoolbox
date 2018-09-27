@@ -2,12 +2,12 @@
 
 # Purpose:
 #     Provides a list of one or more instances with their status.
-#     Multiple instances can be displayed if partial name with wildcard is 
+#     Multiple instances can be displayed if partial name with wildcard is
 #     supplied.
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.5.0"
+version="1.5.1"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -62,24 +62,22 @@ header_row="Profile Name InstanceId PrivateIp PublicIp KeyName AZ Type State"
 {
     echo "$header_row"
 
-    # If tag is not supplied, then search by name, else search by tag.
-    if [[ -z $tag_value ]]; then
-        # If name is not supplied, then we want all instances.
-        if [[ -z $name ]]; then
-            name='*'
-        fi
-
-        if echo "$name" | grep -q '^i-'; then
-            instance_ids="$name"
-        else
-            instance_ids=$(aws --profile "$profile" $region_opt ec2 describe-instances --filters "Name=tag:Name, Values=$name" --query 'Reservations[].Instances[].[InstanceId]' --output text)
-        fi
-        if [[ -z $instance_ids ]]; then
-            exit 1
-        fi
-
-        aws --profile "$profile" $region_opt ec2 describe-instances --instance-ids $instance_ids --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, PrivateIpAddress, PublicIpAddress, KeyName, Placement.AvailabilityZone, InstanceType, State.Name]' --output text | sort | awk -v profile="$profile" '{print profile"\t"$0}'
+    # If tag is supplied, then search by tag.
+    if [[ $tag_value ]]; then
+        instance_ids=$(aws --profile "$profile" $region_opt ec2 describe-instances --filter "Name=tag-value,Values=$tag_value" --query 'Reservations[].Instances[].[InstanceId]' --output text)
+    # If instance ID is supplied, then search by instance ID.
+    elif echo "$name" | grep -q '^i-'; then
+        instance_ids="$name"
+    # If name is supplied, then search by instance name.
+    elif [[ $name ]]; then
+        instance_ids=$(aws --profile "$profile" $region_opt ec2 describe-instances --filters "Name=tag:Name, Values=$name" --query 'Reservations[].Instances[].[InstanceId]' --output text)
+    # If name is not supplied, then we want all instances.
     else
-        aws --profile "$profile" $region_opt ec2 describe-instances --filter "Name=tag-value,Values=$tag_value" --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, PrivateIpAddress, PublicIpAddress, KeyName, Placement.AvailabilityZone, InstanceType, State.Name]' --output text | sort | awk -v profile="$profile" '{print profile"\t"$0}'
+        instance_ids=$(aws --profile "$profile" $region_opt ec2 describe-instances --query 'Reservations[].Instances[].[InstanceId]' --output text)
     fi
+    if [[ -z $instance_ids ]]; then
+        exit 1
+    fi
+
+    aws --profile "$profile" $region_opt ec2 describe-instances --instance-ids $instance_ids --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, PrivateIpAddress, PublicIpAddress, KeyName, Placement.AvailabilityZone, InstanceType, State.Name]' --output text | sort | awk -v profile="$profile" '{print profile"\t"$0}'
 } | column -t

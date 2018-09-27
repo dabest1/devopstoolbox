@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.0"
+version="1.1.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -18,12 +18,13 @@ usage() {
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
     echo
-    echo "    $script_name [--profile profile] [--region region] [-n] [-w] {instance-name}..."
+    echo "    $script_name [--profile profile] [--region region] [-n] [-w] [-s final-snapshot-name] {instance-name}..."
     echo
     echo "Description:"
     echo "    --profile          Use a specified profile from your AWS credential file, otherwise get it from AWS_PROFILE variable."
     echo "    --region           Use a specified region instead of region from configuration or environment setting."
     echo "    -n, --no-prompt    No confirmation prompt."
+    echo "    -s, --snapshot     Filnal database snapshot name."
     echo "    -w, --wait         Wait for 'deleted' state before finishing."
     echo "    -h, --help         Display this help."
     exit 1
@@ -47,6 +48,11 @@ while test -n "$1"; do
         ;;
     -n|--no-prompt)
         do_not_prompt="yes"
+        shift
+        ;;
+    -s|--snapshot)
+        shift
+        snapshot="$1"
         shift
         ;;
     -w|--wait)
@@ -92,7 +98,11 @@ for name in $names; do
     fi
 
     echo "Delete instance..." | tee -a "$log"
-    aws --profile "$profile" $region_opt rds delete-db-instance --db-instance-identifier "$name" --output json | tee -a "$log"
+    if [[ $snapshot ]]; then
+        aws --profile "$profile" $region_opt rds delete-db-instance --db-instance-identifier "$name" --no-skip-final-snapshot --final-db-snapshot-identifier "$snapshot" --output json | tee -a "$log"
+    else
+        aws --profile "$profile" $region_opt rds delete-db-instance --db-instance-identifier "$name" --output json | tee -a "$log"
+    fi
     state="deleting"
     while [[ $state = "deleting" ]] && [[ $wait_for_deleted == yes ]]; do
         state="$(aws --profile "$profile" $region_opt rds describe-db-instances --db-instance-identifier "$name" --query 'DBInstances[0].DBInstanceStatus' --output json 2> /dev/null | jq -r '.')"

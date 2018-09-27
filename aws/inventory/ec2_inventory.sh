@@ -6,7 +6,7 @@
 #     Run script with --help option to get usage.
 ################################################################################
 
-version="1.5.1"
+version="1.5.2"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -54,14 +54,7 @@ refresh_subtask() {
 
     for profile in $profiles; do
         echo "profile: $profile"
-        name='*'
-        instance_ids=$(aws --profile "$profile" ec2 describe-instances --filters "Name=tag:Name, Values=$name" --query 'Reservations[].Instances[].[InstanceId]' --output text)
-        rc="$?"
-        if [[ $rc -gt 0 ]]; then
-            failures=$((failures + 1))
-        fi
-
-        aws --profile "$profile" ec2 describe-instances --instance-ids $instance_ids --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, PrivateIpAddress, PublicIpAddress, KeyName, Placement.AvailabilityZone, InstanceType, State.Name]' --output text | sort | awk -v profile="$profile" '{print profile"\t"$0}' >> "$data_tmp_path"
+        aws --profile "$profile" ec2 describe-instances --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, PrivateIpAddress, PublicIpAddress, KeyName, Placement.AvailabilityZone, InstanceType, State.Name]' --output text | sort | awk -v profile="$profile" '{print profile"\t"$0}' >> "$data_tmp_path"
         rc="$?"
         if [[ $rc -gt 0 ]]; then
             failures=$((failures + 1))

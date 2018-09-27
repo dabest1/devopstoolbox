@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.0"
+version="1.0.1"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -44,7 +44,7 @@ while test -n "$1"; do
 done
 
 # Header row.
-header_row="profile	name	engine	status	endpoint	port"
+header_row="profile name engine status endpoint port"
 
 {
     echo "$header_row"

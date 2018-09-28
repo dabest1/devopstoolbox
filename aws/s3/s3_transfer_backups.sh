@@ -6,7 +6,7 @@
 #         s3://bucket/database_type/hostname/timestamp.backup_type/*
 ################################################################################
 
-version="1.1.0"
+version="1.1.1"
 
 start_time="$(date -u +'%F %T %Z')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -64,7 +64,7 @@ s3_host_list="$($s3cmd ls "$s3uri_source" | awk -F' |/' '/ PRE / {print $(NF-1)}
 if [[ $? -ne 0 ]]; then
     die "Listing in S3 source bucket has failed."
 fi
-s3_host_list="$($s3cmd ls "$s3uri_source" | awk -F' |/' '/ PRE / {print $(NF-1)}' | sort | head -1)" # DEBUG
+s3_host_list="$($s3cmd ls "$s3uri_source" | awk -F' |/' '/ PRE / {print $(NF-1)}' | sort)"
 echo "$s3_host_list"
 
 echo

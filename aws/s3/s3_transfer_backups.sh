@@ -6,7 +6,7 @@
 #         s3://bucket/database_type/hostname/timestamp.backup_type/*
 ################################################################################
 
-version="1.1.1"
+version="1.2.0"
 
 start_time="$(date -u +'%F %T %Z')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -27,6 +27,77 @@ function usage {
     echo
     echo "Example:"
     echo "    $script_name"
+    echo '
+Prerequisites:
+
+    Source bucket needs to have the following bucket policy. Replace source_bucket, destination_account, and destination_username with appropriate values.
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "AllowAll",
+                "Effect": "Allow",
+                "Principal": {
+                    "AWS": "arn:aws:iam::destination_account:user/destination_username"
+                },
+                "Action": "s3:*",
+                "Resource": [
+                    "arn:aws:s3:::source_bucket",
+                    "arn:aws:s3:::source_bucket/*"
+                ]
+            }
+        ]
+    }
+
+    A user with the following policy is needed in destination account. Replace source_bucket and destination_bucket with appropriate values.
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "s3:AbortMultipartUpload",
+                    "s3:GetBucketLocation",
+                    "s3:GetObject",
+                    "s3:GetObjectAcl",
+                    "s3:GetObjectTagging",
+                    "s3:GetObjectTorrent",
+                    "s3:GetObjectVersion",
+                    "s3:GetObjectVersionAcl",
+                    "s3:GetObjectVersionTagging",
+                    "s3:GetObjectVersionTorrent",
+                    "s3:ListBucket",
+                    "s3:ListBucketMultipartUploads",
+                    "s3:ListBucketVersions",
+                    "s3:ListMultipartUploadParts",
+                    "s3:PutObject",
+                    "s3:PutObjectTagging"
+                ],
+                "Resource": [
+                    "arn:aws:s3:::destination_bucket",
+                    "arn:aws:s3:::destination_bucket/*",
+                    "arn:aws:s3:::source_bucket",
+                    "arn:aws:s3:::source_bucket/*"
+                ]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "s3:DeleteObject"
+                ],
+                "Resource": [
+                    "arn:aws:s3:::source_bucket/*"
+                ]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "s3:ListAllMyBuckets"
+                ],
+                "Resource": "*"
+            }
+        ]
+    }'
     exit 1
 }
 
@@ -61,10 +132,9 @@ echo "S3 target: $s3uri_target"
 echo
 echo "Hosts:"
 s3_host_list="$($s3cmd ls "$s3uri_source" | awk -F' |/' '/ PRE / {print $(NF-1)}' | sort)"
-if [[ $? -ne 0 ]]; then
+if [[ $? -ne 0 || ! $s3_host_list ]]; then
     die "Listing in S3 source bucket has failed."
 fi
-s3_host_list="$($s3cmd ls "$s3uri_source" | awk -F' |/' '/ PRE / {print $(NF-1)}' | sort)"
 echo "$s3_host_list"
 
 echo

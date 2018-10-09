@@ -5,13 +5,28 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.0"
+version="1.1.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 
 profile="${AWS_PROFILE:-default}"
+
+function usage {
+    echo "Usage:"
+    echo "    export AWS_PROFILE=profile"
+    echo
+    echo "    $script_name resource"
+    echo
+    echo "Example:"
+    echo "    $script_name i-abcd1234"
+    echo "    or"
+    echo "    $script_name vol-abcd1234"
+    echo "    or"
+    echo "    $script_name myinstancename"
+    exit 1
+}
 
 get_instance_id() {
     local name
@@ -37,10 +52,18 @@ get_instance_id() {
     echo "$instance_id"
 }
 
-instance_id="$1"
-echo -n "$instance_id "
+if [[ $1 == "--help" || -z $1 ]]; then
+    usage
+fi
 
-instance_id="$(get_instance_id "$instance_id")"
+resource="$1"
+echo -n "$resource "
 
-aws --profile glu ec2 describe-instances --instance-ids "$instance_id" --output json --query 'Reservations[0].Instances[0].Tags' | jq -r '.[] | "Key=" + .Key + ",Value=" + .Value' | tr '\n' ' '
+if echo "$resource" | grep -q '^vol-'; then
+    # TODO: Need to return volume tags.
+    echo "$resource" # DEBUG
+else
+    instance_id="$(get_instance_id "$resource")"
+    aws --profile "$profile" $region_opt ec2 describe-instances --instance-ids "$instance_id" --output json --query 'Reservations[0].Instances[0].Tags' | jq -r '.[] | "Key=" + .Key + ",Value=" + .Value' | tr '\n' ' '
+fi
 echo

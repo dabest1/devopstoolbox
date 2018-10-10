@@ -5,13 +5,17 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.0"
+version="1.1.0"
 
+set -E
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 
 profile="${AWS_PROFILE:-default}"
+
+shopt -s expand_aliases
+alias die='error_exit "ERROR in $0: line $LINENO:"'
 
 usage() {
     echo "Usage:"
@@ -26,18 +30,24 @@ usage() {
     exit 1
 }
 
+error_exit() {
+    echo "$@" >&2
+    exit 77
+}
+trap '[ "$?" -ne 77 ] || exit 77' ERR
+trap "error_exit 'Received signal SIGHUP'" SIGHUP
+trap "error_exit 'Received signal SIGINT'" SIGINT
+trap "error_exit 'Received signal SIGTERM'" SIGTERM
+
 get_image_id() {
     local ami_name
     local image_id
-    local rc
 
     ami_name="$1"
 
     image_id="$(aws --profile "$profile" $region_opt ec2 describe-images --filters "Name=name,Values=$ami_name" --query 'Images[].ImageId' --output text)"
-    rc=$?
-    if [[ $rc -ne 0 ]]; then
-        echo "Error: Failure getting image status." 1>&2
-        exit 1
+    if [[ $? -ne 0 || ! $image_id ]]; then
+        die "Failure getting image ID."
     fi
 
     echo "$image_id"
@@ -46,15 +56,12 @@ get_image_id() {
 get_snapshots() {
     local image_id
     local snapshot_ids
-    local rc
 
     image_id="$1"
 
     snapshot_ids="$(aws --profile "$profile" $region_opt ec2 describe-images --image-id "$image_id" --query 'Images[].BlockDeviceMappings[].Ebs.SnapshotId' --output text)"
-    rc=$?
-    if [[ $rc -ne 0 ]]; then
-        echo "Error: Failure getting AMI snapshots." 1>&2
-        exit 1
+    if [[ $? -ne 0 ]]; then
+        die "Failure getting AMI snapshots."
     fi
 
     echo "$snapshot_ids"
@@ -62,29 +69,23 @@ get_snapshots() {
 
 deregister_ami() {
     local image_id
-    local rc
 
     image_id="$1"
 
     aws --profile "$profile" $region_opt ec2 deregister-image --image-id "$image_id"
-    rc=$?
-    if [[ $rc -ne 0 ]]; then
-        echo "Error: Failure deregistering AMI." 1>&2
-        exit 1
+    if [[ $? -ne 0 ]]; then
+        die "Failure deregistering AMI."
     fi
 }
 
 delete_snapshot() {
     local snapshot_id
-    local rc
 
     snapshot_id="$1"
 
     aws --profile "$profile" $region_opt ec2 delete-snapshot --snapshot-id "$snapshot_id"
-    rc=$?
-    if [[ $rc -ne 0 ]]; then
-        echo "Error: Failure deleting snapshot." 1>&2
-        exit 1
+    if [[ $? -ne 0 ]]; then
+        die "Failure deleting snapshot."
     fi
 }
 

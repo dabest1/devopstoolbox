@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=1.0.0
+version=1.1.0
 
 # Zabbix server.
 zabbix_server="zabbix-server-or-proxy"
@@ -128,7 +128,7 @@ if [[ ! $project_name || ! $region || ! $cluster_name ]]; then
     exit 1
 fi
 
-key_file="$script_dir/${script_name/.sh/.${project_name}.key.json}"
+key_file="$script_dir/gcp_key.${project_name}.json"
 
 for (( c=1; c<="$num_tries"; c++ )); do
     metrics="$($gcpmetrics --keyfile "$key_file" --project "$project_name" --query --minutes "$period_min" --metric kubernetes.io/node_daemon/cpu/core_usage_time --resource-filter "cluster_name:$cluster_name")"

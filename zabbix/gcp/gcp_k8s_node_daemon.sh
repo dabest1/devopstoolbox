@@ -1,13 +1,13 @@
 #!/bin/bash
 
-version=1.1.1
+version=1.2.0
 
 # Zabbix server.
 zabbix_server="zabbix-server-or-proxy"
 # Host name, which is being monitored in Zabbix.
 host="monitored host name as set up in zabbix"
 # Custom location of gcpmetrics.
-gcpmetrics="python /opt/gcpmetrics/gcpmetrics.py"
+gcpmetrics="python27 /opt/gcpmetrics/gcpmetrics.py"
 # GCP metrics time period in minutes.
 period_min=2
 # Number of tries before giving up on obtaining GCP metrics.
@@ -60,16 +60,23 @@ trap "error_exit 'Received signal SIGINT'" SIGINT
 trap "error_exit 'Received signal SIGTERM'" SIGTERM
 
 format_metrics() {
-    local metrics
-    metrics="$1"
+    local metrics_data row1_num_columns row2_num_columns ratio
+    metrics_data="$1"
+
+    # Take fixed width formatted input.
+    # Grab last 3 lines.
+    # Count number of columns in 1st and 2nd lines (minus 1 column).
+    row1_num_columns="$(echo "$metrics_data" | tail -3 | awk 'NR==1 {print NF - 1}')"
+    row2_num_columns="$(echo "$metrics_data" | tail -3 | awk 'NR==2 {print NF - 1}')"
+    ratio=$((row2_num_columns / row1_num_columns))
 
     # Take fixed width formatted input.
     # Grab last 3 lines.
     # Replace space between date and time with 'T'.
-    # Add missing headers and remove repeated spaces.
+    # Add missing headers (to match number of columns in 1st and 2nd row) and remove repeated spaces.
     # Remove trailing spaces.
     # Transpose.
-    echo "$metrics" | tail -3 | sed 's/\(^[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\)[ ]/\1T/' | awk '
+    echo "$metrics_data" | tail -3 | sed 's/\(^[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\)[ ]/\1T/' | awk -v ratio="$ratio" '
     BEGIN {ORS=""}
     NR==1 {
         for (n=1; n<=NF; n++) {
@@ -77,7 +84,9 @@ format_metrics() {
                printf "%s ", $n
             }
             else {
-               printf "%s %s %s ", $n, $n, $n
+                for (c=1; c<=ratio; c++) {
+                    printf "%s ", $n
+                }
             }
         }
         print "\n"
@@ -131,10 +140,10 @@ fi
 key_file="$script_dir/gcp_key.${project_name}.json"
 
 for (( c=1; c<="$num_tries"; c++ )); do
-    metrics="$($gcpmetrics --keyfile "$key_file" --project "$project_name" --query --minutes "$period_min" --metric kubernetes.io/node_daemon/cpu/core_usage_time --resource-filter "cluster_name:$cluster_name")"
+    metrics_data="$($gcpmetrics --keyfile "$key_file" --project "$project_name" --query --minutes "$period_min" --metric kubernetes.io/node_daemon/cpu/core_usage_time --resource-filter "cluster_name:$cluster_name")"
     [[ $? -ne 0 ]] && die "Error from gcpmetrics command."
 
-    if echo "$metrics" | grep -q 'Empty DataFrame'; then
+    if echo "$metrics_data" | grep -q 'Empty DataFrame'; then
         if [[ "$c" -eq "$num_tries" ]]; then
             die "No data returned from GCP after $num_tries tries."
         fi
@@ -144,7 +153,7 @@ for (( c=1; c<="$num_tries"; c++ )); do
     sleep 1
 done
 
-transposed="$(format_metrics "$metrics")"
+transposed="$(format_metrics "$metrics_data")"
 
 if [[ "$lld" == "yes" ]]; then
     node_names="$(echo "$transposed" | sed '1d' | awk '{print $1}' | uniq)"

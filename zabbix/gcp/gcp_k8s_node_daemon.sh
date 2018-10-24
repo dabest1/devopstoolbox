@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=1.1.0
+version=1.1.1
 
 # Zabbix server.
 zabbix_server="zabbix-server-or-proxy"
@@ -160,7 +160,6 @@ if [[ "$lld" == "yes" ]]; then
 else
     timestamp="$(echo "$transposed" | awk 'NR==1 {print $3}')"
     epoch="$(date --date="$timestamp" +'%s')"
-    epoch=123 # DEBUG
 
     zabbix_data="$(
         while read node_name component value; do

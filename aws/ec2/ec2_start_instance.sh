@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.5"
+version="1.1.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -16,12 +16,12 @@ usage() {
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
     echo
-    echo "    $script_name [-f] [-w] {name | instance_id}..."
+    echo "    $script_name [-n] [-w] {name | instance_id}..."
     echo
     echo "Description:"
-    echo "    -f, --force   Do not prompt for confirmation."
-    echo "    -w, --wait    Wait for 'running' state before finishing."
-    echo "    -h, --help    Display this help."
+    echo "    -n, --no-prompt    No confirmation prompt."
+    echo "    -w, --wait         Wait for 'running' state before finishing."
+    echo "    -h, --help         Display this help."
     exit 1
 }
 
@@ -30,7 +30,7 @@ while test -n "$1"; do
     -h|--help)
         usage
         ;;
-    -f|--force)
+    -n|--no-prompt)
         do_not_prompt="yes"
         shift
         ;;
@@ -83,7 +83,7 @@ for name in $names; do
 
     aws --profile "$profile" ec2 describe-volumes --filters "Name=attachment.instance-id, Values=$instance_id" --query 'Volumes[*].{VolumeId:VolumeId,InstanceId:Attachments[0].InstanceId,State:Attachments[0].State,DeleteOnTermination:Attachments[0].DeleteOnTermination,Device:Attachments[0].Device,Size:Size}' --output table | tee -a "$log"
 
-    if [[ $do_not_prompt != "yes" ]]; then
+    if [[ ! $do_not_prompt ]]; then
         echo -n 'Are you sure that you want this instance started? y/n: '
         read -r yn
         if [[ $yn != y ]]; then

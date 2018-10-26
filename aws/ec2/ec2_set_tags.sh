@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Purpose:
-#     Create tags for AWS resource such as EC2 instance.
+#     Set tags for AWS resource such as EC2 instance.
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.0"
+version="1.1.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

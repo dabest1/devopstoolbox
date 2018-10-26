@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Purpose:
-#     Provides a list of one or multiple RDS instances with their status.
+#     Provides a list of AWS RDS clusters with their status.
 # Usage:
 #     Run script with --help option to get usage.
 
-version="2.0.0"
+version="1.0.1"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -44,9 +44,9 @@ while test -n "$1"; do
 done
 
 # Header row.
-header_row="account name engine region class status endpoint port"
+header_row="profile name engine status endpoint port"
 
 {
     echo "$header_row"
-    aws --profile "$profile" rds describe-db-instances --db-instance-identifier "$name" | jq '.DBInstances[] | [.DBInstanceIdentifier, .Engine, .AvailabilityZone, .DBInstanceClass, .DBInstanceStatus, .Endpoint.Address, .Endpoint.Port] | @tsv' | tr -d '"' | sed 's/\\t/ /g' | awk -v profile="$profile" '{print profile" "$0}'
+    aws --profile "$profile" $region_opt rds describe-db-clusters --db-cluster-identifier "$name" | jq '.DBClusters[] | [.DBClusterIdentifier, .Engine, .Status, .Endpoint, .Port] | @tsv' | tr -d '"' | sed 's/\\t/ /g' | awk -v profile="$profile" '{print profile" "$0}'
 } | column -t

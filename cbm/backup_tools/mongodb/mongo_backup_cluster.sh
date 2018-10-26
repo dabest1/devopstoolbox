@@ -1,24 +1,26 @@
 #!/bin/bash
 ################################################################################
 # Purpose:
-#     MongoDB cluster backup with the use of Rundeck. Replica set backups are 
+#     MongoDB cluster backup with the use of Rundeck. Replica set backups are
 #     also supported.
-#     Backup all MongoDB databases using mongodump (local db is excluded).
-#     --oplog option is used.
-#     Compress backup.
+#     Backup using mongodump or AWS snapshot.
+#     For mongodump:
+#         Backup all MongoDB databases using mongodump (local db is excluded).
+#         --oplog option is used.
+#         Compress backup.
 #     Optionally run post backup script.
 #     Optionally send email upon completion.
 #
-#     To restore the backup:
+#     To restore the mongodump backup:
 #     find "backup_path/" -name "*.bson.gz" -exec gunzip '{}' \;
 #     mongorestore --oplogReplay --dir "backup_path"
 #
-#     This script does not rely on Rundeck to wait for the job to complete. 
-#     Instead it starts the backup jobs in daemon mode and then sends status 
+#     This script does not rely on Rundeck to wait for the job to complete.
+#     Instead it starts the backup jobs in daemon mode and then sends status
 #     calls via another Rundeck job to track progress of the backup jobs.
 ################################################################################
 
-version="2.4.1"
+version="3.4.0"
 
 start_time="$(date -u +'%FT%TZ')"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -59,6 +61,7 @@ if [[ -z $bkup_dir || -z $rundeck_server_url || -z $rundeck_api_token || -z $run
     exit 1
 fi
 start_time_wot="$(tr 'T' ' ' <<<"$start_time")"
+bkup_mode="${bkup_mode:-mongodump}"
 bkup_date="$(date -d "$start_time_wot" +'%Y%m%dT%H%M%SZ')"
 bkup_dow="$(date -d "$start_time_wot" +'%w')"
 weekly_bkup_dow="${weekly_bkup_dow:-1}"
@@ -66,7 +69,12 @@ num_daily_bkups="${num_daily_bkups:-5}"
 num_weekly_bkups="${num_weekly_bkups:-5}"
 num_monthly_bkups="${num_monthly_bkups:-2}"
 num_yearly_bkups="${num_yearly_bkups:-0}"
-port="${port:-27017}"
+config_port="${config_port:-27019}"
+shard_port="${shard_port:-27018}"
+mongos_host="${mongos_host:-localhost}"
+mongos_port="${mongos_port:-27017}"
+profile="${profile:-default}"
+host_aws_rundeck_sed="${host_aws_rundeck_sed}"
 if [[ -z "$user" ]]; then
     mongo_option=""
 else
@@ -79,6 +87,7 @@ mongod="${mongod:-$(which mongod)}"
 mongodump="${mongodump:-$(which mongodump)}"
 bkup_host_port_regex="${bkup_host_port_regex:-.*-2:[0-9]*}"
 config_server_regex="${config_server_regex:-cfgdb}"
+run_backup_on_master="${run_backup_on_master:-false}"
 
 rundeck_status_check_iterations=432
 rundeck_sleep_seconds_between_status_checks=300
@@ -104,7 +113,7 @@ compress_backup() {
     compressed_size_in_bytes="$(du -sb "$bkup_path" | awk '{print $1}')"
     echo "$compressed_size_in_bytes"
     echo "Disk space after compression:"
-    df -h "$bkup_dir/"
+    df -h
     echo
 }
 
@@ -118,6 +127,21 @@ error_exit() {
     exit 77
 }
 
+get_volume_ids() {
+    instance_id="$(curl -s http://169.254.169.254/latest/meta-data/instance-id)"
+    [[ -n $instance_id ]] || error_exit "ERROR: ${0}(@$LINENO): Failed to obtain AWS instance id."
+    availability_zone="$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)"
+    [[ -n $availability_zone ]] || error_exit "ERROR: ${0}(@$LINENO): Failed to obtain AWS availability zone."
+    region="$(echo "$availability_zone" | sed 's/[a-z]$//')"
+    hostname="$(hostname | awk -F. '{print $1}')"
+    [[ -n $hostname ]] || error_exit "ERROR: ${0}(@$LINENO): Failed to obtain hostname."
+    echo "Describe volumes:"
+    describe_volumes="$(aws --profile "$profile" --region "$region" ec2 describe-volumes --filters "Name=attachment.instance-id, Values=$instance_id" --query 'Volumes[*].{VolumeId:VolumeId,InstanceId:Attachments[0].InstanceId,State:Attachments[0].State,Device:Attachments[0].Device,Size:Size}' --output json)"
+    echo "$describe_volumes"
+    echo
+    volume_ids="$(echo "$describe_volumes" | jq -r '.[].VolumeId')"
+}
+
 main() {
     echo "**************************************************"
     echo "* Backup MongoDB"
@@ -127,9 +151,10 @@ main() {
     echo "Hostname: $HOSTNAME"
     mongodb_version="$("$mongod" --version | head -1 | sed 's/db version //; s/v//')"
     echo "MongoDB version: $mongodb_version"
+    echo "Backup mode: $bkup_mode"
     echo "Backup type: $bkup_type"
     echo "Number of backups to retain for this type: $num_bkups"
-    echo "Backup will be created in: $bkup_path"
+    echo "Backup path: $bkup_path"
     echo
     mkdir "$bkup_path" || error_exit "ERROR: ${0}(@$LINENO): Could not create directory."
     # Move logs into dated backup directory.
@@ -141,7 +166,7 @@ main() {
     # Create backup status and pid file.
     echo "$BASHPID" > "$bkup_pid_file"
     cat <<HERE_DOC > "$bkup_status_file"
-{"start_time":"$start_time","backup_path":"$bkup_path","status":"running"}
+{"start_time":"$start_time","backup_path":"$bkup_path","status":"running","backup_mode":"$bkup_mode"}
 HERE_DOC
 
     purge_old_backups
@@ -149,8 +174,12 @@ HERE_DOC
     backup_size_in_bytes=""
     perform_backup
 
-    compressed_size_in_bytes=""
-    compress_backup
+    if [[ $bkup_mode = "mongodump" ]]; then
+        compressed_size_in_bytes=""
+        compress_backup
+    elif [[ $bkup_mode = "awssnapshot" ]]; then
+        compressed_size_in_bytes="n/a"
+    fi
 
     post_backup_process
 
@@ -174,17 +203,17 @@ HERE_DOC
     # Update backup status file.
     if [[ -z $replset_hosts_ports_bkup ]]; then
         cat <<HERE_DOC > "$bkup_status_file"
-{"start_time":"$start_time","end_time":"$end_time","backup_path":"$bkup_path","db_version":"$mongodb_version","backup_size_in_bytes":$backup_size_in_bytes,"compressed_size_in_bytes":$compressed_size_in_bytes,"status":"completed"}
+{"start_time":"$start_time","end_time":"$end_time","backup_path":"$bkup_path","db_version":"$mongodb_version","backup_size_in_bytes":"$backup_size_in_bytes","compressed_size_in_bytes":"$compressed_size_in_bytes","status":"completed","backup_mode":"$bkup_mode"}
 HERE_DOC
     else
         backup_nodes_json="\"backup_nodes\":["
         while IFS=':' read -r host port; do
-            backup_nodes_json="${backup_nodes_json}{\"node\":\"$host:$port\",\"start_time\":\"${replset_start_time[$host]}\",\"end_time\":\"${replset_end_time[$host]}\",\"backup_path\":\"${replset_bkup_path[$host]}\"},"
+            backup_nodes_json="${backup_nodes_json}{\"node\":\"$host:$shard_port\",\"start_time\":\"${replset_start_time[$host]}\",\"end_time\":\"${replset_end_time[$host]}\",\"backup_path\":\"${replset_bkup_path[$host]}\"},"
         done <<<"$replset_hosts_ports_bkup"
         backup_nodes_json="$(sed 's/,$//' <<<"$backup_nodes_json")]"
 
         cat <<HERE_DOC > "$bkup_status_file"
-{"start_time":"$start_time","end_time":"$end_time","backup_path":"$bkup_path","status":"completed",$backup_nodes_json}
+{"start_time":"$start_time","end_time":"$end_time","backup_path":"$bkup_path","status":"completed","backup_mode":"$bkup_mode",$backup_nodes_json}
 HERE_DOC
     fi
 }
@@ -192,7 +221,7 @@ HERE_DOC
 # Perform backup.
 perform_backup() {
     echo "Disk space before backup:"
-    df -h "$bkup_dir/"
+    df -h
     echo
 
     # Config server.
@@ -203,11 +232,13 @@ perform_backup() {
             echo "Insert UUID into database for restore validation."
             uuid=$(uuidgen)
             echo "uuid: $uuid"
-            "$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.insert( { uuid: \"$uuid\" } )"
+            insert="$("$mongo" --quiet "$mongos_host:$mongos_port/config" $mongo_option --authenticationDatabase admin --eval "db.backup_uuid.insert( { uuid: \"$uuid\" } )")"
+            rc=$?; if [[ $rc -ne 0 ]]; then error_exit "ERROR: ${0}(@$LINENO): $insert."; fi
+            echo "$insert"
             echo
         fi
 
-        mongos_host_port="$("$mongo" localhost:27017/config --quiet --eval 'rs.slaveOk(); var timeOffset = new Date(); timeOffset.setTime(timeOffset.getTime() - 60*60*1000); var cursor = db.mongos.find({ping:{$gte:timeOffset}},{_id:1}).sort({ping:-1}); while(cursor.hasNext()) { print(JSON.stringify(cursor.next())) }' | awk -F'"' '{print $4}' | head -1)"
+        mongos_host_port="$("$mongo" "$mongos_host:$mongos_port/config" --quiet --eval 'rs.slaveOk(); var timeOffset = new Date(); timeOffset.setTime(timeOffset.getTime() - 60*60*1000); var cursor = db.mongos.find({ping:{$gte:timeOffset}},{_id:1}).sort({ping:-1}); while(cursor.hasNext()) { print(JSON.stringify(cursor.next())) }' | awk -F'"' '{print $4}' | head -1)"
         if [[ -z $mongos_host_port ]]; then
             error_exit "ERROR: ${0}(@$LINENO): mongos was not found."
         fi
@@ -217,41 +248,72 @@ perform_backup() {
         echo
         echo "Backing up config server."
         date -u +'start: %FT%TZ'
-        if [[ -e /etc/mongod.conf ]]; then
-            cp -p /etc/mongod.conf "$bkup_path/"
-        fi
-        if [[ -e /etc/mongos.conf ]]; then
-            cp -p /etc/mongos.conf "$bkup_path/"
-        fi
-        "$mongodump" --port "$port" $mongo_option -o "$bkup_path/backup" --authenticationDatabase admin --oplog &> "$bkup_path/mongodump.log"
-        rc=$?
-        if [[ $rc -ne 0 ]]; then
-            # Check if dump failed because the config server is not running with --configsvr option.
-            if grep -q 'No operations in oplog. Please ensure you are connecting to a master.' "$bkup_path/mongodump.log"; then
-                "$mongodump" --port "$port" $mongo_option -o "$bkup_path/backup" --authenticationDatabase admin &> "$bkup_path/mongodump.log"
-                rc=$?
+        if [[ $bkup_mode = "mongodump" ]]; then
+            if [[ -e /etc/mongod.conf ]]; then
+                cp -p /etc/mongod.conf "$bkup_path/"
             fi
-        fi
-        if [[ $rc -ne 0 ]]; then
-            error_exit "ERROR: ${0}(@$LINENO): mongodump failed."
+            if [[ -e /etc/mongos.conf ]]; then
+                cp -p /etc/mongos.conf "$bkup_path/"
+            fi
+            "$mongodump" --port "$config_port" $mongo_option -o "$bkup_path/backup" --authenticationDatabase admin --oplog &> "$bkup_path/mongodump.log"
+            rc=$?
+            if [[ $rc -ne 0 ]]; then
+                # Check if dump failed because the config server is not running with --configsvr option.
+                if grep -q 'No operations in oplog. Please ensure you are connecting to a master.' "$bkup_path/mongodump.log"; then
+                    "$mongodump" --port "$config_port" $mongo_option -o "$bkup_path/backup" --authenticationDatabase admin &> "$bkup_path/mongodump.log"
+                    rc=$?
+                fi
+            fi
+            if [[ $rc -ne 0 ]]; then
+                error_exit "ERROR: ${0}(@$LINENO): mongodump failed."
+            fi
+        elif [[ $bkup_mode = "awssnapshot" ]]; then
+            get_volume_ids
+            for volume_id in $volume_ids; do
+                echo "volume_id: $volume_id"
+                create_snapshot="$(aws --profile "$profile" --region "$region" ec2 create-snapshot --volume-id "$volume_id" --description "$bkup_date.$hostname.$bkup_type")"
+                echo "create_snapshot:
+$create_snapshot"
+                echo
+            done
         fi
 
         if [[ $uuid_insert == yes ]]; then
             echo "Remove UUID."
-            "$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.remove( { uuid: \"$uuid\" } )"
+            "$mongo" --quiet "$mongos_host:$mongos_port/config" $mongo_option --authenticationDatabase admin --eval "db.backup_uuid.remove( { uuid: \"$uuid\" } )"
             echo
         fi
 
         date -u +'finish: %FT%TZ'
 
         # Get shard servers (replica set members).
-        shard_hosts_ports="$("$mongo" --quiet config --eval 'var myCursor = db.shards.find(); myCursor.forEach(printjson)' | jq '.host' | tr -d '"' | awk -F'/' '{print $2}' | awk -F, '{print $1}')"
+        shard_hosts_ports="$("$mongo" --quiet "$mongos_host:$mongos_port/config" --eval 'var myCursor = db.shards.find(); myCursor.forEach(printjson)' | jq -r '.host' | awk -F'/' '{print $2}' | awk -F, '{print $1}')"
         for host_port in $shard_hosts_ports; do
-            replset_hosts_ports="$("$mongo" "$host_port" --quiet --eval 'JSON.stringify(rs.conf())' | jq '.members[].host' | tr -d '"')"
-            if [[ -z $replset_hosts_ports_bkup ]]; then
-                replset_hosts_ports_bkup="$(sed 's/[.].*:/:/' <<<"$replset_hosts_ports" | egrep "$bkup_host_port_regex")"
+            if [[ $run_backup_on_master != "true" ]]; then
+                # Find shard replica set members, which are not PRIMARY.
+                replset_hosts_ports="$("$mongo" "$host_port" --quiet --eval 'JSON.stringify(rs.status())' | jq -r '.members[] | ((.name)+":"+.stateStr)' | grep -v :PRIMARY | awk -F: '{print $1":"$2}')"
             else
-                replset_hosts_ports_bkup="$replset_hosts_ports_bkup"$'\n'"$(sed 's/[.].*:/:/' <<<"$replset_hosts_ports" | egrep "$bkup_host_port_regex")"
+                # Find shard replica set member, which is PRIMARY.
+                replset_hosts_ports="$("$mongo" "$host_port" --quiet --eval 'JSON.stringify(rs.status())' | jq -r '.members[] | ((.name)+":"+.stateStr)' | grep :PRIMARY | awk -F: '{print $1":"$2}')"
+            fi
+
+            # Remove FQDN, to leave just the short name and filter nodes which are allowed to run backup.
+            replset_hosts_ports="$(sed 's/[.].*:/:/' <<<"$replset_hosts_ports" | egrep "$bkup_host_port_regex")"
+
+            # If more than one node remaining in a shard, then just keep one node.
+            replset_hosts_ports="$(tail -1 <<<"$replset_hosts_ports")"
+
+            # Hostname translation between AWS and Rundeck.
+            if [[ ! -z "$host_aws_rundeck_sed" ]]; then
+                host_part="$(awk -F: '{print $1}' <<<"$replset_hosts_ports")"
+                port_part="$(awk -F: '{print $2}' <<<"$replset_hosts_ports")"
+                replset_hosts_ports="$(sed "$host_aws_rundeck_sed" <<<"$host_part"):$port_part"
+            fi
+
+            if [[ -z $replset_hosts_ports_bkup ]]; then
+                replset_hosts_ports_bkup="$replset_hosts_ports"
+            else
+                replset_hosts_ports_bkup="$replset_hosts_ports_bkup"$'\n'"$replset_hosts_ports"
             fi
         done
         echo
@@ -280,10 +342,10 @@ perform_backup() {
         while IFS=':' read -r host port; do
             echo "host: $host:$port"
             execution_log="$(rundeck_get_execution_output_log "$rundeck_server_url" "$rundeck_api_token" "${replset_bkup_execution_id[$host]}" "$host")"
-            replset_bkup_path["$host"]="$(jq '.backup_path' <<<"$execution_log" | tr -d '"')"
+            replset_bkup_path["$host"]="$(jq -r '.backup_path' <<<"$execution_log")"
             rc=$?; if [[ $rc -ne 0 ]]; then error_exit "ERROR: ${0}(@$LINENO): Could not parse Rundeck results."; fi
             echo "replset_bkup_path: ${replset_bkup_path[$host]}"
-            replset_start_time["$host"]="$(jq '.start_time' <<<"$execution_log" | tr -d '"')"
+            replset_start_time["$host"]="$(jq -r '.start_time' <<<"$execution_log")"
             rc=$?; if [[ $rc -ne 0 ]]; then error_exit "ERROR: ${0}(@$LINENO): Could not parse Rundeck results."; fi
         done <<<"$replset_hosts_ports_bkup"
 
@@ -311,13 +373,13 @@ perform_backup() {
 
                 # Get output of Rundeck job.
                 execution_log="$(rundeck_get_execution_output_log "$rundeck_server_url" "$rundeck_api_token" "${replset_bkup_execution_id[$host]}" "$host")"
-                status="$(jq '.status' <<<"$execution_log" | tr -d '"')"
+                status="$(jq -r '.status' <<<"$execution_log")"
                 rc=$?; if [[ $rc -ne 0 ]]; then error_exit "ERROR: ${0}(@$LINENO): Could not parse Rundeck results."; fi
 
                 if [[ $status = "completed" ]]; then
                     echo
                     echo "status: $status"
-                    replset_end_time["$host"]="$(jq '.end_time' <<<"$execution_log" | tr -d '"')"
+                    replset_end_time["$host"]="$(jq -r '.end_time' <<<"$execution_log")"
                     rc=$?; if [[ $rc -ne 0 ]]; then error_exit "ERROR: ${0}(@$LINENO): Could not parse Rundeck results."; fi
                     break
                 elif [[ $status = "failed" ]]; then
@@ -346,22 +408,29 @@ perform_backup() {
 
     # Replica set member.
     else
-        is_master="$("$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin --eval 'JSON.stringify(db.isMaster())' | jq '.ismaster')"
-        if [[ $is_master != "false" ]]; then
-            error_exit "ERROR: ${0}(@$LINENO): This is not a secondary node."
+        if [[ $run_backup_on_master != "true" ]]; then
+            is_master="$("$mongo" --quiet --port "$shard_port" $mongo_option --authenticationDatabase admin --eval 'JSON.stringify(db.isMaster())' | jq '.ismaster')"
+            if [[ $is_master != "false" ]]; then
+                error_exit "ERROR: ${0}(@$LINENO): This is not a secondary node."
+            fi
+        else
+          is_master="$("$mongo" --quiet --port "$shard_port" $mongo_option --authenticationDatabase admin --eval 'JSON.stringify(db.isMaster())' | jq '.ismaster')"
+          if [[ $is_master = "false" ]]; then
+              error_exit "ERROR: ${0}(@$LINENO): This is not a primary node."
+          fi
         fi
 
         if [[ $uuid_insert == yes ]]; then
             echo "Insert UUID into database for restore validation."
             uuid=$(uuidgen)
             echo "uuid: $uuid"
-            primary_host_port="$("$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin dba --eval 'JSON.stringify(rs.isMaster())' | jq '.primary' | tr -d '"')"
+            primary_host_port="$("$mongo" --quiet --port "$shard_port" $mongo_option --authenticationDatabase admin dba --eval 'JSON.stringify(rs.isMaster())' | jq -r '.primary')"
             "$mongo" --quiet --host "$primary_host_port" $mongo_option --authenticationDatabase admin dba --eval "db.backup_uuid.insert( { uuid: \"$uuid\" } )"
             echo
 
             # Verify that UUID showed up in this replica set.
             for (( i=1; i<=60; i++ )); do
-                uuid_from_mongo="$("$mongo" --quiet --port "$port" $mongo_option --authenticationDatabase admin dba --eval "rs.slaveOk(); JSON.stringify(db.backup_uuid.findOne({uuid:\"$uuid\"}));" | jq '.uuid' | tr -d '"')"
+                uuid_from_mongo="$("$mongo" --quiet --port "$shard_port" $mongo_option --authenticationDatabase admin dba --eval "rs.slaveOk(); JSON.stringify(db.backup_uuid.findOne({uuid:\"$uuid\"}));" | jq -r '.uuid')"
                 if [[ $uuid = "$uuid_from_mongo" ]]; then
                     contains_uuid="yes"
                     break
@@ -372,18 +441,29 @@ perform_backup() {
             fi
         fi
 
-        echo "Backing up all dbs except local with --oplog option."
+        echo "Backing up replica set node."
         date -u +'start: %FT%TZ'
-        if [[ -e /etc/mongod.conf ]]; then
-            cp -p /etc/mongod.conf "$bkup_path/"
+        if [[ $bkup_mode = "mongodump" ]]; then
+            if [[ -e /etc/mongod.conf ]]; then
+                cp -p /etc/mongod.conf "$bkup_path/"
+            fi
+            "$mongodump" --port "$shard_port" $mongo_option -o "$bkup_path/backup" --authenticationDatabase admin --oplog &> "$bkup_path/mongodump.log"
+            rc=$?
+            if [[ $rc -ne 0 ]]; then
+                error_exit "ERROR: ${0}(@$LINENO): mongodump failed."
+            fi
+            date -u +'finish: %FT%TZ'
+            echo
+        elif [[ $bkup_mode = "awssnapshot" ]]; then
+            get_volume_ids
+            for volume_id in $volume_ids; do
+                echo "volume_id: $volume_id"
+                create_snapshot="$(aws --profile "$profile" --region "$region" ec2 create-snapshot --volume-id "$volume_id" --description "$bkup_date.$hostname.$bkup_type")"
+                echo "create_snapshot:
+$create_snapshot"
+                echo
+            done
         fi
-        "$mongodump" --port "$port" $mongo_option -o "$bkup_path/backup" --authenticationDatabase admin --oplog &> "$bkup_path/mongodump.log"
-        rc=$?
-        if [[ $rc -ne 0 ]]; then
-            error_exit "ERROR: ${0}(@$LINENO): mongodump failed."
-        fi
-        date -u +'finish: %FT%TZ'
-        echo
 
         if [[ $uuid_insert == yes ]]; then
             echo "Remove UUID."
@@ -392,12 +472,16 @@ perform_backup() {
         fi
     fi
 
-    echo "Backup size in bytes:"
-    backup_size_in_bytes="$(du -sb "$bkup_path" | awk '{print $1}')"
-    echo "$backup_size_in_bytes"
-    echo "Disk space after backup:"
-    df -h "$bkup_dir/"
-    echo
+    if [[ $bkup_mode = "mongodump" ]]; then
+      echo "Backup size in bytes:"
+      backup_size_in_bytes="$(du -sb "$bkup_path" | awk '{print $1}')"
+      echo "$backup_size_in_bytes"
+      echo "Disk space after backup:"
+      df -h
+      echo
+    elif [[ $bkup_mode = "awssnapshot" ]]; then
+        backup_size_in_bytes="n/a"
+    fi
 }
 
 # Post backup process.
@@ -423,10 +507,10 @@ purge_old_backups() {
     local list_of_bkups
 
     echo "Disk space before purge:"
-    df -h "$bkup_dir/"
+    df -h
     echo
 
-    echo "Purge old backups..."
+    echo "Purge old backup directories..."
     list_of_bkups="$(find "$bkup_dir/" -maxdepth 1 -type d -name "[0-9]*T[0-9]*Z.$bkup_type" | sort)"
     if [[ ! -z "$list_of_bkups" ]]; then
         while [[ "$(echo "$list_of_bkups" | wc -l)" -gt $num_bkups ]]; do
@@ -438,6 +522,32 @@ purge_old_backups() {
     fi
     echo "Done."
     echo
+
+    if [[ $bkup_mode = "awssnapshot" ]]; then
+        echo "Purge old snapshots..."
+        get_volume_ids
+        for volume_id in $volume_ids; do
+            echo "Snapshots for volume_id: $volume_id"
+            snapshots="$(aws --profile "$profile" --region "$region" ec2 describe-snapshots --filters "Name=status,Values=completed" "Name=volume-id,Values=$volume_id" --query 'Snapshots[*].{Description:Description,SnapshotId:SnapshotId}' --output json)"
+            echo "$snapshots" | jq "sort_by(.Description) | reverse"
+            bkup_num_to_del="$num_bkups"
+            while :; do
+                snapshot_to_delete="$(echo $snapshots | jq -r "[ sort_by(.Description) | reverse | .[] | select(.Description | contains(\".$bkup_type\")) ] | .[$bkup_num_to_del].SnapshotId")"
+                if [[ $snapshot_to_delete = "null" || ! $snapshot_to_delete ]]; then
+                    break
+                else
+                    echo "Deleting snapshot: $snapshot_to_delete"
+                    delete="$(aws --profile "$profile" --region "$region" ec2 delete-snapshot --snapshot-id "$snapshot_to_delete")"
+                    rc=$?; if [[ $rc -ne 0 ]]; then error_exit "ERROR: ${0}(@$LINENO): $delete."; fi
+                    bkup_num_to_del=$((bkup_num_to_del + 1))
+                fi
+            done
+            echo
+        done
+
+        echo "Done."
+        echo
+    fi
 }
 
 # Get output from Rundeck execution, return just the log portion.
@@ -490,7 +600,7 @@ rundeck_run_job() {
         echo "$rundeck_job" >&2
         error_exit "ERROR: ${0}(@$LINENO): Could not parse Rundeck results."
     fi
-    job_status="$(echo "$rundeck_job" | jq '.status' | tr -d '"')"
+    job_status="$(echo "$rundeck_job" | jq -r '.status')"
     if [[ $job_status != "running" ]]; then
         error_exit "ERROR: ${0}(@$LINENO): Rundeck job could not be executed."
     fi
@@ -520,7 +630,7 @@ rundeck_run_job_failok() {
     echo "$rundeck_job" | jq '.' > /dev/null # Check if this is valid JSON.
     rc=$?
     rc_total="$(( rc_total + rc ))"
-    job_status="$(echo "$rundeck_job" | jq '.status' | tr -d '"')"
+    job_status="$(echo "$rundeck_job" | jq -r '.status')"
     if [[ $job_status != "running" ]]; then
         rc=1
     fi
@@ -546,7 +656,7 @@ rundeck_wait_for_job_to_complete() {
             echo "$result" >&2
             error_exit "ERROR: ${0}(@$LINENO): Rundeck API call failed."
         fi
-        execution_state="$(echo "$result" | jq '.executionState' | tr -d '"')"
+        execution_state="$(echo "$result" | jq -r '.executionState')"
         rc=$?
         if [[ $rc -ne 0 ]]; then
             echo "$result" >&2
@@ -663,7 +773,7 @@ if [[ $command = "start" ]]; then
     bkup_status_file="$bkup_path/backup.status.json"
     # Output status in JSON.
     cat <<HERE_DOC
-{"start_time":"$start_time","backup_path":"$bkup_path","status":"running"}
+{"start_time":"$start_time","backup_path":"$bkup_path","status":"running","backup_mode":"$bkup_mode"}
 HERE_DOC
     exec 1> "$log" 2> "$log" 2> "$log_err"
     main &
@@ -682,21 +792,21 @@ elif [[ $command = "status" ]]; then
             cat "$bkup_status_file"
             exit 0
         else
-            status="$(jq '.status' < "$bkup_status_file" | tr -d '"')"
+            status="$(jq -r '.status' < "$bkup_status_file")"
             if [[ $status = "completed" ]]; then
                 cat "$bkup_status_file"
                 exit 0
             fi
             # Output status in JSON.
             cat <<HERE_DOC
-{"backup_path":"$bkup_path","status":"failed"}
+{"backup_path":"$bkup_path","status":"failed","backup_mode":"$bkup_mode"}
 HERE_DOC
             exit 0
         fi
     fi
     # Output status in JSON.
     cat <<HERE_DOC
-{"backup_path":"$bkup_path","status":"unknown"}
+{"backup_path":"$bkup_path","status":"unknown","backup_mode":"$bkup_mode"}
 HERE_DOC
 # Start backup in regular mode.
 else

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=1.2.0
+version=1.3.0
 
 # Zabbix server.
 zabbix_server="zabbix-server-or-proxy"
@@ -9,7 +9,7 @@ host="monitored host name as set up in zabbix"
 # Custom location of gcpmetrics.
 gcpmetrics="python27 /opt/gcpmetrics/gcpmetrics.py"
 # GCP metrics time period in minutes.
-period_min=2
+period_min=1
 # Number of tries before giving up on obtaining GCP metrics.
 num_tries=20
 
@@ -17,9 +17,6 @@ set -E
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
-
-shopt -s expand_aliases
-alias die='error_exit "ERROR in $0: line $LINENO:"'
 
 usage() {
     cat <<USAGE
@@ -38,7 +35,7 @@ Dependendies:
     gcloud        - https://cloud.google.com/sdk/gcloud/
     gcpmetrics    - https://github.com/ingrammicro/gcpmetrics
     jq            - https://stedolan.github.io/jq/
-    zabbix_sender
+    zabbix_sender - https://www.zabbix.com/documentation/current/manual/installation/getting_zabbix
 
     gcloud key needs to be set up in (replace 'project-name' with actual GCP project name):
     ${script_name/.sh/.project-name.key.json}
@@ -50,6 +47,8 @@ Options:
 USAGE
 }
 
+shopt -s expand_aliases
+alias die='error_exit "ERROR in $0: line $LINENO:"'
 error_exit() {
     echo "$@" >&2
     exit 77
@@ -168,7 +167,11 @@ if [[ "$lld" == "yes" ]]; then
     echo '}'
 else
     timestamp="$(echo "$transposed" | awk 'NR==1 {print $3}')"
-    epoch="$(date --date="$timestamp" +'%s')"
+    if [ "$(uname)" == "Darwin" ]; then
+        epoch="$(date -j -u -f "%FT%T" "$timestamp" "+%s")"
+    else
+        epoch="$(date -u --date="$timestamp" "+%s")"
+    fi
 
     zabbix_data="$(
         while read node_name component value; do

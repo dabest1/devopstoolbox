@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=1.0.1
+version=1.0.2
 
 # Zabbix server.
 zabbix_server="zabbix-server-or-proxy"
@@ -165,11 +165,7 @@ for (( c=1; c<="$num_tries"; c++ )); do
     sleep 1
 done
 
-echo "$metrics_data"
-echo
 transposed="$(format_metrics "$metrics_data")"
-echo "$transposed"
-echo
 
 if [[ "$lld" == "yes" ]]; then
     resources="$(echo "$transposed" | sed '1d' | awk '{print $1}' | uniq)"

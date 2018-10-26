@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=1.0.2
+version=1.1.0
 
 # Zabbix server.
 zabbix_server="zabbix-server-or-proxy"
@@ -18,8 +18,8 @@ metric="loadbalancing.googleapis.com/https/backend_latencies"
 metric_filter="response_code_class:200"
 # Resource key.
 resource_key="url_map_name"
-# Aggregation.
-aggregation="--align ALIGN_PERCENTILE_50 --reduce REDUCE_PERCENTILE_50 --reduce-grouping metric.label.response_code_class,resource.label.$resource_key"
+# Reduce grouping.
+reduce_grouping="--reduce-grouping metric.label.response_code_class,resource.label.$resource_key"
 
 set -E
 set -o pipefail
@@ -29,14 +29,15 @@ script_name="$(basename "$0")"
 usage() {
     cat <<USAGE
 Usage:
-    $script_name [--lld] project-name [load-balancer]
+    $script_name [--lld] project-name percentile [load-balancer]
     $script_name {--version | --help}
 
 Example:
-    $script_name my-gcp-project my-load-balancer
+    $script_name my-gcp-project 50 my-load-balancer
 
 Description:
     Provides GCP (Google Cloud Platform) k8s metrics for use in a monitoring system like Zabbix.
+    Supported percentile values are 05, 50, 95, and 99.
 
 Dependendies:
     These tools need to be installed:
@@ -123,6 +124,8 @@ while test -n "$1"; do
     *)
         if [[ ! $project_name ]]; then
             project_name="$1"
+        elif [[ ! $percentile ]]; then
+            percentile="$1"
         elif [[ ! $resource_value ]]; then
             resource_value="$1"
         else
@@ -150,9 +153,10 @@ if [[ $metric_filter ]]; then
 fi
 
 key_file="$script_dir/gcp_key.${project_name}.json"
+aggregation="--align ALIGN_PERCENTILE_$percentile --reduce REDUCE_PERCENTILE_$percentile"
 
 for (( c=1; c<="$num_tries"; c++ )); do
-    metrics_data="$($gcpmetrics --keyfile "$key_file" --project "$project_name" --query --minutes "$period_min" --metric "$metric" $metric_filter $resource_filter $aggregation)"
+    metrics_data="$($gcpmetrics --keyfile "$key_file" --project "$project_name" --query --minutes "$period_min" --metric "$metric" $metric_filter $resource_filter $aggregation $reduce_grouping)"
     [[ $? -ne 0 ]] && die "Error from gcpmetrics command."
 
     if echo "$metrics_data" | grep -q 'Empty DataFrame'; then
@@ -187,5 +191,5 @@ else
 
     while read resource component value; do
         echo "\"$host\" \"${zabbix_key_part}.${component}[\\\"$resource\\\"]\" $epoch $value"
-    done < <(sed '1d' <<<"$transposed") | zabbix_sender --zabbix-server "$zabbix_server" --with-timestamps --input-file -
+    done < <(sed '1d' <<<"$transposed") | sed "s/\[/.$percentile\[/" | zabbix_sender --zabbix-server "$zabbix_server" --with-timestamps --input-file -
 fi

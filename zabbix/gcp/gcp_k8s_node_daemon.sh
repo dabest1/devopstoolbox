@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=1.3.0
+version=1.4.0
 
 # Zabbix server.
 zabbix_server="zabbix-server-or-proxy"
@@ -12,6 +12,10 @@ gcpmetrics="python27 /opt/gcpmetrics/gcpmetrics.py"
 period_min=1
 # Number of tries before giving up on obtaining GCP metrics.
 num_tries=20
+# Metric.
+metric="kubernetes.io/node_daemon/cpu/core_usage_time"
+# Resource key.
+resource_key="cluster_name"
 
 set -E
 set -o pipefail
@@ -117,8 +121,8 @@ while test -n "$1"; do
             project_name="$1"
         elif [[ ! $region ]]; then
             region="$1"
-        elif [[ ! $cluster_name ]]; then
-            cluster_name="$1"
+        elif [[ ! $resource_value ]]; then
+            resource_value="$1"
         else
             echo "Error: Too many arguments." >&2
             echo
@@ -129,7 +133,7 @@ while test -n "$1"; do
     esac
 done
 
-if [[ ! $project_name || ! $region || ! $cluster_name ]]; then
+if [[ ! $project_name || ! $region || ! $resource_value ]]; then
     echo "Error: Not all of the required arguments were supplied." >&2
     echo
     usage
@@ -137,9 +141,12 @@ if [[ ! $project_name || ! $region || ! $cluster_name ]]; then
 fi
 
 key_file="$script_dir/gcp_key.${project_name}.json"
+if [[ $resource_value ]]; then
+    resource_filter="--resource-filter $resource_key:$resource_value"
+fi
 
 for (( c=1; c<="$num_tries"; c++ )); do
-    metrics_data="$($gcpmetrics --keyfile "$key_file" --project "$project_name" --query --minutes "$period_min" --metric kubernetes.io/node_daemon/cpu/core_usage_time --resource-filter "cluster_name:$cluster_name")"
+    metrics_data="$($gcpmetrics --keyfile "$key_file" --project "$project_name" --query --minutes "$period_min" --metric "$metric" $resource_filter)"
     [[ $? -ne 0 ]] && die "Error from gcpmetrics command."
 
     if echo "$metrics_data" | grep -q 'Empty DataFrame'; then
@@ -155,16 +162,14 @@ done
 transposed="$(format_metrics "$metrics_data")"
 
 if [[ "$lld" == "yes" ]]; then
-    node_names="$(echo "$transposed" | sed '1d' | awk '{print $1}' | uniq)"
-    echo '{'
-    echo '  "data": ['
-    while read line; do
-        echo '    {'
-        echo "      \"{#NODE_NAME}\": \"$line\""
-        echo '    },'
-    done <<<"$node_names" | sed '$ s/,//'
-    echo '  ]'
-    echo '}'
+    resources="$(echo "$transposed" | sed '1d' | awk '{print $1}' | uniq)"
+    (
+        echo '{"data": ['
+        while read line; do
+            echo "{\"{#NODE_NAME}\": \"$line\"},"
+        done <<<"$resources" | sed '$ s/,//'
+        echo ']}'
+    ) | jq '.'
 else
     timestamp="$(echo "$transposed" | awk 'NR==1 {print $3}')"
     if [ "$(uname)" == "Darwin" ]; then
@@ -173,10 +178,7 @@ else
         epoch="$(date -u --date="$timestamp" "+%s")"
     fi
 
-    zabbix_data="$(
-        while read node_name component value; do
-            echo "\"$host\" \"k8s_node.$component.cpu.core_usage_time[\\\"$node_name\\\"]\" $epoch $value"
-        done < <(sed '1d' <<<"$transposed")
-    )"
-    echo "$zabbix_data" | zabbix_sender --zabbix-server "$zabbix_server" --with-timestamps --input-file -
+    while read resource component value; do
+        echo "\"$host\" \"k8s_node.$component.cpu.core_usage_time[\\\"$resource\\\"]\" $epoch $value"
+    done < <(sed '1d' <<<"$transposed") | zabbix_sender --zabbix-server "$zabbix_server" --with-timestamps --input-file -
 fi

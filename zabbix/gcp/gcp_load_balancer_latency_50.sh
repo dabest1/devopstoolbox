@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=1.0.0
+version=1.0.1
 
 # Zabbix server.
 zabbix_server="zabbix-server-or-proxy"
@@ -191,5 +191,5 @@ else
 
     while read resource component value; do
         echo "\"$host\" \"${zabbix_key_part}.${component}[\\\"$resource\\\"]\" $epoch $value"
-    done < <(sed '1d' <<<"$transposed") zabbix_sender --zabbix-server "$zabbix_server" --with-timestamps --input-file -
+    done < <(sed '1d' <<<"$transposed") | zabbix_sender --zabbix-server "$zabbix_server" --with-timestamps --input-file -
 fi

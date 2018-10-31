@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.1.0"
+version="1.2.0"
 
 set -E
 set -o pipefail
@@ -21,7 +21,7 @@ usage() {
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
     echo
-    echo "    $script_name [--profile profile] [--region region] {ami_name | image_name}"
+    echo "    $script_name [--profile profile] [--region region] {name-tag | ami-name | ami-id}"
     echo
     echo "Description:"
     echo "    --profile          Use a specified profile from your AWS credential file, otherwise get it from AWS_PROFILE variable."
@@ -110,18 +110,21 @@ while test -n "$1"; do
         shift
         ;;
     *)
-        ami_name="$1"
+        ami="$1"
         shift
     esac
 done
 
-if [[ -z $ami_name ]]; then
+if [[ -z $ami ]]; then
     usage
 fi
 
-echo "ami_name: $ami_name"
-
-image_id="$(get_image_id "$ami_name")"
+echo "ami: $ami"
+if echo "$ami" | grep -q '^ami-'; then
+    image_id="$ami"
+else
+    image_id="$(get_image_id "$ami")"
+fi
 echo "image_id: $image_id"
 echo
 

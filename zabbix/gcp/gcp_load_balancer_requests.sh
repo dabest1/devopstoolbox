@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=1.0.0
+version=1.1.0
 
 # Zabbix server.
 zabbix_server="zabbix-server-or-proxy"
@@ -14,10 +14,14 @@ period_min=1
 num_tries=20
 # Metric.
 metric="loadbalancing.googleapis.com/https/request_count"
+# Metric filter.
+metric_filter=""
 # Resource key.
 resource_key="url_map_name"
 # Aggregation.
-aggregation="--align ALIGN_SUM --reduce REDUCE_SUM --reduce-grouping metric.label.response_code_class,resource.label.$resource_key"
+aggregation="--align ALIGN_SUM --reduce REDUCE_SUM"
+# Reduce grouping.
+reduce_grouping="--reduce-grouping metric.label.response_code_class,resource.label.$resource_key"
 
 set -E
 set -o pipefail
@@ -65,14 +69,14 @@ trap "error_exit 'Received signal SIGINT'" SIGINT
 trap "error_exit 'Received signal SIGTERM'" SIGTERM
 
 format_metrics() {
-    local metrics row1_num_columns row2_num_columns ratio
-    metrics="$1"
+    local metrics_data row1_num_columns row2_num_columns ratio
+    metrics_data="$1"
 
     # Take fixed width formatted input.
     # Grab last 3 lines.
     # Count number of columns in 1st and 2nd lines (minus 1 column).
-    row1_num_columns="$(echo "$metrics" | tail -3 | awk 'NR==1 {print NF - 1}')"
-    row2_num_columns="$(echo "$metrics" | tail -3 | awk 'NR==2 {print NF - 1}')"
+    row1_num_columns="$(echo "$metrics_data" | tail -3 | awk 'NR==1 {print NF - 1}')"
+    row2_num_columns="$(echo "$metrics_data" | tail -3 | awk 'NR==2 {print NF - 1}')"
     ratio=$((row2_num_columns / row1_num_columns))
 
     # Take fixed width formatted input.
@@ -81,7 +85,7 @@ format_metrics() {
     # Add missing headers (to match number of columns in 1st and 2nd row) and remove repeated spaces.
     # Remove trailing spaces.
     # Transpose.
-    echo "$metrics" | tail -3 | sed 's/\(^[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\)[ ]/\1T/' | awk -v ratio="$ratio" '
+    echo "$metrics_data" | tail -3 | sed 's/\(^[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\)[ ]/\1T/' | awk -v ratio="$ratio" '
     BEGIN {ORS=""}
     NR==1 {
         for (n=1; n<=NF; n++) {
@@ -140,14 +144,16 @@ if [[ ! $project_name ]]; then
     exit 1
 fi
 
+key_file="$script_dir/gcp_key.${project_name}.json"
 if [[ $resource_value ]]; then
     resource_filter="--resource-filter $resource_key:$resource_value"
 fi
-
-key_file="$script_dir/gcp_key.${project_name}.json"
+if [[ $metric_filter ]]; then
+    metric_filter="--metric-filter $metric_filter"
+fi
 
 for (( c=1; c<="$num_tries"; c++ )); do
-    metrics_data="$($gcpmetrics --keyfile "$key_file" --project "$project_name" --query --minutes "$period_min" --metric "$metric" $resource_filter $aggregation)"
+    metrics_data="$($gcpmetrics --keyfile "$key_file" --project "$project_name" --query --minutes "$period_min" --metric "$metric" $metric_filter $resource_filter $aggregation $reduce_grouping)"
     [[ $? -ne 0 ]] && die "Error from gcpmetrics command."
 
     if echo "$metrics_data" | grep -q 'Empty DataFrame'; then

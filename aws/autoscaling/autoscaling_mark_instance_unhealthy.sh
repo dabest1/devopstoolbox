@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.1.0"
+version="1.2.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -23,7 +23,9 @@ function usage {
     echo "    $script_name i-abcd1234"
     echo
     echo "Description:"
-    echo "    -h, --help         Display this help."
+    echo "    --profile     Use a specified profile from your AWS credential file, otherwise get it from AWS_PROFILE variable."
+    echo "    --region      Use a specified region instead of region from configuration or environment setting."
+    echo "    -h, --help    Display this help."
     exit 1
 }
 
@@ -31,6 +33,17 @@ while test -n "$1"; do
     case "$1" in
     -h|--help)
         usage
+        ;;
+    --profile)
+        shift
+        profile="$1"
+        shift
+        ;;
+    --region)
+        shift
+        region="$1"
+        region_opt="--region=$region"
+        shift
         ;;
     *)
         if [[ -z $names ]]; then
@@ -51,7 +64,7 @@ for name in $names; do
         instance_id="$name"
     else
         echo "name: $name"
-        instance_id=$(aws --profile "$profile" ec2 describe-instances --filters "Name=tag:Name, Values=$name" --query 'Reservations[].Instances[].[InstanceId]' --output text)
+        instance_id=$(aws --profile "$profile" $region_opt ec2 describe-instances --filters "Name=tag:Name, Values=$name" --query 'Reservations[].Instances[].[InstanceId]' --output text)
         if [[ $? -ne 0 ]]; then
             echo "Error: Failed to query AWS."
             exit 1
@@ -59,7 +72,7 @@ for name in $names; do
     fi
     echo "instance_id: $instance_id"
 
-    aws --profile "$profile" autoscaling set-instance-health --instance-id "$instance_id" --health-status "Unhealthy"
+    aws --profile "$profile" $region_opt autoscaling set-instance-health --instance-id "$instance_id" --health-status "Unhealthy"
     if [[ $? -ne 0 ]]; then
         echo "Error: Failed to set health status."
         exit 1

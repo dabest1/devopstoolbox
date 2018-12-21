@@ -6,7 +6,7 @@
 #     Run script with --help option to get usage.
 ################################################################################
 
-version="1.5.2"
+version="1.5.3"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -79,7 +79,7 @@ list() {
         (
             echo "$header_row"
             cat "$data_path" | sed '1d' | egrep -- "$regex"
-        ) | column -t | egrep --context=1000000 --colour=always -- "$regex"
+        ) | column -t | egrep --context=1000000 --color=auto -- "$regex"
     fi
 }
 

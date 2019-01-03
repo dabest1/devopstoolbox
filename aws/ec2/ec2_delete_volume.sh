@@ -5,20 +5,24 @@
 # Usage:
 #     Run script with -h option to get usage.
 
-version="1.0.11"
+version="1.1.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 log="$script_dir/${script_name/.sh/.log}"
 
+profile="${AWS_PROFILE:-default}"
+
 function usage {
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
     echo
-    echo "    $script_name [-i] volume_id"
+    echo "    $script_name [--profile profile] [--region region] [-i] volume_id"
     echo
     echo "Description:"
+    echo "    --profile       Use a specified profile from your AWS credential file, otherwise get it from AWS_PROFILE variable."
+    echo "    --region        Use a specified region instead of region from configuration or environment setting."
     echo "    -h, --help      Show this help."
     echo "    -i, --ignore    Ignore unmount error."
     exit 1
@@ -26,6 +30,17 @@ function usage {
 
 while test -n "$1"; do
     case "$1" in
+    --profile)
+        shift
+        profile="$1"
+        shift
+        ;;
+    --region)
+        shift
+        region="$1"
+        region_opt="--region=$region"
+        shift
+        ;;
     -h|--help)
         usage
         ;;
@@ -38,7 +53,6 @@ while test -n "$1"; do
         shift
     esac
 done
-profile="${AWS_PROFILE:-default}"
 
 if [[ -z $volume_id ]]; then
     usage
@@ -51,28 +65,28 @@ echo "profile: $profile" | tee -a $log
 echo "volume_id: $volume_id" | tee -a $log
 echo | tee -a $log
 
-aws --profile "$profile" ec2 describe-volumes --volume-ids "$volume_id" --output table | tee -a $log
+aws --profile "$profile" $region_opt ec2 describe-volumes --volume-ids "$volume_id" --output table | tee -a $log
 rc=$?
 if [[ $rc -ne 0 ]]; then
     echo 'Error getting volume information.' | tee -a $log
     exit 1
 fi
-result=$(aws --profile "$profile" ec2 describe-volumes --volume-ids "$volume_id" --output json)
+result=$(aws --profile "$profile" $region_opt ec2 describe-volumes --volume-ids "$volume_id" --output json)
 instance_id=$(echo "$result" | awk -F'"' '/"InstanceId":/{print $4}')
 if [[ ! -z $instance_id ]]; then
-    aws --profile "$profile" ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, Placement.AvailabilityZone, InstanceType, State.Name]' --output table | tee -a $log
+    aws --profile "$profile" $region_opt ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, Placement.AvailabilityZone, InstanceType, State.Name]' --output table | tee -a $log
 fi
 
 echo -n 'Are you sure that you want this volume deleted? y/n: ' | tee -a $log
 read yn
 if [[ $yn == y ]]; then
-    result=$(aws --profile "$profile" ec2 describe-volumes --volume-ids "$volume_id" --query 'Volumes[*].{InstanceId:Attachments[0].InstanceId,State:Attachments[0].State,Device:Attachments[0].Device}')
+    result=$(aws --profile "$profile" $region_opt ec2 describe-volumes --volume-ids "$volume_id" --query 'Volumes[*].{InstanceId:Attachments[0].InstanceId,State:Attachments[0].State,Device:Attachments[0].Device}')
     instance_id=$(echo "$result" | awk -F'"' '/"InstanceId":/{print $4}')
     device=$(echo "$result" | awk -F'"' '/"Device":/{print $4}')
     device_short="${device: -1}"
     attach_state=$(echo "$result" | awk -F'"' '/"State":/{print $4}')
     if [[ $attach_state == 'attached' || $attach_state == 'busy' ]]; then
-        name=$(aws --profile "$profile" ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0]]' --output text)
+        name=$(aws --profile "$profile" $region_opt ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0]]' --output text)
         echo 'Unmount volume if necessary...' | tee -a $log
         ssh -t "$name" "cat /etc/mtab | egrep '/dev/sd${device_short}|/dev/xvd${device_short}' | awk '{print \$1}' | xargs --no-run-if-empty --verbose sudo umount"
         rc=$?
@@ -85,10 +99,10 @@ if [[ $yn == y ]]; then
         echo 'Done.'
 
         echo 'Detach volume...' | tee -a $log
-        aws --profile "$profile" ec2 detach-volume --volume-id "$volume_id" | tee -a $log
+        aws --profile "$profile" $region_opt ec2 detach-volume --volume-id "$volume_id" | tee -a $log
         state=""
         while [[ $state != 'available' ]]; do
-            result=$(aws --profile "$profile" ec2 describe-volumes --volume-ids "$volume_id" --query 'Volumes[*].{State:State}' --output json)
+            result=$(aws --profile "$profile" $region_opt ec2 describe-volumes --volume-ids "$volume_id" --query 'Volumes[*].{State:State}' --output json)
             state=$(echo "$result" | awk -F'"' '/"State":/{print $4}')
             echo -n "."
             sleep 1
@@ -96,7 +110,7 @@ if [[ $yn == y ]]; then
         echo 'Done.' | tee -a $log
     fi
     echo "Delete volume..." | tee -a $log
-    aws --profile "$profile" ec2 delete-volume --volume-id "$volume_id" | tee -a $log
+    aws --profile "$profile" $region_opt ec2 delete-volume --volume-id "$volume_id" | tee -a $log
     rc=$?
     if [[ $rc -ne 0 ]]; then
         echo 'Error deleting volume.' | tee -a $log

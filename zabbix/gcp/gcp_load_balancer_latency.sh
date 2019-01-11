@@ -9,7 +9,7 @@ host="monitored host name as set up in zabbix"
 # Custom location of gcpmetrics.
 gcpmetrics="python27 /opt/gcpmetrics/gcpmetrics.py"
 # GCP metrics time period in minutes.
-period_min=1
+period_min=2
 # Number of tries before giving up on obtaining GCP metrics.
 num_tries=20
 # Metric.

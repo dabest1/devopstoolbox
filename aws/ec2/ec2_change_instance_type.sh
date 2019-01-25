@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.4"
+version="1.1.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -72,7 +72,7 @@ echo "Done."
 echo
 
 echo "Start instance..."
-"$script_dir"/ec2_start_instance.sh -f -w "$instance_id"
+"$script_dir"/ec2_start_instance.sh -n -w "$instance_id"
 rc=$?
 if [[ $rc -gt 0 ]]; then
     echo "Error: Instance could not be started."

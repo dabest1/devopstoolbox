@@ -1,11 +1,9 @@
 #!/bin/bash
 
-version=1.2.0
+version=1.3.0
 
 # Zabbix server.
 zabbix_server="zabbix-server-or-proxy"
-# Host name, which is being monitored in Zabbix.
-host="monitored host name as set up in zabbix"
 # Custom location of gcpmetrics.
 gcpmetrics="python27 /opt/gcpmetrics/gcpmetrics.py"
 # GCP metrics time period in minutes.
@@ -29,11 +27,12 @@ script_name="$(basename "$0")"
 usage() {
     cat <<USAGE
 Usage:
-    $script_name [--lld] project-name percentile [load-balancer]
+    $script_name --lld project-name percentile [load-balancer]
+    $script_name host_in_zabbix project-name percentile [load-balancer]
     $script_name {--version | --help}
 
 Example:
-    $script_name my-gcp-project 50 my-load-balancer
+    $script_name myhost my-gcp-project 50 my-load-balancer
 
 Description:
     Provides GCP (Google Cloud Platform) k8s metrics for use in a monitoring system like Zabbix.
@@ -119,10 +118,13 @@ while test -n "$1"; do
         ;;
     --lld)
         lld="yes"
+        host_in_zabbix="not_used_by_lld"
         shift
         ;;
     *)
-        if [[ ! $project_name ]]; then
+        if [[ ! $host_in_zabbix ]]; then
+            host_in_zabbix="$1"
+        elif [[ ! $project_name ]]; then
             project_name="$1"
         elif [[ ! $percentile ]]; then
             percentile="$1"
@@ -138,21 +140,22 @@ while test -n "$1"; do
     esac
 done
 
-if [[ ! $project_name ]]; then
+if [[ ! $host_in_zabbix || ! $project_name || ! $percentile ]]; then
     echo "Error: Not all of the required arguments were supplied." >&2
     echo
     usage
     exit 1
 fi
 
-key_file="$script_dir/gcp_key.${project_name}.json"
-aggregation="--align ALIGN_PERCENTILE_$percentile --reduce REDUCE_PERCENTILE_$percentile"
 if [[ $resource_value ]]; then
     resource_filter="--resource-filter $resource_key:$resource_value"
 fi
 if [[ $metric_filter ]]; then
     metric_filter="--metric-filter $metric_filter"
 fi
+
+key_file="$script_dir/gcp_key.${project_name}.json"
+aggregation="--align ALIGN_PERCENTILE_$percentile --reduce REDUCE_PERCENTILE_$percentile"
 
 for (( c=1; c<="$num_tries"; c++ )); do
     metrics_data="$($gcpmetrics --keyfile "$key_file" --project "$project_name" --query --minutes "$period_min" --metric "$metric" $metric_filter $resource_filter $aggregation $reduce_grouping)"
@@ -189,6 +192,6 @@ else
     fi
 
     while read resource component value; do
-        echo "\"$host\" \"${zabbix_key_part}.${component}[\\\"$resource\\\"]\" $epoch $value"
+        echo "\"$host_in_zabbix\" \"${zabbix_key_part}.${component}[\\\"$resource\\\"]\" $epoch $value"
     done < <(sed '1d' <<<"$transposed") | sed "s/\[/.$percentile\[/" | zabbix_sender --zabbix-server "$zabbix_server" --with-timestamps --input-file -
 fi

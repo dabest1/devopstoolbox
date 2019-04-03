@@ -6,31 +6,63 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.8"
+version="1.1.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 log="$script_dir/${script_name/.sh/.log}"
 
-name="$1"
-volume_size="$2"
-volume_type="$3"
-device="$4"
-volume_mount="$5"
 profile="${AWS_PROFILE:-default}"
 
-if [[ $1 == "--help" || -z $name || -z $volume_size || -z $volume_type || -z $device ]]; then
+function usage {
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
     echo
-    echo "    $script_name hostname volume_size_GiB volume_type device [volume_mount]"
+    echo "    $script_name [--profile profile] [--region region] hostname volume_size_GiB volume_type device [volume_mount]"
     echo
     echo "Example:"
     echo "    $script_name my_host 1024 gp2 /dev/sdf"
     echo "    or"
     echo "    $script_name my_host 1024 gp2 /dev/sdf /data"
     exit 1
+}
+
+while test -n "$1"; do
+    case "$1" in
+    --profile)
+        shift
+        profile="$1"
+        shift
+        ;;
+    --region)
+        shift
+        region="$1"
+        region_opt="--region=$region"
+        shift
+        ;;
+    -h|--help)
+        usage
+        ;;
+    *)
+        name="$1"
+        shift
+        volume_size="$1"
+        shift
+        volume_type="$1"
+        shift
+        device="$1"
+        shift
+        volume_mount="$1"
+        shift
+        ;;
+    esac
+done
+
+if [[ -z $name || -z $volume_size || -z $volume_type || -z $device ]]; then
+    echo "Missing option(s)."
+    echo
+    usage
 fi
 
 echo >> $log
@@ -46,14 +78,14 @@ if [[ ! -z $volume_mount ]]; then
 fi
 echo | tee -a $log
 
-instance_id=$(aws --profile "$profile" ec2 describe-instances --filters "Name=tag:Name,Values=$name" "Name=instance-state-name,Values=running" --query 'Reservations[].Instances[].[InstanceId]' --output text)
+instance_id=$(aws --profile "$profile" $region_opt ec2 describe-instances --filters "Name=tag:Name,Values=$name" "Name=instance-state-name,Values=running" --query 'Reservations[].Instances[].[InstanceId]' --output text)
 rc=$?
 if [[ $rc != 0 ]]; then
     echo "Error: Unable to query AWS." | tee -a $log
     exit 1
 fi
 
-result=$(aws --profile "$profile" ec2 describe-instances --instance-ids "$instance_id")
+result=$(aws --profile "$profile" $region_opt ec2 describe-instances --instance-ids "$instance_id")
 rc=$?
 if [[ $rc != 0 ]]; then
     echo "Error: Unable to query AWS." | tee -a $log
@@ -72,7 +104,7 @@ echo "$result" | tee -a $log
 volume_id=$(echo "$result" | awk -F'"' '/"VolumeId":/{print $4}')
 state=""
 while [[ $state != "available" ]]; do
-    result=$(aws --profile "$profile" ec2 describe-volumes --volume-ids "$volume_id" --output json)
+    result=$(aws --profile "$profile" $region_opt ec2 describe-volumes --volume-ids "$volume_id" --output json)
     state=$(echo "$result" | awk -F'"' '/"State":/{print $4}')
     echo -n "."
     sleep 1
@@ -80,10 +112,10 @@ done
 echo "Done." | tee -a $log
 
 echo "Attach volume..." | tee -a $log
-aws --profile "$profile" ec2 attach-volume --volume-id "$volume_id" --instance-id "$instance_id" --device "$device" | tee -a $log
+aws --profile "$profile" $region_opt ec2 attach-volume --volume-id "$volume_id" --instance-id "$instance_id" --device "$device" | tee -a $log
 attachment_state=""
 while [[ $attachment_state != "attached" ]]; do
-    result=$(aws --profile "$profile" ec2 describe-volumes --volume-ids "$volume_id" --query 'Volumes[*].{State:Attachments[0].State}' --output json)
+    result=$(aws --profile "$profile" $region_opt ec2 describe-volumes --volume-ids "$volume_id" --query 'Volumes[*].{State:Attachments[0].State}' --output json)
     attachment_state=$(echo "$result" | awk -F'"' '/"State":/{print $4}')
     echo -n "."
     sleep 1

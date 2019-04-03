@@ -5,35 +5,66 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.8"
+version="1.1.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 script_name="$(basename "$0")"
 log="$script_dir/${script_name/.sh/.log}"
 
-name="$1"
-volume_mount="$2"
-volume_size="$3"
-volume_type="$4"
-device_aws="$5"
-mount_privs="$6"
-mount_owner="$7"
-mount_group="$8"
 profile="${AWS_PROFILE:-default}"
 
 function usage {
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
     echo
-    echo "    $script_name hostname volume_mount volume_size_GiB volume_type device mount_privs mount_owner mount_group"
+    echo "    $script_name [--profile profile] [--region region] hostname volume_mount volume_size_GiB volume_type device mount_privs mount_owner mount_group"
     echo
     echo "Example:"
     echo "    $script_name my_host /data 1024 gp2 /dev/sdf 770 myuser mygroup"
     exit 1
 }
 
-if [[ $1 == "--help" || -z $name || -z $volume_mount || -z $volume_size || -z $volume_type || -z $device_aws || -z $mount_privs || -z $mount_owner || -z $mount_group ]]; then
+while test -n "$1"; do
+    case "$1" in
+    --profile)
+        shift
+        profile="$1"
+        shift
+        ;;
+    --region)
+        shift
+        region="$1"
+        region_opt="--region=$region"
+        shift
+        ;;
+    -h|--help)
+        usage
+        ;;
+    *)
+        name="$1"
+        shift
+        volume_mount="$1"
+        shift
+        volume_size="$1"
+        shift
+        volume_type="$1"
+        shift
+        device_aws="$1"
+        shift
+        mount_privs="$1"
+        shift
+        mount_owner="$1"
+        shift
+        mount_group="$1"
+        shift
+        ;;
+    esac
+done
+
+if [[ -z $name || -z $volume_mount || -z $volume_size || -z $volume_type || -z $device_aws || -z $mount_privs || -z $mount_owner || -z $mount_group ]]; then
+    echo "Missing option(s)."
+    echo
     usage
 fi
 
@@ -60,7 +91,7 @@ fi
 echo
 
 echo "Create new volume..."
-./ec2_create_volume.sh "$name" "$volume_size" "$volume_type" "$device_aws"
+./ec2_create_volume.sh --profile "$profile" $region_opt "$name" "$volume_size" "$volume_type" "$device_aws"
 rc=$?
 if [[ $rc -ne 0 ]]; then
     echo "Error: Could not create volume."

@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.2.0"
+version="1.3.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -108,7 +108,7 @@ for name in $names; do
     fi
 
     echo "Start instance..." | tee -a "$log"
-    aws --profile "$profile" $region_opt ec2 start-instances --instance-ids "$instance_id" --output table | tee -a "$log"
+    aws --profile "$profile" $region_opt ec2 start-instances --instance-ids "$instance_id" | tee -a "$log"
     state=""
     while [[ $state != "running" ]] && [[ $wait_for_running == yes ]]; do
         state=$(aws --profile "$profile" $region_opt ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[].Instances[].[State.Name]' --output text)

@@ -7,7 +7,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.5.1"
+version="1.6.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -16,16 +16,17 @@ script_name="$(basename "$0")"
 profile="${AWS_PROFILE:-default}"
 
 function usage {
-    echo "Usage:"
-    echo "    export AWS_PROFILE=profile"
-    echo
-    echo "    $script_name [--profile profile] [--region region] [name | 'partial_name*' | -v tag-value]"
-    echo
-    echo "Description:"
-    echo "    --profile          Use a specified profile from your AWS credential file, otherwise get it from AWS_PROFILE variable."
-    echo "    --region           Use a specified region instead of region from configuration or environment setting."
-    echo "    -v, --tag-value    List instances which have the provided tag value in any of the tag keys."
-    echo "    -h, --help         Display this help."
+    cat <<USAGE
+Usage:
+    [export AWS_PROFILE=profile]
+    $script_name [--profile profile] [--region region] [name | 'partial_name*' | -v tag-value]
+
+Description:
+    --profile          Use a specified profile from your AWS credential file, otherwise get it from AWS_PROFILE environment variable.
+    --region           Use a specified region instead of region from configuration or environment setting.
+    -v, --tag-value    List instances which have the provided tag value in any of the tag keys.
+    -h, --help         Display this help.
+USAGE
     exit 1
 }
 

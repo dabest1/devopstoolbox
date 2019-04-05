@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.2.0"
+version="1.3.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -114,9 +114,9 @@ for name in $names; do
 
     echo "Stop instance..." | tee -a "$log"
     if [[ $force ]]; then
-        aws --profile "$profile" ec2 stop-instances --instance-ids "$instance_id" --force --output table | tee -a "$log"
+        aws --profile "$profile" ec2 stop-instances --instance-ids "$instance_id" --force | tee -a "$log"
     else
-        aws --profile "$profile" ec2 stop-instances --instance-ids "$instance_id" --output table | tee -a "$log"
+        aws --profile "$profile" ec2 stop-instances --instance-ids "$instance_id" | tee -a "$log"
     fi
     state=""
     while [[ $state != "stopped" ]] && [[ $wait_for_stopped == yes ]]; do

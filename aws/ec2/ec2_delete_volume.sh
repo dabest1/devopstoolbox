@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with -h option to get usage.
 
-version="1.2.0"
+version="1.3.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -58,27 +58,27 @@ if [[ -z $volume_id ]]; then
     usage
 fi
 
-echo >> $log
-echo >> $log
-date +'%F %T %z' >> $log
-echo "profile: $profile" | tee -a $log
-echo "volume_id: $volume_id" | tee -a $log
-echo | tee -a $log
+echo >> "$log"
+echo >> "$log"
+date +'%F %T %z' >> "$log"
+echo "profile: $profile" | tee -a "$log"
+echo "volume_id: $volume_id" | tee -a "$log"
+echo | tee -a "$log"
 
-aws --profile "$profile" $region_opt ec2 describe-volumes --volume-ids "$volume_id" --output table | tee -a $log
+aws --profile "$profile" $region_opt ec2 describe-volumes --volume-ids "$volume_id" --output table | tee -a "$log"
 rc=$?
 if [[ $rc -ne 0 ]]; then
-    echo 'Error getting volume information.' | tee -a $log
+    echo 'Error getting volume information.' | tee -a "$log"
     exit 1
 fi
 result=$(aws --profile "$profile" $region_opt ec2 describe-volumes --volume-ids "$volume_id" --output json)
 instance_id=$(echo "$result" | awk -F'"' '/"InstanceId":/{print $4}')
 if [[ ! -z $instance_id ]]; then
-    aws --profile "$profile" $region_opt ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, Placement.AvailabilityZone, InstanceType, State.Name]' --output table | tee -a $log
+    aws --profile "$profile" $region_opt ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0], InstanceId, Placement.AvailabilityZone, InstanceType, State.Name]' --output table | tee -a "$log"
 fi
 
-echo -n 'Are you sure that you want this volume deleted? y/n: ' | tee -a $log
-read yn
+echo -n 'Are you sure that you want this volume deleted? y/n: ' | tee -a "$log"
+read -r yn
 if [[ $yn == y ]]; then
     result=$(aws --profile "$profile" $region_opt ec2 describe-volumes --volume-ids "$volume_id" --query 'Volumes[*].{InstanceId:Attachments[0].InstanceId,State:Attachments[0].State,Device:Attachments[0].Device}')
     instance_id=$(echo "$result" | awk -F'"' '/"InstanceId":/{print $4}')
@@ -89,18 +89,18 @@ if [[ $yn == y ]]; then
         name=$(aws --profile "$profile" $region_opt ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0]]' --output text)
 
         if [[ $unmount_volume = yes ]]; then
-            echo 'Unmount volume if necessary...' | tee -a $log
+            echo 'Unmount volume if necessary...' | tee -a "$log"
             ssh -t "$name" "cat /etc/mtab | egrep '/dev/sd${device_short}|/dev/xvd${device_short}' | awk '{print \$1}' | xargs --no-run-if-empty --verbose sudo umount"
             rc=$?
             if [[ $rc -ne 0 ]]; then
-                echo 'Error: Could not unmount volume.' | tee -a $log
+                echo 'Error: Could not unmount volume.' | tee -a "$log"
                 exit 1
             fi
             echo 'Done.'
         fi
 
-        echo 'Detach volume...' | tee -a $log
-        aws --profile "$profile" $region_opt ec2 detach-volume --volume-id "$volume_id" | tee -a $log
+        echo 'Detach volume...' | tee -a "$log"
+        aws --profile "$profile" $region_opt ec2 detach-volume --volume-id "$volume_id" | tee -a "$log"
         state=""
         while [[ $state != 'available' ]]; do
             result=$(aws --profile "$profile" $region_opt ec2 describe-volumes --volume-ids "$volume_id" --query 'Volumes[*].{State:State}' --output json)
@@ -108,18 +108,18 @@ if [[ $yn == y ]]; then
             echo -n "."
             sleep 1
         done
-        echo 'Done.' | tee -a $log
+        echo 'Done.' | tee -a "$log"
     fi
 
-    echo "Delete volume..." | tee -a $log
-    aws --profile "$profile" $region_opt ec2 delete-volume --volume-id "$volume_id" | tee -a $log
+    echo "Delete volume..." | tee -a "$log"
+    aws --profile "$profile" $region_opt ec2 delete-volume --volume-id "$volume_id" | tee -a "$log"
     rc=$?
     if [[ $rc -ne 0 ]]; then
-        echo 'Error deleting volume.' | tee -a $log
+        echo 'Error deleting volume.' | tee -a "$log"
         exit 1
     fi
-    echo 'Done.' | tee -a $log
+    echo 'Done.' | tee -a "$log"
 else
-    echo 'Aborted!' | tee -a $log
+    echo 'Aborted!' | tee -a "$log"
     exit 1
 fi

@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with -h option to get usage.
 
-version="1.1.0"
+version="1.2.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -18,13 +18,13 @@ function usage {
     echo "Usage:"
     echo "    export AWS_PROFILE=profile"
     echo
-    echo "    $script_name [--profile profile] [--region region] [-i] volume_id"
+    echo "    $script_name [--profile profile] [--region region] [-u] volume_id"
     echo
     echo "Description:"
     echo "    --profile       Use a specified profile from your AWS credential file, otherwise get it from AWS_PROFILE variable."
     echo "    --region        Use a specified region instead of region from configuration or environment setting."
+    echo "    -u, --unmount   Attempt to unmount volume."
     echo "    -h, --help      Show this help."
-    echo "    -i, --ignore    Ignore unmount error."
     exit 1
 }
 
@@ -44,8 +44,8 @@ while test -n "$1"; do
     -h|--help)
         usage
         ;;
-    -i|--ignore)
-        ignore_error=yes
+    -u|--unmount)
+        unmount_volume=yes
         shift
         ;;
     *)
@@ -87,16 +87,17 @@ if [[ $yn == y ]]; then
     attach_state=$(echo "$result" | awk -F'"' '/"State":/{print $4}')
     if [[ $attach_state == 'attached' || $attach_state == 'busy' ]]; then
         name=$(aws --profile "$profile" $region_opt ec2 describe-instances --instance-ids "$instance_id" --query 'Reservations[].Instances[].[Tags[?Key==`Name`].Value | [0]]' --output text)
-        echo 'Unmount volume if necessary...' | tee -a $log
-        ssh -t "$name" "cat /etc/mtab | egrep '/dev/sd${device_short}|/dev/xvd${device_short}' | awk '{print \$1}' | xargs --no-run-if-empty --verbose sudo umount"
-        rc=$?
-        if [[ $rc -ne 0 ]]; then
-            echo 'Error: Could not unmount volume.' | tee -a $log
-            if [[ $ignore_error != yes ]]; then
+
+        if [[ $unmount_volume = yes ]]; then
+            echo 'Unmount volume if necessary...' | tee -a $log
+            ssh -t "$name" "cat /etc/mtab | egrep '/dev/sd${device_short}|/dev/xvd${device_short}' | awk '{print \$1}' | xargs --no-run-if-empty --verbose sudo umount"
+            rc=$?
+            if [[ $rc -ne 0 ]]; then
+                echo 'Error: Could not unmount volume.' | tee -a $log
                 exit 1
             fi
+            echo 'Done.'
         fi
-        echo 'Done.'
 
         echo 'Detach volume...' | tee -a $log
         aws --profile "$profile" $region_opt ec2 detach-volume --volume-id "$volume_id" | tee -a $log
@@ -109,6 +110,7 @@ if [[ $yn == y ]]; then
         done
         echo 'Done.' | tee -a $log
     fi
+
     echo "Delete volume..." | tee -a $log
     aws --profile "$profile" $region_opt ec2 delete-volume --volume-id "$volume_id" | tee -a $log
     rc=$?

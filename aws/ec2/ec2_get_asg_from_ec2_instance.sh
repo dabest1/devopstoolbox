@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.0"
+version="1.0.1"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -53,16 +53,25 @@ while test -n "$1"; do
 done
 
 if [[ -z $name ]]; then
-    echo "Error: Instance name/id is missing."
-    echo
+    echo "Error: Instance name/id is missing." >&2
+    echo >&2
     usage
 fi
 
 if echo "$name" | grep -q '^i-'; then
     instance_id="$name"
-    auto_scaling_group="$(aws --profile "$profile" $region_opt ec2 describe-tags --filters "Name=resource-id,Values=$instance_id" | jq -r '.Tags[] | select(.Key=="aws:autoscaling:groupName") | .Value')"
 else
-    auto_scaling_group="$(aws --profile "$profile" $region_opt ec2 describe-tags --filters "Name=tag:Name,Values=$name" | jq -r '.Tags[] | select(.Key=="aws:autoscaling:groupName") | .Value')"
+    instance_id=$(aws --profile "$profile" $region_opt ec2 describe-instances --filters "Name=tag:Name, Values=$name" --query 'Reservations[].Instances[].[InstanceId]' --output text)
+    if [[ $? -ne 0 ]]; then
+        echo "Error: Failed to query AWS." >&2
+        exit 1
+    fi
+fi
+
+auto_scaling_group="$(aws --profile "$profile" $region_opt ec2 describe-tags --filters "Name=resource-id,Values=$instance_id" "Name=key,Values=aws:autoscaling:groupName" | jq -r '.Tags[].Value')"
+if [[ $? -ne 0 ]]; then
+    echo "Error: Failed to query AWS." >&2
+    exit 1
 fi
 
 echo "Auto Scaling Group: $auto_scaling_group"

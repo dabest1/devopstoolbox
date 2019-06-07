@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.0.1"
+version="1.1.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -68,10 +68,16 @@ else
     fi
 fi
 
-auto_scaling_group="$(aws --profile "$profile" $region_opt ec2 describe-tags --filters "Name=resource-id,Values=$instance_id" "Name=key,Values=aws:autoscaling:groupName" | jq -r '.Tags[].Value')"
+auto_scaling_group_name="$(aws --profile "$profile" $region_opt ec2 describe-tags --filters "Name=resource-id,Values=$instance_id" "Name=key,Values=aws:autoscaling:groupName" | jq -r '.Tags[].Value')"
 if [[ $? -ne 0 ]]; then
     echo "Error: Failed to query AWS." >&2
     exit 1
 fi
 
-echo "Auto Scaling Group: $auto_scaling_group"
+auto_scaling_group="$(aws --profile "$profile" $region_opt autoscaling describe-auto-scaling-groups --auto-scaling-group-names "$auto_scaling_group_name")"
+if [[ $? -ne 0 ]]; then
+    echo "Error: Failed to query AWS." >&2
+    exit 1
+fi
+
+echo "$auto_scaling_group" | jq '.AutoScalingGroups[] | {AutoScalingGroupName, LaunchConfigurationName, MinSize, MaxSize, DesiredCapacity, LoadBalancerNames, HealthCheckType, Instances}'

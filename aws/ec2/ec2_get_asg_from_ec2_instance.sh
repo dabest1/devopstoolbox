@@ -5,7 +5,7 @@
 # Usage:
 #     Run script with --help option to get usage.
 
-version="1.2.0"
+version="1.2.1"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -84,7 +84,7 @@ echo "$auto_scaling_group" | jq '.AutoScalingGroups[] | {AutoScalingGroupName, L
 echo
 
 load_balancer_names="$(echo "$auto_scaling_group" | jq -r '.AutoScalingGroups[].LoadBalancerNames[]')"
-load_balancers="$(aws elb describe-load-balancers --load-balancer-names "$load_balancer_names" | jq '.LoadBalancerDescriptions')"
+load_balancers="$(aws --profile "$profile" $region_opt elb describe-load-balancers --load-balancer-names "$load_balancer_names" | jq '.LoadBalancerDescriptions')"
 if [[ $? -ne 0 ]]; then
     echo "Error: Failed to query AWS." >&2
     exit 1

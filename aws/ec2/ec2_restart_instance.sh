@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Purpose:
 #     Restart EC2 instance.
@@ -7,7 +7,7 @@
 # Todo:
 #     Add prompt for confirmation before restart.
 
-version="1.0.0"
+version="1.1.0"
 
 set -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -16,14 +16,19 @@ script_name="$(basename "$0")"
 profile="${AWS_PROFILE:-default}"
 
 function usage {
-    echo "Usage:"
-    echo "    export AWS_PROFILE=profile"
-    echo
-    echo "    $script_name [--profile profile] name"
-    echo
-    echo "Description:"
-    echo "    --profile          Use a specified profile from your AWS credential file, otherwise get it from AWS_PROFILE variable."
-    echo "    -h, --help         Display this help."
+    cat <<USAGE
+Usage:
+    [export AWS_PROFILE=profile]
+    $script_name [--profile profile] [--region region] name
+
+Example:
+    $script_name myhost
+
+Description:
+    --profile     Use a specified profile from your AWS credential file, otherwise get it from AWS_PROFILE environment variable.
+    --region      Use a specified region instead of region from configuration or environment setting.
+    -h, --help    Display this help.
+USAGE
     exit 1
 }
 
@@ -35,6 +40,12 @@ while test -n "$1"; do
     --profile)
         shift
         profile="$1"
+        shift
+        ;;
+    --region)
+        shift
+        region="$1"
+        region_opt="--region $region"
         shift
         ;;
     *)
@@ -51,10 +62,10 @@ fi
 if echo "$name" | grep -q '^i-'; then
     instance_ids="$name"
 else
-    instance_ids=$(aws --profile "$profile" ec2 describe-instances --filters "Name=tag:Name, Values=$name" --query 'Reservations[].Instances[].[InstanceId]' --output text)
+    instance_ids=$(aws --profile "$profile" $region_opt ec2 describe-instances --filters "Name=tag:Name, Values=$name" --query 'Reservations[].Instances[].[InstanceId]' --output text)
 fi
 if [[ -z $instance_ids ]]; then
     exit 1
 fi
 
-aws --profile "$profile" ec2 reboot-instances --instance-ids $instance_ids
+aws --profile "$profile" $region_opt ec2 reboot-instances --instance-ids $instance_ids
